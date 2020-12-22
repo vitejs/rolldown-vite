@@ -10,6 +10,7 @@ import { buildEsbuildPlugin } from '../plugins/esbuild'
 import { terserPlugin } from '../plugins/terser'
 import { Terser } from 'types/terser'
 import { copyDir, emptyDir } from '../utils'
+import { buildManifestPlugin } from '../plugins/manifest'
 
 export interface BuildOptions {
   /**
@@ -189,6 +190,7 @@ async function doBuild(
     ...(options.minify && options.minify !== 'esbuild'
       ? [terserPlugin(options.terserOptions)]
       : []),
+    ...(options.emitManifest ? [buildManifestPlugin()] : []),
     sizeReporPlugin(config)
   ]
 
