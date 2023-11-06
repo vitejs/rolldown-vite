@@ -298,8 +298,7 @@ export function rollupCjsExternalPlugin(
         const kind: ImportKind = options.custom?.kind
         if (kind === 'require-call' && platform !== 'node') {
           return {
-            id,
-            namespace: cjsExternalFacadeNamespace,
+            id: cjsExternalFacadeNamespace + id,
           }
         }
 
