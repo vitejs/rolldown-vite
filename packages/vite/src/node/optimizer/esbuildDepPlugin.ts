@@ -1,4 +1,5 @@
 import path from 'node:path'
+import type * as Rollup from 'rollup'
 import type { ImportKind, Plugin } from 'esbuild'
 import { KNOWN_ASSET_TYPES } from '../constants'
 import type { PackageCache } from '../packages'
@@ -292,43 +293,43 @@ const matchesEntireLine = (text: string) => `^${escapeRegex(text)}$`
 export function esbuildCjsExternalPlugin(
   externals: string[],
   platform: 'node' | 'browser',
-): Plugin {
+): Rollup.Plugin {
+  const filter = new RegExp(externals.map(matchesEntireLine).join('|'))
+
   return {
     name: 'cjs-external',
-    setup(build) {
-      const filter = new RegExp(externals.map(matchesEntireLine).join('|'))
-
-      build.onResolve({ filter: new RegExp(`^${nonFacadePrefix}`) }, (args) => {
+    resolveId(id, importer, options) {
+      if (id.startsWith(nonFacadePrefix)) {
         return {
-          path: args.path.slice(nonFacadePrefix.length),
+          id: id.slice(nonFacadePrefix.length),
           external: true,
         }
-      })
+      }
 
-      build.onResolve({ filter }, (args) => {
-        // preserve `require` for node because it's more accurate than converting it to import
-        if (args.kind === 'require-call' && platform !== 'node') {
+      if (filter.test(id)) {
+        // TODO rolldown: kind is not available in rollup
+        const kind: ImportKind = options.custom?.kind
+        if (kind === 'require-call' && platform !== 'node') {
           return {
-            path: args.path,
-            namespace: cjsExternalFacadeNamespace,
+            id: cjsExternalFacadeNamespace + id,
           }
         }
 
         return {
-          path: args.path,
+          id,
           external: true,
         }
-      })
-
-      build.onLoad(
-        { filter: /.*/, namespace: cjsExternalFacadeNamespace },
-        (args) => ({
-          contents:
+      }
+    },
+    load(id) {
+      if (id.startsWith(cjsExternalFacadeNamespace)) {
+        return {
+          code:
             `import * as m from ${JSON.stringify(
-              nonFacadePrefix + args.path,
+              nonFacadePrefix + id.slice(cjsExternalFacadeNamespace.length),
             )};` + `module.exports = m;`,
-        }),
-      )
+        }
+      }
     },
   }
 }
