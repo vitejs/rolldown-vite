@@ -4,6 +4,8 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import { performance } from 'node:perf_hooks'
 import colors from 'picocolors'
+import type { Plugin } from 'rollup'
+import rollup from 'rollup'
 import type { BuildContext, BuildOptions as EsbuildBuildOptions } from 'esbuild'
 import esbuild, { build } from 'esbuild'
 import { init, parse } from 'es-module-lexer'
@@ -29,6 +31,7 @@ import { ESBUILD_MODULES_TARGET } from '../constants'
 import { esbuildCjsExternalPlugin, esbuildDepPlugin } from './esbuildDepPlugin'
 import { scanImports } from './scan'
 import { createOptimizeDepsIncludeResolver, expandGlobIds } from './resolve'
+import { rollupCjsExternalPlugin, rollupDepPlugin } from './rollupDepPlugin'
 export {
   initDepsOptimizer,
   initDevSsrDepsOptimizer,
@@ -108,6 +111,7 @@ export interface DepOptimizationConfig {
     | 'outExtension'
     | 'metafile'
   >
+  rollupOptions: rollup.RollupOptions
   /**
    * List of file extensions that can be optimized. A corresponding esbuild
    * plugin must exist to handle the specific extension.
@@ -820,6 +824,155 @@ async function prepareEsbuildOptimizerRun(
     ignoreAnnotations: !isBuild,
     metafile: true,
     plugins,
+    charset: 'utf8',
+    ...esbuildOptions,
+    supported: {
+      'dynamic-import': true,
+      'import-meta': true,
+      ...esbuildOptions.supported,
+    },
+  })
+  return { context, idToExports }
+}
+
+async function prepareRollupOptimizerRun(
+  resolvedConfig: ResolvedConfig,
+  depsInfo: Record<string, OptimizedDepInfo>,
+  ssr: boolean,
+  processingCacheDir: string,
+  optimizerContext: { cancelled: boolean },
+): Promise<{
+  context?: BuildContext
+  idToExports: Record<string, ExportsData>
+}> {
+  const isBuild = resolvedConfig.command === 'build'
+  const config: ResolvedConfig = {
+    ...resolvedConfig,
+    command: 'build',
+  }
+
+  // esbuild generates nested directory output with lowest common ancestor base
+  // this is unpredictable and makes it difficult to analyze entry / output
+  // mapping. So what we do here is:
+  // 1. flatten all ids to eliminate slash
+  // 2. in the plugin, read the entry ourselves as virtual files to retain the
+  //    path.
+  const flatIdDeps: Record<string, string> = {}
+  const idToExports: Record<string, ExportsData> = {}
+
+  const optimizeDeps = getDepOptimizationConfig(config, ssr)
+
+  // TODO compat esbuild options
+  // const { plugins: pluginsFromConfig = [], ...esbuildOptions } =
+  //   optimizeDeps?.esbuildOptions ?? {}
+  const { plugins: pluginsFromConfig = [], ...rollupOptions } =
+    optimizeDeps?.rollupOptions ?? {}
+
+  await Promise.all(
+    Object.keys(depsInfo).map(async (id) => {
+      const src = depsInfo[id].src!
+      const exportsData = await (depsInfo[id].exportsData ??
+        extractExportsData(src, config, ssr))
+      if (exportsData.jsxLoader && !esbuildOptions.loader?.['.js']) {
+        // Ensure that optimization won't fail by defaulting '.js' to the JSX parser.
+        // This is useful for packages such as Gatsby.
+        esbuildOptions.loader = {
+          '.js': 'jsx',
+          ...esbuildOptions.loader,
+        }
+      }
+      const flatId = flattenId(id)
+      flatIdDeps[flatId] = src
+      idToExports[id] = exportsData
+    }),
+  )
+
+  if (optimizerContext.cancelled) return { context: undefined, idToExports }
+
+  // esbuild automatically replaces process.env.NODE_ENV for platform 'browser'
+  // But in lib mode, we need to keep process.env.NODE_ENV untouched
+  const define = {
+    'process.env.NODE_ENV':
+      isBuild && config.build.lib
+        ? 'process.env.NODE_ENV'
+        : JSON.stringify(process.env.NODE_ENV || config.mode),
+  }
+
+  const platform =
+    ssr && config.ssr?.target !== 'webworker' ? 'node' : 'browser'
+
+  const external = [...(optimizeDeps?.exclude ?? [])]
+
+  if (isBuild) {
+    let rollupOptionsExternal = config?.build?.rollupOptions?.external
+    if (rollupOptionsExternal) {
+      if (typeof rollupOptionsExternal === 'string') {
+        rollupOptionsExternal = [rollupOptionsExternal]
+      }
+      // TODO: decide whether to support RegExp and function options
+      // They're not supported yet because `optimizeDeps.exclude` currently only accepts strings
+      if (
+        !Array.isArray(rollupOptionsExternal) ||
+        rollupOptionsExternal.some((ext) => typeof ext !== 'string')
+      ) {
+        throw new Error(
+          `[vite] 'build.rollupOptions.external' can only be an array of strings or a string when using esbuild optimization at build time.`,
+        )
+      }
+      external.push(...(rollupOptionsExternal as string[]))
+    }
+  }
+
+  const plugins = [...pluginsFromConfig] as Plugin[]
+  if (external.length) {
+    plugins.push(rollupCjsExternalPlugin(external, platform))
+  }
+  plugins.push(rollupDepPlugin(flatIdDeps, external, config, ssr))
+
+  const value = await rollup.rollup({
+    input: Object.keys(flatIdDeps),
+    external,
+    output: {
+      format: 'esm',
+      sourcemap: true,
+      dir: processingCacheDir,
+      banner:
+        platform === 'node'
+          ? (chunk) =>
+              chunk.fileName.endsWith('.js')
+                ? `import { createRequire } from 'module';const require = createRequire(import.meta.url);`
+                : ''
+          : undefined,
+    },
+    logLevel: 'warn',
+  })
+
+  const context = await esbuild.context({
+    absWorkingDir: process.cwd(),
+    // entryPoints: Object.keys(flatIdDeps),
+    // bundle: true,
+    // We can't use platform 'neutral', as esbuild has custom handling
+    // when the platform is 'node' or 'browser' that can't be emulated
+    // by using mainFields and conditions
+    platform,
+    define,
+    // format: 'esm',
+    // See https://github.com/evanw/esbuild/issues/1921#issuecomment-1152991694
+    // banner:
+    //   platform === 'node'
+    //     ? {
+    //         js: `import { createRequire } from 'module';const require = createRequire(import.meta.url);`,
+    //       }
+    //     : undefined,
+    target: isBuild ? config.build.target || undefined : ESBUILD_MODULES_TARGET,
+    // external,
+    // logLevel: 'error',
+    // splitting: true,
+    // sourcemap: true,
+    // outdir: processingCacheDir,
+    ignoreAnnotations: !isBuild,
+    metafile: true,
+    // plugins,
     charset: 'utf8',
     ...esbuildOptions,
     supported: {
