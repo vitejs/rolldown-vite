@@ -8,7 +8,7 @@ import rollupPluginReplace from '@rollup/plugin-replace'
 import rollup from 'rollup'
 import colors from 'picocolors'
 import type { BuildOptions as EsbuildBuildOptions } from 'esbuild'
-import { build, transform } from 'esbuild'
+import { build } from 'esbuild'
 import { init, parse } from 'es-module-lexer'
 import glob from 'fast-glob'
 import { createFilter } from '@rollup/pluginutils'
@@ -28,7 +28,7 @@ import {
   removeLeadingSlash,
   tryStatSync,
 } from '../utils'
-import { prettifyMessage, transformWithEsbuild } from '../plugins/esbuild'
+import { transformWithEsbuild } from '../plugins/esbuild'
 import { ESBUILD_MODULES_TARGET } from '../constants'
 import { Rollup } from '..'
 import { definePlugin } from '../plugins/define'

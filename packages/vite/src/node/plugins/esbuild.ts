@@ -429,7 +429,7 @@ export function resolveEsbuildTranspileOptions(
   }
 }
 
-export function prettifyMessage(m: Message, code: string): string {
+function prettifyMessage(m: Message, code: string): string {
   let res = colors.yellow(m.text)
   if (m.location) {
     const lines = code.split(/\r?\n/g)
