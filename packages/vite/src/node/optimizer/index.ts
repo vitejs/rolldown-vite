@@ -8,7 +8,7 @@ import rollupPluginReplace from '@rollup/plugin-replace'
 import rollup from 'rollup'
 import colors from 'picocolors'
 import type { BuildOptions as EsbuildBuildOptions } from 'esbuild'
-import { build } from 'esbuild'
+import { build, transform } from 'esbuild'
 import { init, parse } from 'es-module-lexer'
 import glob from 'fast-glob'
 import { createFilter } from '@rollup/pluginutils'
@@ -28,7 +28,7 @@ import {
   removeLeadingSlash,
   tryStatSync,
 } from '../utils'
-import { transformWithEsbuild } from '../plugins/esbuild'
+import { prettifyMessage, transformWithEsbuild } from '../plugins/esbuild'
 import { ESBUILD_MODULES_TARGET } from '../constants'
 import { Rollup } from '..'
 import { definePlugin } from '../plugins/define'
@@ -731,20 +731,17 @@ async function prepareRollupOptimizerRun(
   const { plugins: pluginsFromConfig = [], ...rollupOptions } =
     optimizeDeps?.rollupOptions ?? {}
 
+  let jsxLoader = false
   await Promise.all(
     Object.keys(depsInfo).map(async (id) => {
       const src = depsInfo[id].src!
       const exportsData = await (depsInfo[id].exportsData ??
         extractExportsData(src, config, ssr))
-      // TODO support jsxLoader
-      // if (exportsData.jsxLoader && !esbuildOptions.loader?.['.js']) {
-      //   // Ensure that optimization won't fail by defaulting '.js' to the JSX parser.
-      //   // This is useful for packages such as Gatsby.
-      //   esbuildOptions.loader = {
-      //     '.js': 'jsx',
-      //     ...esbuildOptions.loader,
-      //   }
-      // }
+      if (exportsData.jsxLoader) {
+        // Ensure that optimization won't fail by defaulting '.js' to the JSX parser.
+        // This is useful for packages such as Gatsby.
+        jsxLoader = true
+      }
       const flatId = flattenId(id)
       flatIdDeps[flatId] = src
       idToExports[id] = exportsData
@@ -794,9 +791,40 @@ async function prepareRollupOptimizerRun(
   }
   plugins.push(rollupDepPlugin(flatIdDeps, external, config, ssr))
   plugins.push(rollupPluginReplace(define))
+  if (jsxLoader) {
+    plugins.push({
+      name: 'optimizer-transform',
+      async transform(code, id) {
+        if (id.endsWith('.js')) {
+          try {
+            const result = await transform(code, {
+              sourcemap: true,
+              sourcefile: id,
+              loader: 'jsx',
+            })
+            result.warnings.forEach((m) => {
+              this.warn(prettifyMessage(m, code))
+            })
+            return {
+              code: result.code,
+              map: result.map,
+            }
+          } catch (error) {
+            error.errors.forEach((m) => {
+              this.error(prettifyMessage(m, code))
+            })
+            error.warnings.forEach((m) => {
+              this.warn(prettifyMessage(m, code))
+            })
+          }
+        }
+      },
+    })
+  }
 
   async function build() {
-    // TODO platform target define
+    // TODO target: isBuild ? config.build.target || undefined : ESBUILD_MODULES_TARGET,
+    // TODO platform
     const bundle = await rollup.rollup({
       input: Object.keys(flatIdDeps),
       external,
