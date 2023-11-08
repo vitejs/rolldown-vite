@@ -791,39 +791,30 @@ async function prepareRollupOptimizerRun(
   }
   plugins.push(rollupDepPlugin(flatIdDeps, external, config, ssr))
   plugins.push(rollupPluginReplace(define))
-  if (jsxLoader) {
-    plugins.push({
-      name: 'optimizer-transform',
-      async transform(code, id) {
-        if (id.endsWith('.js')) {
-          try {
-            const result = await transform(code, {
-              sourcemap: true,
-              sourcefile: id,
-              loader: 'jsx',
-            })
-            result.warnings.forEach((m) => {
-              this.warn(prettifyMessage(m, code))
-            })
-            return {
-              code: result.code,
-              map: result.map,
-            }
-          } catch (error) {
-            error.errors.forEach((m) => {
-              this.error(prettifyMessage(m, code))
-            })
-            error.warnings.forEach((m) => {
-              this.warn(prettifyMessage(m, code))
-            })
-          }
+  plugins.push({
+    name: 'optimizer-transform',
+    async transform(code, id) {
+      if (/\.(?:m?[jt]s|[jt]sx)$/.test(id)) {
+        const result = await transformWithEsbuild(code, id, {
+          sourcemap: true,
+          sourcefile: id,
+          loader: jsxLoader && /\.js$/.test(id) ? 'jsx' : undefined,
+          target: isBuild
+            ? config.build.target || undefined
+            : ESBUILD_MODULES_TARGET,
+        })
+        result.warnings.forEach((m) => {
+          this.warn(prettifyMessage(m, code))
+        })
+        return {
+          code: result.code,
+          map: result.map,
         }
-      },
-    })
-  }
+      }
+    },
+  })
 
   async function build() {
-    // TODO target: isBuild ? config.build.target || undefined : ESBUILD_MODULES_TARGET,
     // TODO platform
     const bundle = await rollup.rollup({
       input: Object.keys(flatIdDeps),
