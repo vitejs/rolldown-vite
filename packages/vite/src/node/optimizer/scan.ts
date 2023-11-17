@@ -204,15 +204,11 @@ async function prepareRolldownScanner(
   plugins.push(rolldownScanPlugin(config, container, deps, missing, entries))
 
   async function build() {
-    const bundle = await rolldown.rolldown({
+    await rolldown.rolldown({
       input: entries,
       // logLevel: 'silent',
       plugins,
       ...rollupOptions,
-    })
-    return await bundle.write({
-      format: 'esm',
-      ...rollupOptions.output,
     })
   }
 
