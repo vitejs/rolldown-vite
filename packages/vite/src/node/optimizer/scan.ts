@@ -3,7 +3,7 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import glob from 'fast-glob'
-import type { Plugin, RollupOutput } from '@rolldown/node'
+import type { Plugin } from '@rolldown/node'
 import * as rolldown from '@rolldown/node'
 import type { Loader } from 'esbuild'
 import { transform } from 'esbuild'
@@ -178,7 +178,7 @@ async function prepareRolldownScanner(
   scanContext?: { cancelled: boolean },
 ): Promise<
   | {
-      build: () => Promise<RollupOutput>
+      build: () => Promise<void>
     }
   | undefined
 > {
