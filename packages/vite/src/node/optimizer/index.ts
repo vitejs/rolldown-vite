@@ -649,9 +649,7 @@ export function runOptimizeDeps(
                 ),
               })
             } else {
-              const id = path
-                .relative(processingCacheDirOutputPath, chunk.fileName)
-                .replace(jsExtensionRE, '')
+              const id = chunk.fileName.replace(jsExtensionRE, '')
               const file = getOptimizedDepPath(id, resolvedConfig, ssr)
               if (
                 !findOptimizedDepInfoInRecord(
