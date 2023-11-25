@@ -1065,7 +1065,10 @@ function stringifyDepsOptimizerMetadata(
         ),
       ),
       chunks: Object.fromEntries(
-        Object.values(chunks).map(({ id, file }) => [id, { file }]),
+        Object.values(chunks).map(({ id, file, isDynamicEntry }) => [
+          id,
+          { file, isDynamicEntry },
+        ]),
       ),
     },
     (key: string, value: string) => {
