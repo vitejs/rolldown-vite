@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['./playground/optimize-deps/**/optimize-deps.spec.[tj]s'],
+    include: ['./playground/**/*.spec.[tj]s'],
     setupFiles: ['./playground/vitestSetup.ts'],
     globalSetup: ['./playground/vitestGlobalSetup.ts'],
     testTimeout: timeout,
