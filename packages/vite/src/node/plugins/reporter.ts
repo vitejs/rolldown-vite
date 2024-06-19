@@ -300,15 +300,15 @@ export function buildReporterPlugin(config: ResolvedConfig): Plugin {
       }
     },
 
-    closeBundle() {
-      if (shouldLogInfo && !config.build.watch) {
-        config.logger.info(
-          `${colors.green(
-            `✓ built in ${displayTime(Date.now() - startTime)}`,
-          )}`,
-        )
-      }
-    },
+    // closeBundle() {
+    //   if (shouldLogInfo && !config.build.watch) {
+    //     config.logger.info(
+    //       `${colors.green(
+    //         `✓ built in ${displayTime(Date.now() - startTime)}`,
+    //       )}`,
+    //     )
+    //   }
+    // },
   }
 }
 

@@ -1,5 +1,5 @@
 import type {
-  CustomPluginOptions,
+  // CustomPluginOptions,
   LoadResult,
   ObjectHook,
   PluginContext,
@@ -7,7 +7,7 @@ import type {
   Plugin as RollupPlugin,
   TransformPluginContext,
   TransformResult,
-} from 'rollup'
+} from '@rolldown/node'
 export type { PluginContext } from 'rollup'
 import type { ConfigEnv, ResolvedConfig, UserConfig } from './config'
 import type { ServerHook } from './server'
@@ -37,7 +37,7 @@ import type { PreviewServerHook } from './preview'
  * If a plugin should be applied only for server or build, a function format
  * config file can be used to conditional determine the plugins to use.
  */
-export interface Plugin<A = any> extends RollupPlugin<A> {
+export interface Plugin extends RollupPlugin {
   /**
    * Enforce plugin invocation tier similar to webpack loaders.
    *
@@ -150,8 +150,8 @@ export interface Plugin<A = any> extends RollupPlugin<A> {
       source: string,
       importer: string | undefined,
       options: {
-        attributes: Record<string, string>
-        custom?: CustomPluginOptions
+        attributes?: Record<string, string>
+        // custom?: CustomPluginOptions
         ssr?: boolean
         /**
          * @internal
