@@ -70,6 +70,7 @@ import {
   renderAssetUrlInJS,
 } from './asset'
 import type { ESBuildOptions } from './esbuild'
+import { getChunkMetadata } from './metadata'
 
 // const debug = createDebugger('vite:css')
 
@@ -567,7 +568,7 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
         // replace asset url references with resolved url.
         chunkCSS = chunkCSS.replace(assetUrlRE, (_, fileHash, postfix = '') => {
           const filename = this.getFileName(fileHash) + postfix
-          chunk.viteMetadata!.importedAssets.add(cleanUrl(filename))
+          getChunkMetadata(chunk.fileName)!.importedAssets.add(cleanUrl(filename))
           return toOutputFilePathInCss(
             filename,
             'asset',
@@ -648,8 +649,7 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
           generatedAssets
             .get(config)!
             .set(referenceId, { originalName, isEntry })
-          chunk.viteMetadata!.importedCss.add(this.getFileName(referenceId))
-
+          getChunkMetadata(chunk.fileName)!.importedCss.add(this.getFileName(referenceId))
           if (emitTasksLength === emitTasks.length) {
             // this is the last task, clear `emitTasks` to free up memory
             emitTasks = []
@@ -709,9 +709,9 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
     },
 
     augmentChunkHash(chunk) {
-      if (chunk.viteMetadata?.importedCss.size) {
+      if (getChunkMetadata(chunk.fileName)?.importedCss.size) {
         let hash = ''
-        for (const id of chunk.viteMetadata.importedCss) {
+        for (const id of getChunkMetadata(chunk.fileName)!.importedCss) {
           hash += id
         }
         return hash
@@ -752,14 +752,14 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
             // chunks instead.
             chunk.imports = chunk.imports.filter((file) => {
               if (pureCssChunkNames.includes(file)) {
-                const { importedCss, importedAssets } = (
+                const { importedCss, importedAssets } = getChunkMetadata((
                   bundle[file] as OutputChunk
-                ).viteMetadata!
+                ).fileName)!
                 importedCss.forEach((file) =>
-                  chunk.viteMetadata!.importedCss.add(file),
+                  getChunkMetadata(chunk.fileName)!.importedCss.add(file),
                 )
                 importedAssets.forEach((file) =>
-                  chunk.viteMetadata!.importedAssets.add(file),
+                  getChunkMetadata(chunk.fileName)!.importedAssets.add(file),
                 )
                 return false
               }

@@ -25,6 +25,7 @@ import { genSourceMapUrl } from '../server/sourcemap'
 import { getDepsOptimizer, optimizedDepNeedsInterop } from '../optimizer'
 import { removedPureCssFilesCache } from './css'
 import { createParseErrorInfo, interopNamedImports } from './importAnalysis'
+import { getChunkMetadata } from './metadata'
 
 type FileDep = {
   url: string
@@ -522,7 +523,7 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
                     chunk.imports.forEach(addDeps)
                     // Ensure that the css imported by current chunk is loaded after the dependencies.
                     // So the style of current chunk won't be overwritten unexpectedly.
-                    chunk.viteMetadata!.importedCss.forEach((file) => {
+                    getChunkMetadata(chunk.fileName)!.importedCss.forEach((file) => {
                       deps.add(addFileDep(file))
                     })
                   } else {
@@ -530,8 +531,8 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
                       removedPureCssFilesCache.get(config)!
                     const chunk = removedPureCssFiles.get(filename)
                     if (chunk) {
-                      if (chunk.viteMetadata!.importedCss.size) {
-                        chunk.viteMetadata!.importedCss.forEach((file) => {
+                      if (getChunkMetadata(chunk.fileName)!.importedCss.size) {
+                        getChunkMetadata(chunk.fileName)!.importedCss.forEach((file) => {
                           deps.add(addFileDep(file))
                         })
                         hasRemovedPureCssChunk = true

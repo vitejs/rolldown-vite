@@ -6,6 +6,7 @@ import type { Plugin } from '../plugin'
 import { normalizePath } from '../utils'
 import { generatedAssets } from './asset'
 import type { GeneratedAssetMeta } from './asset'
+import { getChunkMetadata } from './metadata'
 
 export type Manifest = Record<string, ManifestChunk>
 
@@ -92,11 +93,11 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
           }
         }
 
-        if (chunk.viteMetadata?.importedCss.size) {
-          manifestChunk.css = [...chunk.viteMetadata.importedCss]
+        if (getChunkMetadata(chunk.fileName)?.importedCss.size) {
+          manifestChunk.css = [...getChunkMetadata(chunk.fileName)!.importedCss]
         }
-        if (chunk.viteMetadata?.importedAssets.size) {
-          manifestChunk.assets = [...chunk.viteMetadata.importedAssets]
+        if (getChunkMetadata(chunk.fileName)?.importedAssets.size) {
+          manifestChunk.assets = [...getChunkMetadata(chunk.fileName)!.importedAssets]
         }
 
         return manifestChunk
