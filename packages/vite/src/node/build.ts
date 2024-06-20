@@ -45,7 +45,7 @@ import { loadFallbackPlugin } from './plugins/loadFallback'
 import { findNearestPackageData } from './packages'
 import type { PackageCache } from './packages'
 import { ESBUILD_MODULES_TARGET, VERSION } from './constants'
-import { resolveChokidarOptions } from './watch'
+// import { resolveChokidarOptions } from './watch'
 import { completeSystemWrapPlugin } from './plugins/completeSystemWrap'
 import { mergeConfig } from './publicUtils'
 import { webWorkerPostPlugin } from './plugins/worker'
@@ -417,10 +417,10 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   post: Plugin[]
 }> {
   const options = config.build
-  const { commonjsOptions } = options
-  const usePluginCommonjs =
-    !Array.isArray(commonjsOptions?.include) ||
-    commonjsOptions?.include.length !== 0
+  // const { commonjsOptions } = options
+  // const usePluginCommonjs =
+  //   !Array.isArray(commonjsOptions?.include) ||
+  //   commonjsOptions?.include.length !== 0
   const rollupOptionsPlugins = options.rollupOptions.plugins
   return {
     pre: [

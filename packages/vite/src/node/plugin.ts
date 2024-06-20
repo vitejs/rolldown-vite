@@ -8,7 +8,6 @@ import type {
   TransformPluginContext,
   TransformResult,
 } from '@rolldown/node'
-export type { PluginContext } from 'rollup'
 import type { ConfigEnv, ResolvedConfig, UserConfig } from './config'
 import type { ServerHook } from './server'
 import type { IndexHtmlTransform } from './plugins/html'
