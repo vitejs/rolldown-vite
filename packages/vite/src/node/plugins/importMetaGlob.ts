@@ -13,7 +13,7 @@ import type {
   TemplateLiteral,
 } from 'estree'
 import { parseExpressionAt } from 'acorn'
-import type { CustomPluginOptions, RollupError } from 'rollup'
+import type { CustomPluginOptions, RollupError } from '@rolldown/node'
 import { findNodeAt } from 'acorn-walk'
 import MagicString from 'magic-string'
 import fg from 'fast-glob'

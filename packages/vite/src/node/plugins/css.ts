@@ -349,9 +349,9 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
               isSelfAccepting,
               ssr,
             )
-            for (const file of deps) {
-              this.addWatchFile(file)
-            }
+            // for (const file of deps) {
+              // this.addWatchFile(file)
+            // }
           } else {
             thisModule.isSelfAccepting = isSelfAccepting
           }
@@ -1278,14 +1278,17 @@ export async function formatPostcssSourceMap(
 ): Promise<ExistingRawSourceMap> {
   const inputFileDir = path.dirname(file)
 
-  const sources = rawMap.sources.map((source) => {
-    const cleanSource = cleanUrl(decodeURIComponent(source))
+  const sources = rawMap.sources?.map((source) => {
+    if (source) {
+      const cleanSource = cleanUrl(decodeURIComponent(source))
 
-    if (postcssReturnsVirtualFilesRE.test(cleanSource)) {
-      return `\0${cleanSource}`
+      if (postcssReturnsVirtualFilesRE.test(cleanSource)) {
+        return `\0${cleanSource}`
+      }
+  
+      return normalizePath(path.resolve(inputFileDir, cleanSource))
     }
-
-    return normalizePath(path.resolve(inputFileDir, cleanSource))
+    return source
   })
 
   return {
@@ -2159,12 +2162,12 @@ function formatStylusSourceMap(
   if (!mapBefore) return undefined
   const map = { ...mapBefore }
 
-  const resolveFromRoot = (p: string) => normalizePath(path.resolve(root, p))
+  const resolveFromRoot = (p: string | null) => p && normalizePath(path.resolve(root, p))
 
   if (map.file) {
     map.file = resolveFromRoot(map.file)
   }
-  map.sources = map.sources.map(resolveFromRoot)
+  map.sources = map.sources?.map(resolveFromRoot)
 
   return map
 }

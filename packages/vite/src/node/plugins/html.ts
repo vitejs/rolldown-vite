@@ -5,7 +5,7 @@ import type {
   OutputChunk,
   RollupError,
   SourceMapInput,
-} from 'rollup'
+} from '@rolldown/node'
 import MagicString from 'magic-string'
 import colors from 'picocolors'
 import type { DefaultTreeAdapterMap, ParserError, Token } from 'parse5'

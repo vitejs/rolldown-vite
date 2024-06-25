@@ -8,7 +8,7 @@ import type {
 } from 'esbuild'
 import { transform } from 'esbuild'
 import type { RawSourceMap } from '@ampproject/remapping'
-import type { InternalModuleFormat, SourceMap } from 'rollup'
+import type { InternalModuleFormat, SourceMap } from '@rolldown/node'
 import type { TSConfckParseResult } from 'tsconfck'
 import { TSConfckCache, TSConfckParseError, parse } from 'tsconfck'
 import {
@@ -27,8 +27,8 @@ const debug = createDebugger('vite:esbuild')
 
 // IIFE content looks like `var MyLib = function() {`.
 // Spaces are removed and parameters are mangled when minified
-const IIFE_BEGIN_RE =
-  /(const|var)\s+\S+\s*=\s*function\([^()]*\)\s*\{\s*"use strict";/
+// const IIFE_BEGIN_RE =
+//   /(const|var)\s+\S+\s*=\s*function\([^()]*\)\s*\{\s*"use strict";/
 
 const validExtensionRE = /\.\w+$/
 const jsxExtensionsRE = /\.(?:j|t)sx\b/
@@ -317,7 +317,7 @@ export const buildEsbuildPlugin = (config: ResolvedConfig): Plugin => {
         // Instead, using plain string index manipulation (indexOf, slice) which is simple and performant
         // We don't need to create a MagicString here because both the helpers and
         // the headers don't modify the sourcemap
-        const esbuildCode = res.code
+        // const esbuildCode = res.code
         // const contentIndex =
         //   opts.format === 'iife'
         //     ? esbuildCode.match(IIFE_BEGIN_RE)?.index || 0

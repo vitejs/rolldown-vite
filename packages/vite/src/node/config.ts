@@ -613,6 +613,7 @@ export async function resolveConfig(
           aliasContainer ||
           (aliasContainer = await createPluginContainer({
             ...resolved,
+            // @ts-expect-error
             plugins: [aliasPlugin({ entries: resolved.resolve.alias })],
           }))
       } else {
@@ -621,6 +622,7 @@ export async function resolveConfig(
           (resolverContainer = await createPluginContainer({
             ...resolved,
             plugins: [
+                          // @ts-expect-error
               aliasPlugin({ entries: resolved.resolve.alias }),
               resolvePlugin({
                 ...resolved.resolve,

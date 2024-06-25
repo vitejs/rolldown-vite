@@ -554,7 +554,7 @@ export async function build(
       }
 
       const ssrNodeBuild = ssr && config.ssr.target === 'node'
-      const ssrWorkerBuild = ssr && config.ssr.target === 'webworker'
+      // const ssrWorkerBuild = ssr && config.ssr.target === 'webworker'
 
       const format = output.format || 'es'
       const jsExt =

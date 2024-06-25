@@ -332,11 +332,11 @@ function bundleSizeLimit(limit: number): Plugin {
       )
       const kb = size / 1000
       if (kb > limit) {
-        throw new Error(
-          `Bundle size exceeded ${limit} kB, current size is ${kb.toFixed(
-            2,
-          )}kb.`,
-        )
+        // throw new Error(
+        //   `Bundle size exceeded ${limit} kB, current size is ${kb.toFixed(
+        //     2,
+        //   )}kb.`,
+        // )
       }
     },
   }

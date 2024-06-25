@@ -42,10 +42,10 @@ export function buildReporterPlugin(config: ResolvedConfig): Plugin {
   const tty = process.stdout.isTTY && !process.env.CI
   const shouldLogInfo = LogLevels[config.logLevel || 'info'] >= LogLevels.info
   let hasTransformed = false
-  let hasRenderedChunk = false
+  // let hasRenderedChunk = false
   let hasCompressChunk = false
   let transformedCount = 0
-  let chunkCount = 0
+  // let chunkCount = 0
   let compressedCount = 0
   // let startTime = Date.now()
 
@@ -120,7 +120,7 @@ export function buildReporterPlugin(config: ResolvedConfig): Plugin {
     },
 
     renderStart() {
-      chunkCount = 0
+      // chunkCount = 0
       compressedCount = 0
     },
 

@@ -2,7 +2,7 @@ import path from 'node:path'
 import MagicString from 'magic-string'
 import type { ImportSpecifier } from 'es-module-lexer'
 import { init, parse as parseImports } from 'es-module-lexer'
-import type { OutputChunk, SourceMap } from 'rollup'
+import type { OutputChunk, SourceMap } from '@rolldown/node'
 import colors from 'picocolors'
 import type { RawSourceMap } from '@ampproject/remapping'
 import convertSourceMap from 'convert-source-map'
@@ -686,7 +686,7 @@ function __vite__mapDeps(indexes) {
                 nextMap as RawSourceMap,
                 chunk.map as RawSourceMap,
               ]) as SourceMap
-              map.toUrl = () => genSourceMapUrl(map)
+              // map.toUrl = () => genSourceMapUrl(map)
               chunk.map = map
 
               if (config.build.sourcemap === 'inline') {
