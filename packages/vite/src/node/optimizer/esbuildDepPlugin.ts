@@ -294,7 +294,6 @@ export function rolldownCjsExternalPlugin(
       }
 
       if (filter.test(id)) {
-        // TODO rolldown: kind is not available in rollup
         const kind = options.kind
         if (kind === 'require-call' && platform !== 'node') {
           return {

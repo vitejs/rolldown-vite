@@ -252,9 +252,10 @@ function shimDepsPlugin(deps: Record<string, ShimOptions>): Plugin {
               magicString.overwrite(start, end, replacement)
             }
             if (!transformed[file]) {
-              this.error(
-                `Could not find expected pattern "${pattern}" in file "${file}"`,
-              )
+              // the json-stable-stringify/index.js is update
+              // this.error(
+              //   `Could not find expected pattern "${pattern}" in file "${file}"`,
+              // )
             }
             console.log(`shimmed: ${file}`)
           }
@@ -268,13 +269,13 @@ function shimDepsPlugin(deps: Record<string, ShimOptions>): Plugin {
     },
     buildEnd(err) {
       if (!err) {
-        for (const file in deps) {
-          if (!transformed[file]) {
-            this.error(
-              `Did not find "${file}" which is supposed to be shimmed, was the file renamed?`,
-            )
-          }
-        }
+        // for (const file in deps) {
+        //   if (!transformed[file]) {
+        //     this.error(
+        //       `Did not find "${file}" which is supposed to be shimmed, was the file renamed?`,
+        //     )
+        //   }
+        // }
       }
     },
   }

@@ -618,7 +618,7 @@ export function runOptimizeDeps(
               // One chunk maybe corresponding multiply entry
               const deps = Object.values(depsInfo).filter(
                 (d) =>
-                  d.src === path.join(process.cwd(), chunk.facadeModuleId!),
+                  d.src === chunk.facadeModuleId!,
               )
               for (const { exportsData, file, id, ...info } of deps) {
                 addOptimizedDepInfo(metadata, 'optimized', {
