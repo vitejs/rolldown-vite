@@ -717,7 +717,10 @@ async function prepareRolldownOptimizerRun(
 
   const { plugins: pluginsFromConfig = [], ...rollupOptions } =
     optimizeDeps?.rollupOptions ?? {}
+  const { plugins: pluginsFromConfig = [], ...rollupOptions } =
+    optimizeDeps?.rollupOptions ?? {}
 
+  let jsxLoader = false
   let jsxLoader = false
   await Promise.all(
     Object.keys(depsInfo).map(async (id) => {
@@ -725,8 +728,10 @@ async function prepareRolldownOptimizerRun(
       const exportsData = await (depsInfo[id].exportsData ??
         extractExportsData(src, config, ssr))
       if (exportsData.jsxLoader) {
+      if (exportsData.jsxLoader) {
         // Ensure that optimization won't fail by defaulting '.js' to the JSX parser.
         // This is useful for packages such as Gatsby.
+        jsxLoader = true
         jsxLoader = true
       }
       const flatId = flattenId(id)
@@ -736,9 +741,15 @@ async function prepareRolldownOptimizerRun(
   )
 
   if (optimizerContext.cancelled) return { build: undefined, idToExports }
+  if (optimizerContext.cancelled) return { build: undefined, idToExports }
 
   // In lib mode, we need to keep process.env.NODE_ENV untouched
+  // In lib mode, we need to keep process.env.NODE_ENV untouched
   const define = {
+    'process.env.NODE_ENV':
+      isBuild && config.build.lib
+        ? 'process.env.NODE_ENV'
+        : JSON.stringify(process.env.NODE_ENV || config.mode),
     'process.env.NODE_ENV':
       isBuild && config.build.lib
         ? 'process.env.NODE_ENV'
@@ -773,7 +784,31 @@ async function prepareRolldownOptimizerRun(
   const plugins = await asyncFlatten(
     Array.isArray(pluginsFromConfig) ? pluginsFromConfig : [pluginsFromConfig],
   )
+  if (isBuild) {
+    let rollupOptionsExternal = config?.build?.rollupOptions?.external
+    if (rollupOptionsExternal) {
+      if (typeof rollupOptionsExternal === 'string') {
+        rollupOptionsExternal = [rollupOptionsExternal]
+      }
+      // TODO: decide whether to support RegExp and function options
+      // They're not supported yet because `optimizeDeps.exclude` currently only accepts strings
+      if (
+        !Array.isArray(rollupOptionsExternal) ||
+        rollupOptionsExternal.some((ext) => typeof ext !== 'string')
+      ) {
+        throw new Error(
+          `[vite] 'build.rollupOptions.external' can only be an array of strings or a string when using esbuild optimization at build time.`,
+        )
+      }
+      external.push(...(rollupOptionsExternal as string[]))
+    }
+  }
+
+  const plugins = await asyncFlatten(
+    Array.isArray(pluginsFromConfig) ? pluginsFromConfig : [pluginsFromConfig],
+  )
   if (external.length) {
+    plugins.push(rolldownCjsExternalPlugin(external, platform))
     plugins.push(rolldownCjsExternalPlugin(external, platform))
   }
   plugins.push(rolldownDepPlugin(flatIdDeps, external, config, ssr))
@@ -804,7 +839,7 @@ async function prepareRolldownOptimizerRun(
   async function build() {
     const bundle = await rolldown.rolldown({
       input: Object.keys(flatIdDeps),
-      // external,
+      external,
       logLevel: 'warn',
       plugins,
       resolve: {

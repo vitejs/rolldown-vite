@@ -228,6 +228,7 @@ importers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         specifier: ^8.4.41
         version: 8.4.41
 =======
@@ -235,6 +236,8 @@ importers:
         version: 8.4.39
 <<<<<<< HEAD
 =======
+=======
+>>>>>>> 98eab41fd (feat(optimizer): using rolldown instead of esbuild)
         specifier: ^8.4.40
         version: 8.4.40
 =======
@@ -246,10 +249,20 @@ importers:
         specifier: latest
         version: 0.12.2
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> 373dcbfe4 (chore: using latest rolldown)
 >>>>>>> 054006584 (chore: using latest rolldown)
 =======
 >>>>>>> fd64fc622 (chore: update lock)
+=======
+=======
+        specifier: ^8.4.39
+        version: 8.4.39
+      rolldown:
+        specifier: ^0.10.5
+        version: 0.10.5
+>>>>>>> e7317462e (feat(optimizer): using rolldown instead of esbuild)
+>>>>>>> 98eab41fd (feat(optimizer): using rolldown instead of esbuild)
       rollup:
         specifier: ^4.20.0
         version: 4.20.0
@@ -3050,7 +3063,10 @@ packages:
     resolution: {integrity: sha512-2LuNTFBIO0m7kKIQvvPHN6UE63VjpmL9rnEEaOOaiSPbZK+zUOYIzBAWcED+3XYzhYsd/0mD57VdxAEqqV52CQ==}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 98eab41fd (feat(optimizer): using rolldown instead of esbuild)
   '@rolldown/binding-darwin-arm64@0.12.2':
     resolution: {integrity: sha512-Y3Ajye63Z5KymGUwTLaK7Q6YMvycXqNiXtosecgVzjAwMITCmXdzgnWgzzx5UlWHMrDYL4m5zIeXGB5slLwoMA==}
     cpu: [arm64]
@@ -3111,6 +3127,65 @@ packages:
     cpu: [x64]
     os: [win32]
 
+<<<<<<< HEAD
+=======
+=======
+  '@rolldown/binding-darwin-arm64@0.10.5':
+    resolution: {integrity: sha512-hCwEjzDOBOA+vvFjcoSWZBTilcTvPs/zMjPNmLKZoZg58TNK5p3StZbrIuPaklhYT4j0X5emyoU3Vs0wswzYqg==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@rolldown/binding-darwin-x64@0.10.5':
+    resolution: {integrity: sha512-yRtnTyIyXYH7dQgtZoLinRqO+o/ROTPdWLcMHvRK8o+Rx0G4UC2KXapiq+SpQEEZwMMPnMGrDJ++1W+gzsJLAw==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@rolldown/binding-linux-arm-gnueabihf@0.10.5':
+    resolution: {integrity: sha512-pT9+xKS7uUvh4LGEbRkM7NuYRrTnT0M+QxORVN0BFXBIMCWVh/g5dL/86/P9POjN0wjfJCt7sD1XTq2csC17Bw==}
+    cpu: [arm]
+    os: [linux]
+
+  '@rolldown/binding-linux-arm64-gnu@0.10.5':
+    resolution: {integrity: sha512-yjwqwS86v61/qIOeoTb13roNYsw9BKhVHJ8gPrAR/CCSRa93G1SoDGxzlZTpZL1zF/8GnegGy4vU6zZ4RMJqsQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@rolldown/binding-linux-arm64-musl@0.10.5':
+    resolution: {integrity: sha512-/C+r30Kl4jIpXS7/akg9YnhVBQxY4jiz0GLc0UpCAt7oaoAhgZXCWpqGgPv4jpvGFYP+bp91kCqS0C3dOnU+mA==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@rolldown/binding-linux-x64-gnu@0.10.5':
+    resolution: {integrity: sha512-kOvKZgoXjfWtgHIz8U4/rp1WfSpJMpgRuAJ5AnMhqEfUKXCFkbZsCy7oggdo7u2NXonO3sQmfov+YKO3ec5Hsg==}
+    cpu: [x64]
+    os: [linux]
+
+  '@rolldown/binding-linux-x64-musl@0.10.5':
+    resolution: {integrity: sha512-dT1HmEJfaiy1ZNsIuNLvkOo6mG0jL4d8gmR0ftk0BwKXH1M8Wnia3fP8k4nn6K3cwGHTBkPObLk/O++9Bt23Vw==}
+    cpu: [x64]
+    os: [linux]
+
+  '@rolldown/binding-wasm32-wasi@0.10.5':
+    resolution: {integrity: sha512-ieDGFO6GXeayxWRxVvAl8H75oQXLkASZ7R84qcq/ue5EY36Zst8KMAcNU2Pvpm0z0/6IDwSMAxF1nJPhQWQzqw==}
+    engines: {node: '>=14.21.3'}
+    cpu: [wasm32]
+
+  '@rolldown/binding-win32-arm64-msvc@0.10.5':
+    resolution: {integrity: sha512-EPZTG0WXWimc/LaLHmEpVZ1j7eX+Zrrpg/Sx/pEjiDRCYr0ztdKRM06HUsk4Bqtd/6HXIJOWWLSWwlxXEuOAeg==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@rolldown/binding-win32-ia32-msvc@0.10.5':
+    resolution: {integrity: sha512-If+pP+v7ccXrp6vg5Gq6V8+ATn+RSl7eDndOj3LGNCOfoPbgBGZNwsNS9ZE1VOsj99qQgOtoc9JwgP333TR81g==}
+    cpu: [ia32]
+    os: [win32]
+
+  '@rolldown/binding-win32-x64-msvc@0.10.5':
+    resolution: {integrity: sha512-NCPYa5kEBkolWa9c6zf6FDq77bdmdm9u4ydRvWdOiC4xDKW/8bSyxmW6EvAimkOWkDvNQjzNaWF2nO2ywm6ZnQ==}
+    cpu: [x64]
+    os: [win32]
+
+>>>>>>> 98eab41fd (feat(optimizer): using rolldown instead of esbuild)
   '@rollup/plugin-alias@5.0.0':
     resolution: {integrity: sha512-l9hY5chSCjuFRPsnRm16twWBiSApl2uYFLsepQYwtBuAxNMQ/1dJqADld40P0Jkqm65GRTLy/AC6hnpVebtLsA==}
     engines: {node: '>=14.0.0'}
@@ -3120,7 +3195,11 @@ packages:
       rollup:
         optional: true
 
+<<<<<<< HEAD
 >>>>>>> 054006584 (chore: using latest rolldown)
+=======
+>>>>>>> e7317462e (feat(optimizer): using rolldown instead of esbuild)
+>>>>>>> 98eab41fd (feat(optimizer): using rolldown instead of esbuild)
   '@rollup/plugin-alias@5.1.0':
     resolution: {integrity: sha512-lpA3RZ9PdIG7qqhEfv79tBffNaoDuukFDrmhLqg9ifv99u/ehn+lOg30x2zmhf8AQqQUZaMk/B9fZraQ6/acDQ==}
     engines: {node: '>=14.0.0'}
@@ -4251,9 +4330,18 @@ packages:
   citty@0.1.4:
     resolution: {integrity: sha512-Q3bK1huLxzQrvj7hImJ7Z1vKYJRPQCDnd0EjXfHMidcjecGOMuLrmuQmtWmFkuKLcMThlGh1yCKG8IEc6VeNXQ==}
 
+<<<<<<< HEAD
   cli-cursor@5.0.0:
     resolution: {integrity: sha512-aCj4O5wKyszjMmDT4tZj93kxyydN/K5zPWSCe6/0AV/AA1pqe5ZBIw0a2ZfPQV7lL5/yb5HsUreJ6UFAF1tEQw==}
     engines: {node: '>=18'}
+=======
+  citty@0.1.6:
+    resolution: {integrity: sha512-tskPPKEs8D2KPafUypv2gxwJP8h/OaJmC82QQGGDQcHvXX43xF2VDACcJVmZ0EuSxkpO9Kc4MlrA3q0+FG58AQ==}
+
+  cli-cursor@4.0.0:
+    resolution: {integrity: sha512-VGtlMu3x/4DOtIUwEkRezxUZ2lBacNJCHash0N0WeZDBS+7Ux1dm3XWAgWYxLJFMMdOeXMHXorshEFhbMSGelg==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+>>>>>>> e7317462e (feat(optimizer): using rolldown instead of esbuild)
 
   cli-truncate@4.0.0:
     resolution: {integrity: sha512-nPdaFdQ0h/GEigbPClz11D0v/ZJEwxmeVZGeMo3Z5StPtUTkA9o1lD6QwoirYiSDzbcwn2XcjwmCp68W1IS4TA==}
@@ -6332,6 +6420,13 @@ packages:
 >>>>>>> fd64fc622 (chore: update lock)
     hasBin: true
 
+  rollup-plugin-dts@6.0.2:
+    resolution: {integrity: sha512-GYCCy9DyE5csSuUObktJBpjNpW2iLZMabNDIiAqzQWBl7l/WHzjvtAXevf8Lftk8EA920tuxeB/g8dM8MVMR6A==}
+    engines: {node: '>=v16'}
+    peerDependencies:
+      rollup: ^3.25
+      typescript: ^4.5 || ^5.0
+
   rollup-plugin-dts@6.1.1:
     resolution: {integrity: sha512-aSHRcJ6KG2IHIioYlvAOcEq6U99sVtqDDKVhnwt70rW6tsz3tv5OSjEiWcgzfsHdLyGXZ/3b/7b/+Za3Y6r1XA==}
     engines: {node: '>=16'}
@@ -7253,6 +7348,9 @@ packages:
 
 =======
 >>>>>>> fd64fc622 (chore: update lock)
+  zod@3.23.8:
+    resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
+
   zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
 
@@ -8704,10 +8802,13 @@ snapshots:
   '@polka/url@1.0.0-next.24': {}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   '@rollup/plugin-alias@5.1.0(rollup@3.29.4)':
 =======
 <<<<<<< HEAD
 =======
+=======
+>>>>>>> 98eab41fd (feat(optimizer): using rolldown instead of esbuild)
   '@rolldown/binding-darwin-arm64@0.12.2':
     optional: true
 
@@ -8746,9 +8847,16 @@ snapshots:
   '@rolldown/binding-win32-x64-msvc@0.12.2':
     optional: true
 
+<<<<<<< HEAD
 >>>>>>> f35336e4e (chore: using latest rolldown)
   '@rollup/plugin-alias@5.0.0(rollup@3.29.4)':
 >>>>>>> 054006584 (chore: using latest rolldown)
+=======
+  '@rollup/plugin-alias@5.1.0(rollup@3.29.4)':
+=======
+  '@rollup/plugin-alias@5.0.0(rollup@3.29.4)':
+>>>>>>> e7317462e (feat(optimizer): using rolldown instead of esbuild)
+>>>>>>> 98eab41fd (feat(optimizer): using rolldown instead of esbuild)
     dependencies:
       slash: 4.0.0
     optionalDependencies:
@@ -9998,7 +10106,15 @@ snapshots:
     dependencies:
       consola: 3.2.3
 
+<<<<<<< HEAD
   cli-cursor@5.0.0:
+=======
+  citty@0.1.6:
+    dependencies:
+      consola: 3.2.3
+
+  cli-cursor@4.0.0:
+>>>>>>> e7317462e (feat(optimizer): using rolldown instead of esbuild)
     dependencies:
       restore-cursor: 5.1.0
 
@@ -12337,6 +12453,7 @@ snapshots:
 =======
       glob: 10.3.10
 
+<<<<<<< HEAD
   rolldown@0.12.2:
     dependencies:
       zod: 3.23.8
@@ -12356,6 +12473,9 @@ snapshots:
 >>>>>>> f35336e4e (chore: using latest rolldown)
 
   rollup-plugin-dts@6.1.1(rollup@3.29.4)(typescript@5.5.3):
+=======
+  rollup-plugin-dts@6.0.2(rollup@3.29.4)(typescript@5.2.2):
+>>>>>>> e7317462e (feat(optimizer): using rolldown instead of esbuild)
     dependencies:
       magic-string: 0.30.11
       rollup: 3.29.4
@@ -13366,5 +13486,7 @@ snapshots:
 =======
   zod@3.23.8: {}
 >>>>>>> fd64fc622 (chore: update lock)
+
+  zod@3.23.8: {}
 
   zwitch@2.0.4: {}
