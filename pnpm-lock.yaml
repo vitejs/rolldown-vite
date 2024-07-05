@@ -246,6 +246,7 @@ importers:
         version: 8.4.40
 >>>>>>> fd64fc622 (chore: update lock)
       rolldown:
+<<<<<<< HEAD
         specifier: latest
         version: 0.12.2
 <<<<<<< HEAD
@@ -270,7 +271,14 @@ importers:
         specifier: latest
         version: 0.12.2
 >>>>>>> 373dcbfe4 (chore: using latest rolldown)
+<<<<<<< HEAD
 >>>>>>> 74236a1b7 (chore: using latest rolldown)
+=======
+=======
+        specifier: ^0.10.5
+        version: 0.10.5
+>>>>>>> ff11c4d0f (feat(optimizer): using rolldown instead of esbuild)
+>>>>>>> e98d22a91 (feat(optimizer): using rolldown instead of esbuild)
       rollup:
         specifier: ^4.20.0
         version: 4.20.0
@@ -3073,11 +3081,14 @@ packages:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
 >>>>>>> 98eab41fd (feat(optimizer): using rolldown instead of esbuild)
 =======
 >>>>>>> 74236a1b7 (chore: using latest rolldown)
+=======
+>>>>>>> e98d22a91 (feat(optimizer): using rolldown instead of esbuild)
   '@rolldown/binding-darwin-arm64@0.12.2':
     resolution: {integrity: sha512-Y3Ajye63Z5KymGUwTLaK7Q6YMvycXqNiXtosecgVzjAwMITCmXdzgnWgzzx5UlWHMrDYL4m5zIeXGB5slLwoMA==}
     cpu: [arm64]
@@ -3137,6 +3148,16 @@ packages:
     resolution: {integrity: sha512-XnRqHx182tyk1M12OMXqLajIj9DZrOUEKSPYrQUSaMCmHHAhULYP6ki240CV16PBWZW4Q1pwQ7YVKYFevRtvKg==}
     cpu: [x64]
     os: [win32]
+=======
+  '@rollup/plugin-alias@5.0.0':
+    resolution: {integrity: sha512-l9hY5chSCjuFRPsnRm16twWBiSApl2uYFLsepQYwtBuAxNMQ/1dJqADld40P0Jkqm65GRTLy/AC6hnpVebtLsA==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+>>>>>>> ff11c4d0f (feat(optimizer): using rolldown instead of esbuild)
 
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -4360,6 +4381,7 @@ packages:
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   cli-cursor@5.0.0:
     resolution: {integrity: sha512-aCj4O5wKyszjMmDT4tZj93kxyydN/K5zPWSCe6/0AV/AA1pqe5ZBIw0a2ZfPQV7lL5/yb5HsUreJ6UFAF1tEQw==}
     engines: {node: '>=18'}
@@ -4369,6 +4391,11 @@ packages:
 
 =======
 >>>>>>> 373dcbfe4 (chore: using latest rolldown)
+=======
+  citty@0.1.6:
+    resolution: {integrity: sha512-tskPPKEs8D2KPafUypv2gxwJP8h/OaJmC82QQGGDQcHvXX43xF2VDACcJVmZ0EuSxkpO9Kc4MlrA3q0+FG58AQ==}
+
+>>>>>>> ff11c4d0f (feat(optimizer): using rolldown instead of esbuild)
   cli-cursor@4.0.0:
     resolution: {integrity: sha512-VGtlMu3x/4DOtIUwEkRezxUZ2lBacNJCHash0N0WeZDBS+7Ux1dm3XWAgWYxLJFMMdOeXMHXorshEFhbMSGelg==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
@@ -5566,6 +5593,10 @@ packages:
     resolution: {integrity: sha512-ZvFw1KWS3GVyYBYb7qkmRM/WwL2TQQBxgCK62rlvm4WpVQ23Nb4tYjApUlfjrEGvOs7KHEsmyUn75OHZrJMWPw==}
     engines: {node: '>= 12.13.0'}
 
+  local-pkg@0.5.0:
+    resolution: {integrity: sha512-ok6z3qlYyCDS4ZEU27HaU6x/xZa9Whf8jD4ptH5UZTQYZVYeb9bnZ3ojVhiJNLiXK1Hfc0GNbLXcmZ5plLDDBg==}
+    engines: {node: '>=14'}
+
   locate-path@6.0.0:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
@@ -6456,6 +6487,7 @@ packages:
 >>>>>>> ed509d7b1 (chore: rebase)
     hasBin: true
 
+<<<<<<< HEAD
   rolldown@0.12.2:
     resolution: {integrity: sha512-YJYKiYt2O9XytiQ3Na4Kk29avfIXhvK7udB3wAaVaF4kiSsFKE1167tElO/0eD6tjfJXCvwNxwsyYkBJRtsLmQ==}
 <<<<<<< HEAD
@@ -6478,6 +6510,14 @@ packages:
 >>>>>>> 8267755d0 (chore: rebase)
 >>>>>>> ed509d7b1 (chore: rebase)
     hasBin: true
+=======
+  rollup-plugin-dts@6.0.2:
+    resolution: {integrity: sha512-GYCCy9DyE5csSuUObktJBpjNpW2iLZMabNDIiAqzQWBl7l/WHzjvtAXevf8Lftk8EA920tuxeB/g8dM8MVMR6A==}
+    engines: {node: '>=v16'}
+    peerDependencies:
+      rollup: ^3.25
+      typescript: ^4.5 || ^5.0
+>>>>>>> ff11c4d0f (feat(optimizer): using rolldown instead of esbuild)
 
   rollup-plugin-dts@6.1.1:
     resolution: {integrity: sha512-aSHRcJ6KG2IHIioYlvAOcEq6U99sVtqDDKVhnwt70rW6tsz3tv5OSjEiWcgzfsHdLyGXZ/3b/7b/+Za3Y6r1XA==}
@@ -8857,6 +8897,7 @@ snapshots:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   '@rollup/plugin-alias@5.1.0(rollup@3.29.4)':
 =======
 <<<<<<< HEAD
@@ -8869,6 +8910,8 @@ snapshots:
 >>>>>>> 373dcbfe4 (chore: using latest rolldown)
 >>>>>>> 74236a1b7 (chore: using latest rolldown)
 =======
+=======
+>>>>>>> e98d22a91 (feat(optimizer): using rolldown instead of esbuild)
 =======
 =======
 >>>>>>> 373dcbfe4 (chore: using latest rolldown)
@@ -8937,7 +8980,13 @@ snapshots:
 =======
   '@rollup/plugin-alias@5.1.0(rollup@3.29.4)':
 >>>>>>> 8267755d0 (chore: rebase)
+<<<<<<< HEAD
 >>>>>>> ed509d7b1 (chore: rebase)
+=======
+=======
+  '@rollup/plugin-alias@5.0.0(rollup@3.29.4)':
+>>>>>>> ff11c4d0f (feat(optimizer): using rolldown instead of esbuild)
+>>>>>>> e98d22a91 (feat(optimizer): using rolldown instead of esbuild)
     dependencies:
       slash: 4.0.0
     optionalDependencies:
@@ -10189,9 +10238,17 @@ snapshots:
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   cli-cursor@5.0.0:
 =======
   citty@0.1.6:
+=======
+  citty@0.1.6:
+    dependencies:
+      consola: 3.2.3
+
+  cli-cursor@4.0.0:
+>>>>>>> ff11c4d0f (feat(optimizer): using rolldown instead of esbuild)
     dependencies:
       consola: 3.2.3
 
@@ -11526,6 +11583,11 @@ snapshots:
 
   loader-utils@3.2.1: {}
 
+  local-pkg@0.5.0:
+    dependencies:
+      mlly: 1.7.1
+      pkg-types: 1.0.3
+
   locate-path@6.0.0:
     dependencies:
       p-locate: 5.0.0
@@ -12527,6 +12589,7 @@ snapshots:
 
   rimraf@5.0.10:
     dependencies:
+<<<<<<< HEAD
       glob: 10.4.5
 <<<<<<< HEAD
 =======
@@ -12535,7 +12598,11 @@ snapshots:
 =======
 =======
 >>>>>>> ed509d7b1 (chore: rebase)
+=======
+      glob: 10.3.10
+>>>>>>> e98d22a91 (feat(optimizer): using rolldown instead of esbuild)
 
+<<<<<<< HEAD
   rolldown@0.12.2:
     dependencies:
       zod: 3.23.8
@@ -12564,6 +12631,9 @@ snapshots:
 =======
   rollup-plugin-dts@6.1.1(rollup@3.29.4)(typescript@5.5.3):
 >>>>>>> 8267755d0 (chore: rebase)
+=======
+  rollup-plugin-dts@6.0.2(rollup@3.29.4)(typescript@5.2.2):
+>>>>>>> ff11c4d0f (feat(optimizer): using rolldown instead of esbuild)
     dependencies:
       zod: 3.23.8
     optionalDependencies:
