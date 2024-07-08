@@ -1,6 +1,6 @@
 import path from 'node:path'
 import MagicString from 'magic-string'
-import type { OutputChunk } from 'rollup'
+import type { OutputChunk } from 'rolldown'
 import type { ResolvedConfig } from '../config'
 import type { Plugin } from '../plugin'
 import type { ViteDevServer } from '../server'
@@ -66,16 +66,16 @@ async function bundleWorkerEntry(
   }
 
   // bundle the file as entry to support imports
-  const { rollup } = await import('rollup')
+  const { rolldown } = await import('rolldown')
   const { plugins, rollupOptions, format } = config.worker
-  const bundle = await rollup({
+  const bundle = await rolldown({
     ...rollupOptions,
     input,
     plugins: await plugins(newBundleChain),
     onwarn(warning, warn) {
       onRollupWarning(warning, warn, config)
     },
-    preserveEntrySignatures: false,
+    // preserveEntrySignatures: false,
   })
   let chunk: OutputChunk
   try {
@@ -116,7 +116,7 @@ async function bundleWorkerEntry(
       }
     })
   } finally {
-    await bundle.close()
+    // await bundle.close()
   }
   return emitSourcemapForWorkerEntry(config, chunk)
 }
@@ -179,6 +179,7 @@ export async function workerFileToUrl(
 export function webWorkerPostPlugin(): Plugin {
   return {
     name: 'vite:worker-post',
+    // TODO @underfin it's not unsupported yet
     resolveImportMeta(property, { format }) {
       // document is undefined in the worker, so we need to avoid it in iife
       if (format === 'iife') {
@@ -230,6 +231,7 @@ export function webWorkerPlugin(config: ResolvedConfig): Plugin {
       }
     },
 
+    // TODO @underfin it's not unsupported yet
     shouldTransformCachedModule({ id }) {
       if (isBuild && config.build.watch && workerOrSharedWorkerRE.test(id)) {
         return true

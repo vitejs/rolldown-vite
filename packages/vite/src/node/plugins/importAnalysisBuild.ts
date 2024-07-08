@@ -5,7 +5,7 @@ import type {
   ImportSpecifier,
 } from 'es-module-lexer'
 import { init, parse as parseImports } from 'es-module-lexer'
-import type { SourceMap } from 'rollup'
+import type { SourceMap } from 'rolldown'
 import type { RawSourceMap } from '@ampproject/remapping'
 import convertSourceMap from 'convert-source-map'
 import {
@@ -692,7 +692,8 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
                 nextMap as RawSourceMap,
                 chunk.map as RawSourceMap,
               ]) as SourceMap
-              map.toUrl = () => genSourceMapUrl(map)
+              // TODO: The rolldown `Sourcemap` is not unsupported yet
+              // map.toUrl = () => genSourceMapUrl(map)
               chunk.map = map
 
               if (config.build.sourcemap === 'inline') {
