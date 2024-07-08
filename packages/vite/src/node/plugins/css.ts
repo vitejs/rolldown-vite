@@ -605,7 +605,7 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
         // replace asset url references with resolved url.
         chunkCSS = chunkCSS.replace(assetUrlRE, (_, fileHash, postfix = '') => {
           const filename = this.getFileName(fileHash) + postfix
-          getChunkMetadata(chunk.fileName)!.importedAssets.add(cleanUrl(filename))
+          getChunkMetadata(chunk.name)!.importedAssets.add(cleanUrl(filename))
           return encodeURIPath(
             toOutputFilePathInCss(
               filename,
@@ -775,7 +775,7 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
             generatedAssets
               .get(config)!
               .set(referenceId, { originalName: originalFilename, isEntry })
-              getChunkMetadata(chunk.fileName)!.importedCss.add(this.getFileName(referenceId))
+              getChunkMetadata(chunk.name)!.importedCss.add(this.getFileName(referenceId))
           } else if (!config.build.ssr) {
             // legacy build and inline css
 
@@ -835,9 +835,9 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
     },
 
     augmentChunkHash(chunk) {
-      if (getChunkMetadata(chunk.fileName)?.importedCss.size) {
+      if (getChunkMetadata(chunk.name)?.importedCss.size) {
         let hash = ''
-        for (const id of getChunkMetadata(chunk.fileName)!.importedCss) {
+        for (const id of getChunkMetadata(chunk.name)!.importedCss) {
           hash += id
         }
         return hash
@@ -930,10 +930,10 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
               if (pureCssChunkNames.includes(file)) {
                 const { importedCss, importedAssets } =  getChunkMetadata((bundle[file] as OutputChunk).fileName)!
                 importedCss.forEach((file) =>
-                  getChunkMetadata(chunk.fileName)!.importedCss.add(file),
+                  getChunkMetadata(chunk.name)!.importedCss.add(file),
                 )
                 importedAssets.forEach((file) =>
-                  getChunkMetadata(chunk.fileName)!.importedAssets.add(file),
+                  getChunkMetadata(chunk.name)!.importedAssets.add(file),
                 )
                 chunkImportsPureCssChunk = true
                 return false
