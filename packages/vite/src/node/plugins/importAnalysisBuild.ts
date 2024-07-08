@@ -546,7 +546,7 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
                       chunk.imports.forEach(addDeps)
                       // Ensure that the css imported by current chunk is loaded after the dependencies.
                       // So the style of current chunk won't be overwritten unexpectedly.
-                      getChunkMetadata(chunk.fileName)!.importedCss.forEach((file) => {
+                      getChunkMetadata(chunk.name)!.importedCss.forEach((file) => {
                         deps.add(file)
                       })
                     }
@@ -555,8 +555,8 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
                       removedPureCssFilesCache.get(config)!
                     const chunk = removedPureCssFiles.get(filename)
                     if (chunk) {
-                      if (getChunkMetadata(chunk.fileName)!.importedCss.size) {
-                        getChunkMetadata(chunk.fileName)!.importedCss.forEach((file) => {
+                      if (getChunkMetadata(chunk.name)!.importedCss.size) {
+                        getChunkMetadata(chunk.name)!.importedCss.forEach((file) => {
                           deps.add(file)
                         })
                         hasRemovedPureCssChunk = true
