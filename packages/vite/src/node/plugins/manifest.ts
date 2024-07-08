@@ -89,11 +89,11 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
           }
         }
 
-        if (getChunkMetadata(chunk.fileName)?.importedCss.size) {
-          manifestChunk.css = [...getChunkMetadata(chunk.fileName)!.importedCss]
+        if (getChunkMetadata(chunk.name)?.importedCss.size) {
+          manifestChunk.css = [...getChunkMetadata(chunk.name)!.importedCss]
         }
-        if (getChunkMetadata(chunk.fileName)?.importedAssets.size) {
-          manifestChunk.assets = [...getChunkMetadata(chunk.fileName)!.importedAssets]
+        if (getChunkMetadata(chunk.name)?.importedAssets.size) {
+          manifestChunk.assets = [...getChunkMetadata(chunk.name)!.importedAssets]
         }
 
         return manifestChunk
