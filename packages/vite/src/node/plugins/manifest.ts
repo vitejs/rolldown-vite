@@ -4,7 +4,7 @@ import type {
   OutputAsset,
   OutputChunk,
   RenderedChunk,
-} from 'rollup'
+} from 'rolldown'
 import type { ResolvedConfig } from '..'
 import type { Plugin } from '../plugin'
 import { normalizePath, sortObjectKeys } from '../utils'
@@ -184,7 +184,8 @@ export function getChunkOriginalFileName(
 ): string {
   if (chunk.facadeModuleId) {
     let name = normalizePath(path.relative(root, chunk.facadeModuleId))
-    if (format === 'system' && !chunk.name.includes('-legacy')) {
+    // TODO @underfin format
+    if (/* format === 'system' && */ !chunk.name.includes('-legacy')) {
       const ext = path.extname(name)
       const endPos = ext.length !== 0 ? -ext.length : undefined
       name = name.slice(0, endPos) + `-legacy` + ext

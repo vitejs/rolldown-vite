@@ -110,10 +110,10 @@ export function splitVendorChunkPlugin(): Plugin {
   return {
     name: 'vite:split-vendor-chunk',
     config(config) {
-      let outputs = config?.build?.rollupOptions?.output
-      if (outputs) {
-        outputs = arraify(outputs)
-        for (const output of outputs) {
+      let output = config?.build?.rollupOptions?.output
+      if (output) {
+        // outputs = arraify(outputs)
+        // for (const output of outputs) {
           const viteManualChunks = createSplitVendorChunk(output, config)
           if (viteManualChunks) {
             if (output.manualChunks) {
@@ -134,7 +134,7 @@ export function splitVendorChunkPlugin(): Plugin {
               output.manualChunks = viteManualChunks
             }
           }
-        }
+        // }
       } else {
         return {
           build: {

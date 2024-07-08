@@ -13,7 +13,7 @@ import type {
   RenderedChunk,
   RollupError,
   SourceMapInput,
-} from 'rollup'
+} from 'rolldown'
 import { dataToEsm } from '@rollup/pluginutils'
 import colors from 'picocolors'
 import MagicString from 'magic-string'
@@ -27,7 +27,7 @@ import type { TransformOptions } from 'esbuild'
 import { formatMessages, transform } from 'esbuild'
 import type { RawSourceMap } from '@ampproject/remapping'
 import { WorkerWithFallback } from 'artichokie'
-import { getCodeWithSourcemap, injectSourcesContent } from '../server/sourcemap'
+// import { getCodeWithSourcemap, injectSourcesContent } from '../server/sourcemap'
 import type { ModuleNode } from '../server/moduleGraph'
 import type { ResolveFn, ViteDevServer } from '../'
 import {
@@ -367,7 +367,7 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
       const {
         code: css,
         modules,
-        deps,
+        //deps,
         map,
       } = await compileCSS(
         id,
@@ -380,11 +380,11 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
         moduleCache.set(id, modules)
       }
 
-      if (deps) {
-        for (const file of deps) {
-          this.addWatchFile(file)
-        }
-      }
+      // if (deps) {
+      //   for (const file of deps) {
+      //     this.addWatchFile(file)
+      //   }
+      // }
 
       return {
         code: css,
@@ -489,13 +489,13 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
 
       if (config.command === 'serve') {
         const getContentWithSourcemap = async (content: string) => {
-          if (config.css?.devSourcemap) {
-            const sourcemap = this.getCombinedSourcemap()
-            if (sourcemap.mappings) {
-              await injectSourcesContent(sourcemap, cleanUrl(id), config.logger)
-            }
-            return getCodeWithSourcemap('css', content, sourcemap)
-          }
+          // if (config.css?.devSourcemap) {
+          //   const sourcemap = this.getCombinedSourcemap()
+          //   if (sourcemap.mappings) {
+          //     await injectSourcesContent(sourcemap, cleanUrl(id), config.logger)
+          //   }
+          //   return getCodeWithSourcemap('css', content, sourcemap)
+          // }
           return content
         }
 
@@ -1529,8 +1529,9 @@ export async function formatPostcssSourceMap(
 ): Promise<ExistingRawSourceMap> {
   const inputFileDir = path.dirname(file)
 
-  const sources = rawMap.sources.map((source) => {
-    const cleanSource = cleanUrl(decodeURIComponent(source))
+  // Note: the real `Sourcemap#sources` maybe is `null`, but rollup typing is not handle it.
+  const sources = rawMap.sources!.map((source) => {
+    const cleanSource = cleanUrl(decodeURIComponent(source!))
 
     // postcss virtual files
     if (cleanSource[0] === '<' && cleanSource[cleanSource.length - 1] === '>') {
@@ -2835,12 +2836,13 @@ function formatStylusSourceMap(
   if (!mapBefore) return undefined
   const map = { ...mapBefore }
 
-  const resolveFromRoot = (p: string) => normalizePath(path.resolve(root, p))
+  const resolveFromRoot = (p: string | null) => normalizePath(path.resolve(root, p!))
 
   if (map.file) {
     map.file = resolveFromRoot(map.file)
   }
-  map.sources = map.sources.map(resolveFromRoot)
+  // Note: the real `Sourcemap#sources` maybe is `null`, but rollup typing is not handle it.
+  map.sources = map.sources!.map(resolveFromRoot)
 
   return map
 }
