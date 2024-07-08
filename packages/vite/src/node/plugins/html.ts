@@ -759,7 +759,7 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
           })
         }
 
-        getChunkMetadata(chunk.fileName)!.importedCss.forEach((file) => {
+        getChunkMetadata(chunk.name)!.importedCss.forEach((file) => {
           if (!seen.has(file)) {
             seen.add(file)
             tags.push({
@@ -907,7 +907,7 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
         result = result.replace(assetUrlRE, (_, fileHash, postfix = '') => {
           const file = this.getFileName(fileHash)
           if (chunk) {
-            getChunkMetadata(chunk.fileName)!.importedAssets.add(cleanUrl(file))
+            getChunkMetadata(chunk.name)!.importedAssets.add(cleanUrl(file))
           }
           return encodeURIPath(toOutputAssetFilePath(file)) + postfix
         })
