@@ -271,7 +271,7 @@ export interface LibraryOptions {
   fileName?: string | ((format: ModuleFormat, entryName: string) => string)
 }
 
-export type LibraryFormats = 'es' | 'cjs' /*| 'umd' | 'iife' | 'system'*/
+export type LibraryFormats = 'es' | 'cjs' | 'iife' /*| 'umd'  | 'system'*/
 
 export interface ModulePreloadOptions {
   /**
@@ -1165,7 +1165,7 @@ const relativeUrlMechanisms: Record<
     getResolveUrl(
       `'${escapeId(partialEncodeURIPath(relativePath))}', import.meta.url`,
     ),
-  // iife: (relativePath) => getRelativeUrlFromDocument(relativePath),
+  iife: (relativePath) => getRelativeUrlFromDocument(relativePath),
   // // NOTE: make sure rollup generate `module` params
   // system: (relativePath) =>
   //   getResolveUrl(
@@ -1237,7 +1237,7 @@ export function createToImportMetaURLBasedRelativeRuntime(
   format: InternalModuleFormat,
   isWorker: boolean,
 ): (filename: string, importer: string) => { runtime: string } {
-  const formatLong = /* isWorker && format === 'iife' ? 'worker-iife' : */ format
+  const formatLong = isWorker && format === 'iife' ? 'worker-iife' :  format
   const toRelativePath = customRelativeUrlMechanisms[formatLong]
   return (filename, importer) => ({
     runtime: toRelativePath(
