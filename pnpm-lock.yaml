@@ -238,6 +238,7 @@ importers:
       rolldown:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         specifier: ^0.10.5
         version: 0.10.5
 >>>>>>> e7317462e (feat(optimizer): using rolldown instead of esbuild)
@@ -253,6 +254,10 @@ importers:
         specifier: latest
         version: 0.12.2
 >>>>>>> c469a7861 (chore: using latest rolldown)
+=======
+        specifier: /Users/likui/Github/rolldown/packages/rolldown
+        version: link:../../../rolldown/packages/rolldown
+>>>>>>> 4610549ce (chore: bump rolldown 0.12.1)
       rollup:
         specifier: ^4.13.0
         version: 4.18.1
@@ -2374,6 +2379,15 @@ packages:
       search-insights:
         optional: true
 
+  '@emnapi/core@1.2.0':
+    resolution: {integrity: sha512-E7Vgw78I93we4ZWdYCb4DGAwRROGkMIXk7/y87UmANR+J6qsWusmC3gLt0H+O0KOt5e6O38U8oJamgbudrES/w==}
+
+  '@emnapi/runtime@1.2.0':
+    resolution: {integrity: sha512-bV21/9LQmcQeCPEg3BDFtvwL6cwiTMksYNWQQ4KOxCZikEGalWtenoZ0wCiukJINlGCIi2KXx01g4FoH/LxpzQ==}
+
+  '@emnapi/wasi-threads@1.0.1':
+    resolution: {integrity: sha512-iIBu7mwkq4UQGeMEM8bLwNK962nXdhodeScX4slfQnRhEMMzvYivHhutCIk8uojvmASXXPC2WNEjwxFWk72Oqw==}
+
   '@esbuild/aix-ppc64@0.19.11':
     resolution: {integrity: sha512-FnzU0LyE3ySQk7UntJO4+qIiQgI7KoODnZg5xzXIrFJlKd2P2gwHsHY4927xj9y5PJmJSzULiUCWmv7iWnNa7g==}
     engines: {node: '>=12'}
@@ -2868,6 +2882,9 @@ packages:
     resolution: {integrity: sha512-Yhlar6v9WQgUp/He7BdgzOz8lqMQ8sU+jkCq7Wx8Myc5YFJLbEe7lgui/V7G1qB1DJykHSGwreceSaD60Y0PUQ==}
     hasBin: true
 
+  '@napi-rs/wasm-runtime@0.2.4':
+    resolution: {integrity: sha512-9zESzOO5aDByvhIAsOy9TbpZ0Ur2AJbUI7UT73kcUTS2mxAMHOBaa1st/jAymNoCtvrit99kkzT1FZuXVcgfIQ==}
+
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -2896,6 +2913,9 @@ packages:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4610549ce (chore: bump rolldown 0.12.1)
 =======
 >>>>>>> b7ab0616a (feat: build using rolldown)
 =======
@@ -3040,7 +3060,12 @@ packages:
 =======
 
 >>>>>>> f35336e4e (chore: using latest rolldown)
+<<<<<<< HEAD
 >>>>>>> c469a7861 (chore: using latest rolldown)
+=======
+=======
+>>>>>>> 300447bd8 (chore: bump rolldown 0.12.1)
+>>>>>>> 4610549ce (chore: bump rolldown 0.12.1)
   '@rollup/plugin-alias@5.0.0':
     resolution: {integrity: sha512-l9hY5chSCjuFRPsnRm16twWBiSApl2uYFLsepQYwtBuAxNMQ/1dJqADld40P0Jkqm65GRTLy/AC6hnpVebtLsA==}
     engines: {node: '>=14.0.0'}
@@ -3238,6 +3263,9 @@ packages:
 
   '@tsconfig/node16@1.0.2':
     resolution: {integrity: sha512-eZxlbI8GZscaGS7kkc/trHTT5xgrjH3/1n2JDwusC9iahPKWMRvRjJSAN5mCXviuTGQ/lHnhvv8Q1YTpnfz9gA==}
+
+  '@tybys/wasm-util@0.9.0':
+    resolution: {integrity: sha512-6+7nlbMVX/PVDCwaIQ8nTOPveOcFLSt8GcXdx8hD0bt39uWxYT88uXzqTd4fTvqta7oeUJqudepapKNt2DYJFw==}
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -6222,6 +6250,7 @@ packages:
     hasBin: true
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   rolldown@0.12.2:
     resolution: {integrity: sha512-YJYKiYt2O9XytiQ3Na4Kk29avfIXhvK7udB3wAaVaF4kiSsFKE1167tElO/0eD6tjfJXCvwNxwsyYkBJRtsLmQ==}
 >>>>>>> f35336e4e (chore: using latest rolldown)
@@ -6236,6 +6265,7 @@ packages:
     hasBin: true
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   rolldown@0.12.2:
     resolution: {integrity: sha512-YJYKiYt2O9XytiQ3Na4Kk29avfIXhvK7udB3wAaVaF4kiSsFKE1167tElO/0eD6tjfJXCvwNxwsyYkBJRtsLmQ==}
 <<<<<<< HEAD
@@ -6247,6 +6277,10 @@ packages:
 >>>>>>> 8267755d0 (chore: rebase)
     hasBin: true
 =======
+=======
+=======
+>>>>>>> 300447bd8 (chore: bump rolldown 0.12.1)
+>>>>>>> 4610549ce (chore: bump rolldown 0.12.1)
   rollup-plugin-dts@6.0.2:
     resolution: {integrity: sha512-GYCCy9DyE5csSuUObktJBpjNpW2iLZMabNDIiAqzQWBl7l/WHzjvtAXevf8Lftk8EA920tuxeB/g8dM8MVMR6A==}
     engines: {node: '>=v16'}
@@ -7166,6 +7200,9 @@ packages:
 
   zimmerframe@1.0.0:
     resolution: {integrity: sha512-H6qQ6LtjP+kDQwDgol18fPi4OCo7F+73ZBYt2U9c1D3V74bIMKxXvyrN0x+1I7/RYh5YsausflQxQR/qwDLHPQ==}
+
+  zod@3.23.8:
+    resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
 
   zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
@@ -8195,6 +8232,22 @@ snapshots:
     transitivePeerDependencies:
       - '@algolia/client-search'
 
+  '@emnapi/core@1.2.0':
+    dependencies:
+      '@emnapi/wasi-threads': 1.0.1
+      tslib: 2.6.3
+    optional: true
+
+  '@emnapi/runtime@1.2.0':
+    dependencies:
+      tslib: 2.6.3
+    optional: true
+
+  '@emnapi/wasi-threads@1.0.1':
+    dependencies:
+      tslib: 2.6.3
+    optional: true
+
   '@esbuild/aix-ppc64@0.19.11':
     optional: true
 
@@ -8503,6 +8556,13 @@ snapshots:
       - encoding
       - supports-color
 
+  '@napi-rs/wasm-runtime@0.2.4':
+    dependencies:
+      '@emnapi/core': 1.2.0
+      '@emnapi/runtime': 1.2.0
+      '@tybys/wasm-util': 0.9.0
+    optional: true
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -8528,6 +8588,9 @@ snapshots:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4610549ce (chore: bump rolldown 0.12.1)
 =======
 >>>>>>> b7ab0616a (feat: build using rolldown)
 =======
@@ -8583,10 +8646,15 @@ snapshots:
 =======
 =======
 >>>>>>> f35336e4e (chore: using latest rolldown)
+<<<<<<< HEAD
 >>>>>>> 373dcbfe4 (chore: using latest rolldown)
 =======
 >>>>>>> f35336e4e (chore: using latest rolldown)
 >>>>>>> c469a7861 (chore: using latest rolldown)
+=======
+=======
+>>>>>>> 300447bd8 (chore: bump rolldown 0.12.1)
+>>>>>>> 4610549ce (chore: bump rolldown 0.12.1)
   '@rollup/plugin-alias@5.0.0(rollup@3.29.4)':
 >>>>>>> e7317462e (feat(optimizer): using rolldown instead of esbuild)
 =======
@@ -8790,6 +8858,11 @@ snapshots:
   '@tsconfig/node14@1.0.1': {}
 
   '@tsconfig/node16@1.0.2': {}
+
+  '@tybys/wasm-util@0.9.0':
+    dependencies:
+      tslib: 2.6.3
+    optional: true
 
   '@types/babel__core@7.20.5':
     dependencies:
@@ -12064,10 +12137,13 @@ snapshots:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   rolldown@0.12.2:
 =======
 =======
 >>>>>>> b7ab0616a (feat: build using rolldown)
+=======
+>>>>>>> 4610549ce (chore: bump rolldown 0.12.1)
 =======
   rolldown@0.12.2:
 =======
@@ -12094,6 +12170,8 @@ snapshots:
       '@rolldown/binding-win32-x64-msvc': 0.10.5
 
 >>>>>>> f35336e4e (chore: using latest rolldown)
+=======
+>>>>>>> 300447bd8 (chore: bump rolldown 0.12.1)
   rollup-plugin-dts@6.0.2(rollup@3.29.4)(typescript@5.2.2):
 >>>>>>> c469a7861 (chore: using latest rolldown)
     dependencies:
@@ -13103,6 +13181,8 @@ snapshots:
       stacktracey: 2.1.8
 
   zimmerframe@1.0.0: {}
+
+  zod@3.23.8: {}
 
   zod@3.23.8: {}
 
