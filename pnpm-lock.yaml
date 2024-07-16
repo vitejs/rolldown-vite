@@ -17,6 +17,9 @@ patchedDependencies:
   http-proxy@1.18.1:
     hash: qqiqxx62zlcu62nljjmhlvexni
     path: patches/http-proxy@1.18.1.patch
+  rolldown@0.10.5:
+    hash: ln72metpgkqigpsuuo4ap6taba
+    path: patches/rolldown@0.10.5.patch
   sirv@2.0.4:
     hash: amdes53ifqfntejkflpaq5ifce
     path: patches/sirv@2.0.4.patch
@@ -235,7 +238,7 @@ importers:
         version: 8.4.39
       rolldown:
         specifier: ^0.10.5
-        version: 0.10.5
+        version: 0.10.5(patch_hash=ln72metpgkqigpsuuo4ap6taba)
       rollup:
         specifier: ^4.13.0
         version: 4.13.0
@@ -11751,7 +11754,7 @@ snapshots:
     dependencies:
       glob: 10.3.10
 
-  rolldown@0.10.5:
+  rolldown@0.10.5(patch_hash=ln72metpgkqigpsuuo4ap6taba):
     dependencies:
       citty: 0.1.6
       colorette: 2.0.20
