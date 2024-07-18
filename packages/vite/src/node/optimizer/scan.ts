@@ -6,7 +6,7 @@ import glob from 'fast-glob'
 import type { Plugin } from 'rolldown'
 import * as rolldown from 'rolldown'
 import type { Loader } from 'esbuild'
-import  { transform } from 'esbuild'
+import { transform } from 'esbuild'
 import colors from 'picocolors'
 import type { ResolvedConfig } from '..'
 import {
@@ -41,6 +41,7 @@ type ResolveIdOptions = Parameters<PluginContainer['resolveId']>[2]
 
 const debug = createDebugger('vite:deps')
 
+// eslint-disable-next-line regexp/no-unused-capturing-group
 const htmlTypesRE = /\.(html|vue|svelte|astro|imba)$/
 
 // A simple regex to detect import sources. This is only used on
@@ -100,15 +101,13 @@ export function scanImports(config: ResolvedConfig): {
       if (!context || scanContext?.cancelled) {
         return { deps: {}, missing: {} }
       }
-      return context
-        .build()
-        .then(() => {
-          return {
-            // Ensure a fixed order so hashes are stable and improve logs
-            deps: orderedDependencies(deps),
-            missing,
-          }
-        })
+      return context.build().then(() => {
+        return {
+          // Ensure a fixed order so hashes are stable and improve logs
+          deps: orderedDependencies(deps),
+          missing,
+        }
+      })
     })
     .catch(async (e) => {
       // if (e.errors && e.message.includes('The build was canceled')) {
@@ -129,7 +128,7 @@ export function scanImports(config: ResolvedConfig): {
       //   })
       //   e.message = prependMessage + msgs.join('\n')
       // } else {
-        e.message = prependMessage + e.message
+      e.message = prependMessage + e.message
       // }
       throw e
     })
@@ -807,10 +806,10 @@ function rolldownScanPlugin(
           content + (loader.startsWith('ts') ? extractImportPaths(content) : '')
 
         const key = `${p}?id=${scriptId++}&loader=${loader}`
-        if (loader !== 'js') {
-          contents = (await transform(contents, { loader })).code
-        }
         if (contents.includes('import.meta.glob')) {
+          if (loader !== 'js') {
+            contents = (await transform(contents, { loader })).code
+          }
           scripts[key] = await doTransformGlobImport(contents, p)
         } else {
           scripts[key] = contents
@@ -1020,11 +1019,10 @@ function rolldownScanPlugin(
 
         const loader = ext as Loader
 
-        if (loader !== 'js') {
-          contents = (await transform(contents, { loader })).code
-        }
-
         if (contents.includes('import.meta.glob')) {
+          if (loader !== 'js') {
+            contents = (await transform(contents, { loader })).code
+          }
           return {
             code: await doTransformGlobImport(contents, id),
           }
@@ -1037,7 +1035,6 @@ function rolldownScanPlugin(
     },
   }
 }
-
 
 /**
  * when using TS + (Vue + `<script setup>`) or Svelte, imports may seem
