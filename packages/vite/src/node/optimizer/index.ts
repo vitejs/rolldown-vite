@@ -24,12 +24,13 @@ import {
   tryStatSync,
   unique,
 } from '../utils'
-import {
-  transformWithEsbuild,
-} from '../plugins/esbuild'
+import { transformWithEsbuild } from '../plugins/esbuild'
 import { ESBUILD_MODULES_TARGET, METADATA_FILENAME } from '../constants'
 import { isWindows } from '../../shared/utils'
-import { rolldownCjsExternalPlugin, rolldownDepPlugin } from './rolldownDepPlugin'
+import {
+  rolldownCjsExternalPlugin,
+  rolldownDepPlugin,
+} from './rolldownDepPlugin'
 import { scanImports } from './scan'
 import { createOptimizeDepsIncludeResolver, expandGlobIds } from './resolve'
 export {
@@ -617,8 +618,7 @@ export function runOptimizeDeps(
             if (chunk.isEntry) {
               // One chunk maybe corresponding multiply entry
               const deps = Object.values(depsInfo).filter(
-                (d) =>
-                  d.src === chunk.facadeModuleId!,
+                (d) => d.src === chunk.facadeModuleId!,
               )
               for (const { exportsData, file, id, ...info } of deps) {
                 addOptimizedDepInfo(metadata, 'optimized', {
@@ -810,7 +810,7 @@ async function prepareRolldownOptimizerRun(
       resolve: {
         mainFields: ['module', 'main'],
         aliasFields: [['browser']],
-        extensions: ['.js', '.css']
+        extensions: ['.js', '.css'],
       },
       ...rollupOptions,
     })
@@ -820,7 +820,8 @@ async function prepareRolldownOptimizerRun(
       dir: processingCacheDir,
       banner:
         platform === 'node'
-          ? (chunk) =>
+          ? // TODO: use async to workaround https://github.com/rolldown/rolldown/issues/1655
+            async (chunk) =>
               chunk.fileName.endsWith('.js')
                 ? `import { createRequire } from 'module';const require = createRequire(import.meta.url);`
                 : ''
@@ -1037,13 +1038,16 @@ function stringifyDepsOptimizerMetadata(
               file,
               fileHash,
               needsInterop,
-              isDynamicEntry
+              isDynamicEntry,
             },
           ],
         ),
       ),
       chunks: Object.fromEntries(
-        Object.values(chunks).map(({ id, file, isDynamicEntry }) => [id, { file, isDynamicEntry }]),
+        Object.values(chunks).map(({ id, file, isDynamicEntry }) => [
+          id,
+          { file, isDynamicEntry },
+        ]),
       ),
     },
     (key: string, value: string) => {
@@ -1075,11 +1079,11 @@ export async function extractExportsData(
     const rolldownBuild = await rolldown.rolldown({
       ...rollupOptions,
       input: [filePath],
-    });
+    })
     const result = await rolldownBuild.generate({
       ...rollupOptions.output,
       format: 'esm',
-    });
+    })
     const [, exports, , hasModuleSyntax] = parse(result.output[0].code)
     return {
       hasModuleSyntax,
