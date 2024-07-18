@@ -1,0 +1,31 @@
+diff --git a/dist/types/binding.d.ts b/dist/types/binding.d.ts
+index a6a5fc5cc68c7151e2ba8ef40304f635adefaa41..88da140d22bb586721f07947c3497d0cd24f5b0b 100644
+--- a/dist/types/binding.d.ts
++++ b/dist/types/binding.d.ts
+@@ -247,7 +247,7 @@ export interface BindingResolveOptions {
+ }
+ 
+ export interface BindingSourcemap {
+-  inner: string | BindingJSONSourcemap
++  inner: string | BindingJsonSourcemap
+ }
+ 
+ export interface BindingTreeshake {
+@@ -334,4 +334,3 @@ export interface TypeScriptBindingOptions {
+   allowNamespaces?: boolean
+   allowDeclareFields?: boolean
+ }
+-
+diff --git a/dist/types/options/normalized-input-options.d.ts b/dist/types/options/normalized-input-options.d.ts
+index 43794f69c9036db22c58200ddf812b128ff2d821..d4ba99ef6d402e506e41b00e10ec26a6bf71902d 100644
+--- a/dist/types/options/normalized-input-options.d.ts
++++ b/dist/types/options/normalized-input-options.d.ts
+@@ -2,7 +2,7 @@ import type { LogLevelOption, RollupLog, NormalizedInputOptions as RollupNormali
+ import type { InputOptions } from './input-options';
+ import type { RolldownPlugin } from '../plugin';
+ import type { LogLevel } from '../log/logging';
+-import { NormalizedTreeshakingOptions } from '../../src/treeshake';
++import { NormalizedTreeshakingOptions } from '../treeshake';
+ export interface NormalizedInputOptions extends Omit<InputOptions, 'treeshake'> {
+     input: RollupNormalizedInputOptions['input'];
+     plugins: RolldownPlugin[];

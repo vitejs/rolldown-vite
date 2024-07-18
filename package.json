@@ -107,7 +107,7 @@
       "chokidar@3.6.0": "patches/chokidar@3.6.0.patch",
       "http-proxy@1.18.1": "patches/http-proxy@1.18.1.patch",
       "sirv@2.0.4": "patches/sirv@2.0.4.patch",
-      "rolldown@0.10.5": "patches/rolldown@0.10.5.patch"
+      "rolldown@0.12.1": "patches/rolldown@0.12.1.patch"
     },
     "peerDependencyRules": {
       "allowedVersions": {
