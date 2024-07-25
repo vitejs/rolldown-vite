@@ -804,7 +804,7 @@ async function prepareRolldownOptimizerRun(
   async function build() {
     const bundle = await rolldown.rolldown({
       input: Object.keys(flatIdDeps),
-      external,
+      // external,
       logLevel: 'warn',
       plugins,
       resolve: {
