@@ -807,10 +807,10 @@ function rolldownScanPlugin(
           content + (loader.startsWith('ts') ? extractImportPaths(content) : '')
 
         const key = `${p}?id=${scriptId++}&loader=${loader}`
-        if (loader !== 'js') {
-          contents = (await transform(contents, { loader })).code
-        }
         if (contents.includes('import.meta.glob')) {
+          if (loader !== 'js') {
+            contents = (await transform(contents, { loader })).code
+          }
           scripts[key] = await doTransformGlobImport(contents, p)
         } else {
           scripts[key] = contents
@@ -1020,11 +1020,10 @@ function rolldownScanPlugin(
 
         const loader = ext as Loader
 
-        if (loader !== 'js') {
-          contents = (await transform(contents, { loader })).code
-        }
-
         if (contents.includes('import.meta.glob')) {
+          if (loader !== 'js') {
+            contents = (await transform(contents, { loader })).code
+          }
           return {
             code: await doTransformGlobImport(contents, id),
           }
