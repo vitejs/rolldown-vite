@@ -36,6 +36,7 @@ import type { PluginContainer } from '../server/pluginContainer'
 import { createPluginContainer } from '../server/pluginContainer'
 import { transformGlobImport } from '../plugins/importMetaGlob'
 import { cleanUrl } from '../../shared/utils'
+import { loadTsconfigJsonForFile } from '../plugins/esbuild'
 
 type ResolveIdOptions = Parameters<PluginContainer['resolveId']>[2]
 
@@ -1069,7 +1070,14 @@ function rolldownScanPlugin(
         const loader = ext as Loader
 
         if (loader !== 'js') {
-          contents = (await transform(contents, { loader })).code
+          let tsconfigRaw
+          const tsconfigResult = await loadTsconfigJsonForFile(
+                  path.join(config.root, '_dummy.js'),
+          )
+          if (tsconfigResult.compilerOptions?.experimentalDecorators) {
+            tsconfigRaw = { compilerOptions: { experimentalDecorators: true } }
+          }
+          contents = (await transform(contents, { loader, tsconfigRaw })).code
         }
 
         if (contents.includes('import.meta.glob')) {
