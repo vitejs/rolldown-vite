@@ -924,16 +924,16 @@ export function resolveBuildOutputs(
       )
     }
 
-    outputs.forEach((output) => {
-      if (
-        (output.format === 'umd' || output.format === 'iife') &&
-        !output.name
-      ) {
-        throw new Error(
-          'Entries in "build.rollupOptions.output" must specify "name" when the format is "umd" or "iife".',
-        )
-      }
-    })
+    // outputs.forEach((output) => {
+    //   if (
+    //     (output.format === 'umd' || output.format === 'iife') &&
+    //     !output.name
+    //   ) {
+    //     throw new Error(
+    //       'Entries in "build.rollupOptions.output" must specify "name" when the format is "umd" or "iife".',
+    //     )
+    //   }
+    // })
   }
 
   return outputs

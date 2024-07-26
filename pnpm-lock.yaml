@@ -3109,6 +3109,7 @@ packages:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 1d4e2f5a6 (chore: rebase)
 =======
@@ -3287,6 +3288,8 @@ packages:
 =======
 =======
 =======
+=======
+>>>>>>> 79f1feab7 (chore: rebase)
   '@rolldown/binding-darwin-arm64@0.12.2':
     resolution: {integrity: sha512-Y3Ajye63Z5KymGUwTLaK7Q6YMvycXqNiXtosecgVzjAwMITCmXdzgnWgzzx5UlWHMrDYL4m5zIeXGB5slLwoMA==}
     cpu: [arm64]
@@ -3347,6 +3350,7 @@ packages:
     cpu: [x64]
     os: [win32]
 
+<<<<<<< HEAD
 >>>>>>> cfd9c8f72 (chore: rebase)
 >>>>>>> 1d4e2f5a6 (chore: rebase)
 >>>>>>> 06d8cab20 (chore: rebase)
@@ -3368,7 +3372,12 @@ packages:
 =======
 =======
 >>>>>>> 8267755d0 (chore: rebase)
+<<<<<<< HEAD
 >>>>>>> ed509d7b1 (chore: rebase)
+=======
+=======
+>>>>>>> 79f1feab7 (chore: rebase)
+>>>>>>> 8a3eb2605 (chore: rebase)
   '@rollup/plugin-alias@5.1.0':
     resolution: {integrity: sha512-lpA3RZ9PdIG7qqhEfv79tBffNaoDuukFDrmhLqg9ifv99u/ehn+lOg30x2zmhf8AQqQUZaMk/B9fZraQ6/acDQ==}
     engines: {node: '>=14.0.0'}
@@ -5716,10 +5725,6 @@ packages:
     resolution: {integrity: sha512-ZvFw1KWS3GVyYBYb7qkmRM/WwL2TQQBxgCK62rlvm4WpVQ23Nb4tYjApUlfjrEGvOs7KHEsmyUn75OHZrJMWPw==}
     engines: {node: '>= 12.13.0'}
 
-  local-pkg@0.5.0:
-    resolution: {integrity: sha512-ok6z3qlYyCDS4ZEU27HaU6x/xZa9Whf8jD4ptH5UZTQYZVYeb9bnZ3ojVhiJNLiXK1Hfc0GNbLXcmZ5plLDDBg==}
-    engines: {node: '>=14'}
-
   locate-path@6.0.0:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
@@ -6578,12 +6583,15 @@ packages:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 74236a1b7 (chore: using latest rolldown)
 =======
 >>>>>>> ed509d7b1 (chore: rebase)
 =======
 >>>>>>> 5a0a4c820 (chore: using latest rolldown)
+=======
+>>>>>>> 8a3eb2605 (chore: rebase)
   rimraf@5.0.10:
     resolution: {integrity: sha512-l0OE8wL34P4nJH/H2ffoaniAokM2qSmrtXHmlpvYr5AVVX8msAyW0l8NVJFDxlSK4u3Uh/f41cQheDVdnYijwQ==}
 =======
@@ -6673,10 +6681,18 @@ packages:
 >>>>>>> 4610549ce (chore: bump rolldown 0.12.1)
 =======
 =======
+=======
+  rimraf@5.0.9:
+    resolution: {integrity: sha512-3i7b8OcswU6CpU8Ej89quJD4O98id7TtVM5U4Mybh84zQXdrFmDLouWBEEaD/QfO3gDDfH+AGFCGsR7kngzQnA==}
+    engines: {node: 14 >=14.20 || 16 >=16.20 || >=18}
+    hasBin: true
+
+>>>>>>> 79f1feab7 (chore: rebase)
   rolldown@0.12.2:
     resolution: {integrity: sha512-YJYKiYt2O9XytiQ3Na4Kk29avfIXhvK7udB3wAaVaF4kiSsFKE1167tElO/0eD6tjfJXCvwNxwsyYkBJRtsLmQ==}
     hasBin: true
 
+<<<<<<< HEAD
 >>>>>>> cfd9c8f72 (chore: rebase)
 >>>>>>> 1d4e2f5a6 (chore: rebase)
   rollup-plugin-dts@6.0.2:
@@ -6687,6 +6703,8 @@ packages:
       typescript: ^4.5 || ^5.0
 >>>>>>> ff11c4d0f (feat(optimizer): using rolldown instead of esbuild)
 
+=======
+>>>>>>> 79f1feab7 (chore: rebase)
   rollup-plugin-dts@6.1.1:
     resolution: {integrity: sha512-aSHRcJ6KG2IHIioYlvAOcEq6U99sVtqDDKVhnwt70rW6tsz3tv5OSjEiWcgzfsHdLyGXZ/3b/7b/+Za3Y6r1XA==}
     engines: {node: '>=16'}
@@ -9070,6 +9088,7 @@ snapshots:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   '@rollup/plugin-alias@5.1.0(rollup@3.29.4)':
 =======
 <<<<<<< HEAD
@@ -9089,6 +9108,8 @@ snapshots:
 =======
 =======
 =======
+=======
+>>>>>>> 8a3eb2605 (chore: rebase)
 =======
 >>>>>>> 1d4e2f5a6 (chore: rebase)
 >>>>>>> 06d8cab20 (chore: rebase)
@@ -9136,6 +9157,8 @@ snapshots:
 
   '@rolldown/binding-wasm32-wasi@0.10.5':
 =======
+=======
+>>>>>>> 79f1feab7 (chore: rebase)
   '@rolldown/binding-darwin-arm64@0.12.2':
     optional: true
 
@@ -9161,11 +9184,11 @@ snapshots:
     optional: true
 
   '@rolldown/binding-wasm32-wasi@0.12.2':
->>>>>>> cfd9c8f72 (chore: rebase)
     dependencies:
       '@napi-rs/wasm-runtime': 0.2.4
     optional: true
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   '@rolldown/binding-win32-arm64-msvc@0.10.5':
     optional: true
@@ -9206,6 +9229,8 @@ snapshots:
 >>>>>>> 4610549ce (chore: bump rolldown 0.12.1)
 =======
 =======
+=======
+>>>>>>> 79f1feab7 (chore: rebase)
   '@rolldown/binding-win32-arm64-msvc@0.12.2':
     optional: true
 
@@ -9215,6 +9240,7 @@ snapshots:
   '@rolldown/binding-win32-x64-msvc@0.12.2':
     optional: true
 
+<<<<<<< HEAD
 >>>>>>> cfd9c8f72 (chore: rebase)
 >>>>>>> 1d4e2f5a6 (chore: rebase)
   '@rollup/plugin-alias@5.0.0(rollup@3.29.4)':
@@ -9231,7 +9257,13 @@ snapshots:
 =======
   '@rollup/plugin-alias@5.0.0(rollup@3.29.4)':
 >>>>>>> ff11c4d0f (feat(optimizer): using rolldown instead of esbuild)
+<<<<<<< HEAD
 >>>>>>> e98d22a91 (feat(optimizer): using rolldown instead of esbuild)
+=======
+=======
+  '@rollup/plugin-alias@5.1.0(rollup@3.29.4)':
+>>>>>>> 79f1feab7 (chore: rebase)
+>>>>>>> 8a3eb2605 (chore: rebase)
     dependencies:
       slash: 4.0.0
     optionalDependencies:
@@ -11831,11 +11863,6 @@ snapshots:
 
   loader-utils@3.2.1: {}
 
-  local-pkg@0.5.0:
-    dependencies:
-      mlly: 1.7.1
-      pkg-types: 1.0.3
-
   locate-path@6.0.0:
     dependencies:
       p-locate: 5.0.0
@@ -12838,6 +12865,7 @@ snapshots:
   rimraf@5.0.10:
     dependencies:
 <<<<<<< HEAD
+<<<<<<< HEAD
       glob: 10.4.5
 <<<<<<< HEAD
 =======
@@ -12849,7 +12877,11 @@ snapshots:
 =======
       glob: 10.3.10
 >>>>>>> e98d22a91 (feat(optimizer): using rolldown instead of esbuild)
+=======
+      glob: 10.4.5
+>>>>>>> 8a3eb2605 (chore: rebase)
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -12892,6 +12924,8 @@ snapshots:
 =======
 >>>>>>> 300447bd8 (chore: bump rolldown 0.12.1)
 =======
+=======
+>>>>>>> 79f1feab7 (chore: rebase)
   rolldown@0.12.2:
     dependencies:
       zod: 3.23.8
@@ -12909,9 +12943,13 @@ snapshots:
       '@rolldown/binding-win32-ia32-msvc': 0.12.2
       '@rolldown/binding-win32-x64-msvc': 0.12.2
 
+<<<<<<< HEAD
 >>>>>>> cfd9c8f72 (chore: rebase)
   rollup-plugin-dts@6.0.2(rollup@3.29.4)(typescript@5.2.2):
 >>>>>>> c469a7861 (chore: using latest rolldown)
+=======
+  rollup-plugin-dts@6.1.1(rollup@3.29.4)(typescript@5.5.3):
+>>>>>>> 79f1feab7 (chore: rebase)
     dependencies:
       zod: 3.23.8
     optionalDependencies:
