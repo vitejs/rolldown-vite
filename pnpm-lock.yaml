@@ -2895,15 +2895,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@rollup/plugin-alias@5.0.0':
-    resolution: {integrity: sha512-l9hY5chSCjuFRPsnRm16twWBiSApl2uYFLsepQYwtBuAxNMQ/1dJqADld40P0Jkqm65GRTLy/AC6hnpVebtLsA==}
-    engines: {node: '>=14.0.0'}
-    peerDependencies:
-      rollup: ^1.20.0||^2.0.0||^3.0.0
-    peerDependenciesMeta:
-      rollup:
-        optional: true
-
   '@rollup/plugin-alias@5.1.0':
     resolution: {integrity: sha512-lpA3RZ9PdIG7qqhEfv79tBffNaoDuukFDrmhLqg9ifv99u/ehn+lOg30x2zmhf8AQqQUZaMk/B9fZraQ6/acDQ==}
     engines: {node: '>=14.0.0'}
@@ -5155,10 +5146,6 @@ packages:
     resolution: {integrity: sha512-ZvFw1KWS3GVyYBYb7qkmRM/WwL2TQQBxgCK62rlvm4WpVQ23Nb4tYjApUlfjrEGvOs7KHEsmyUn75OHZrJMWPw==}
     engines: {node: '>= 12.13.0'}
 
-  local-pkg@0.5.0:
-    resolution: {integrity: sha512-ok6z3qlYyCDS4ZEU27HaU6x/xZa9Whf8jD4ptH5UZTQYZVYeb9bnZ3ojVhiJNLiXK1Hfc0GNbLXcmZ5plLDDBg==}
-    engines: {node: '>=14'}
-
   locate-path@6.0.0:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
@@ -6003,31 +5990,26 @@ packages:
     hasBin: true
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   rimraf@5.0.10:
     resolution: {integrity: sha512-l0OE8wL34P4nJH/H2ffoaniAokM2qSmrtXHmlpvYr5AVVX8msAyW0l8NVJFDxlSK4u3Uh/f41cQheDVdnYijwQ==}
 =======
 <<<<<<< HEAD
+=======
+>>>>>>> 8267755d0 (chore: rebase)
   rimraf@5.0.9:
     resolution: {integrity: sha512-3i7b8OcswU6CpU8Ej89quJD4O98id7TtVM5U4Mybh84zQXdrFmDLouWBEEaD/QfO3gDDfH+AGFCGsR7kngzQnA==}
     engines: {node: 14 >=14.20 || 16 >=16.20 || >=18}
-=======
-  rimraf@5.0.7:
-    resolution: {integrity: sha512-nV6YcJo5wbLW77m+8KjH8aB/7/rxQy9SZ0HY5shnwULfS+9nmTtVXAJET5NdZmCzA4fPI/Hm1wo/Po/4mopOdg==}
-    engines: {node: '>=14.18'}
     hasBin: true
 
   rolldown@0.12.2:
     resolution: {integrity: sha512-YJYKiYt2O9XytiQ3Na4Kk29avfIXhvK7udB3wAaVaF4kiSsFKE1167tElO/0eD6tjfJXCvwNxwsyYkBJRtsLmQ==}
+<<<<<<< HEAD
 >>>>>>> f35336e4e (chore: using latest rolldown)
 >>>>>>> 373dcbfe4 (chore: using latest rolldown)
+=======
+>>>>>>> 8267755d0 (chore: rebase)
     hasBin: true
-
-  rollup-plugin-dts@6.0.2:
-    resolution: {integrity: sha512-GYCCy9DyE5csSuUObktJBpjNpW2iLZMabNDIiAqzQWBl7l/WHzjvtAXevf8Lftk8EA920tuxeB/g8dM8MVMR6A==}
-    engines: {node: '>=v16'}
-    peerDependencies:
-      rollup: ^3.25
-      typescript: ^4.5 || ^5.0
 
   rollup-plugin-dts@6.1.1:
     resolution: {integrity: sha512-aSHRcJ6KG2IHIioYlvAOcEq6U99sVtqDDKVhnwt70rW6tsz3tv5OSjEiWcgzfsHdLyGXZ/3b/7b/+Za3Y6r1XA==}
@@ -8217,8 +8199,6 @@ snapshots:
 
   '@polka/url@1.0.0-next.24': {}
 
-<<<<<<< HEAD
-=======
   '@rolldown/binding-darwin-arm64@0.12.2':
     optional: true
 
@@ -8257,8 +8237,7 @@ snapshots:
   '@rolldown/binding-win32-x64-msvc@0.12.2':
     optional: true
 
->>>>>>> f35336e4e (chore: using latest rolldown)
-  '@rollup/plugin-alias@5.0.0(rollup@3.29.4)':
+  '@rollup/plugin-alias@5.1.0(rollup@3.29.4)':
     dependencies:
       slash: 4.0.0
     optionalDependencies:
@@ -10695,11 +10674,6 @@ snapshots:
 
   loader-utils@3.2.1: {}
 
-  local-pkg@0.5.0:
-    dependencies:
-      mlly: 1.7.1
-      pkg-types: 1.0.3
-
   locate-path@6.0.0:
     dependencies:
       p-locate: 5.0.0
@@ -11667,10 +11641,7 @@ snapshots:
 
   rimraf@5.0.10:
     dependencies:
-<<<<<<< HEAD
       glob: 10.4.5
-=======
-      glob: 10.3.10
 
   rolldown@0.12.2:
     dependencies:
@@ -11688,9 +11659,8 @@ snapshots:
       '@rolldown/binding-win32-arm64-msvc': 0.12.2
       '@rolldown/binding-win32-ia32-msvc': 0.12.2
       '@rolldown/binding-win32-x64-msvc': 0.12.2
->>>>>>> f35336e4e (chore: using latest rolldown)
 
-  rollup-plugin-dts@6.0.2(rollup@3.29.4)(typescript@5.2.2):
+  rollup-plugin-dts@6.1.1(rollup@3.29.4)(typescript@5.5.3):
     dependencies:
       magic-string: 0.30.11
       rollup: 3.29.4
