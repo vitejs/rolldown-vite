@@ -643,6 +643,7 @@ export async function resolveConfig(
           aliasContainer ||
           (aliasContainer = await createPluginContainer({
             ...resolved,
+            // @ts-expect-error  the aliasPlugin using rollup types
             plugins: [aliasPlugin({ entries: resolved.resolve.alias })],
           }))
       } else {
@@ -651,6 +652,7 @@ export async function resolveConfig(
           (resolverContainer = await createPluginContainer({
             ...resolved,
             plugins: [
+              // @ts-expect-error the aliasPlugin using rollup types
               aliasPlugin({ entries: resolved.resolve.alias }),
               resolvePlugin({
                 ...resolved.resolve,
