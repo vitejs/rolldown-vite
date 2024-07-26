@@ -10,7 +10,7 @@ import type {
   SpreadElement,
   TemplateLiteral,
 } from 'estree'
-import type { CustomPluginOptions, RollupError } from 'rolldown'
+import type { /* CustomPluginOptions, */ RollupError } from 'rolldown'
 import MagicString from 'magic-string'
 import fg from 'fast-glob'
 import { stringifyQuery } from 'ufo'
