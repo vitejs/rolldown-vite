@@ -121,11 +121,11 @@ export function workerImportMetaUrlPlugin(config: ResolvedConfig): Plugin {
     name: 'vite:worker-import-meta-url',
 
     // TODO @underfin it's not unsupported yet
-    shouldTransformCachedModule({ code }) {
-      if (isBuild && config.build.watch && isIncludeWorkerImportMetaUrl(code)) {
-        return true
-      }
-    },
+    // shouldTransformCachedModule({ code }) {
+    //   if (isBuild && config.build.watch && isIncludeWorkerImportMetaUrl(code)) {
+    //     return true
+    //   }
+    // },
 
     async transform(code, id, options) {
       if (!options?.ssr && isIncludeWorkerImportMetaUrl(code)) {
