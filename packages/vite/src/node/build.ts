@@ -671,9 +671,11 @@ export async function build(
         //           config.packageCache,
         //         )
         //     : path.posix.join(options.assetsDir, `[name]-[hash].${jsExt}`),
-        entryFileNames: libOptions
-          ? `[name]-[hash].${jsExt}`
-          : path.posix.join(options.assetsDir, `[name]-[hash].${jsExt}`),
+        entryFileNames: ssr
+          ? `[name].${jsExt}`
+          : libOptions
+            ? `[name]-[hash].${jsExt}`
+            : path.posix.join(options.assetsDir, `[name]-[hash].${jsExt}`),
         chunkFileNames: libOptions
           ? `[name]-[hash].${jsExt}`
           : path.posix.join(options.assetsDir, `[name]-[hash].${jsExt}`),
@@ -681,10 +683,10 @@ export async function build(
           ? `[name].[ext]`
           : path.posix.join(options.assetsDir, `[name]-[hash].[ext]`),
         // inlineDynamicImports:
-          // output.format === 'umd' ||
-          // output.format === 'iife' ||
-          // (ssrWorkerBuild &&
-          //   (typeof input === 'string' || Object.keys(input).length === 1)),
+        // output.format === 'umd' ||
+        // output.format === 'iife' ||
+        // (ssrWorkerBuild &&
+        //   (typeof input === 'string' || Object.keys(input).length === 1)),
         ...output,
       }
     }
@@ -845,7 +847,7 @@ function resolveOutputJsExtension(
   type: string = 'commonjs',
 ): JsExt {
   if (type === 'module') {
-    return format === 'cjs'  /* || format === 'umd'  */ ? 'cjs' :'js'
+    return format === 'cjs' /* || format === 'umd'  */ ? 'cjs' : 'js'
   } else {
     return format === 'es' ? 'mjs' : 'js'
   }
@@ -895,7 +897,7 @@ export function resolveBuildOutputs(
       Object.values(libOptions.entry).length > 1
     const libFormats =
       libOptions.formats ||
-      (libHasMultipleEntries ? ['es', 'cjs'] : ['es', /* 'umd' */])
+      (libHasMultipleEntries ? ['es', 'cjs'] : ['es' /* 'umd' */])
 
     if (!Array.isArray(outputs)) {
       // if (libFormats.includes('umd') || libFormats.includes('iife')) {
@@ -1237,7 +1239,7 @@ export function createToImportMetaURLBasedRelativeRuntime(
   format: InternalModuleFormat,
   isWorker: boolean,
 ): (filename: string, importer: string) => { runtime: string } {
-  const formatLong = isWorker && format === 'iife' ? 'worker-iife' :  format
+  const formatLong = isWorker && format === 'iife' ? 'worker-iife' : format
   const toRelativePath = customRelativeUrlMechanisms[formatLong]
   return (filename, importer) => ({
     runtime: toRelativePath(
