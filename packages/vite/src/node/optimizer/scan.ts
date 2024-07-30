@@ -27,7 +27,7 @@ import {
   moduleListContains,
   multilineCommentsRE,
   normalizePath,
-  parseRequest,
+  // parseRequest,
   singlelineCommentsRE,
   virtualModulePrefix,
   virtualModuleRE,
