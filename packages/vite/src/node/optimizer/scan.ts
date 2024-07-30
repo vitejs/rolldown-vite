@@ -860,9 +860,14 @@ function rolldownScanPlugin(
           contents = (await transform(contents, { loader })).code
         }
         if (contents.includes('import.meta.glob')) {
-          scripts[key] = await doTransformGlobImport(contents, p)
+          scripts[key] = {
+            contents: await doTransformGlobImport(contents, p),
+            loader
+          }
         } else {
-          scripts[key] = contents
+          scripts[key] = {
+            contents, loader
+          }
         }
 
         const virtualModulePath = JSON.stringify(virtualModulePrefix + key)
@@ -894,7 +899,10 @@ function rolldownScanPlugin(
     return js
   }
 
-  const scripts: Record<string, string> = {}
+  const scripts: Record<string, {
+    contents: string,
+    loader: Loader,
+  }> = {}
 
   const ASSET_TYPE_RE = new RegExp(`\\.(${KNOWN_ASSET_TYPES.join('|')})$`)
 
@@ -956,10 +964,9 @@ function rolldownScanPlugin(
         if (depImports[id]) {
           return externalUnlessEntry({ path: id })
         }
-        const loader = parseRequest(id)?.loader
         const resolved = await resolve(id, importer, {
           custom: {
-            depScan: { loader },
+            depScan: importer ? { loader: scripts[importer]?.loader } : {},
           },
         })
         if (resolved) {
@@ -1019,10 +1026,9 @@ function rolldownScanPlugin(
       // catch all -------------------------------------------------------------
 
       // use vite resolver to support urls and omitted extensions
-      const loader = parseRequest(id)?.loader
       const resolved = await resolve(id, importer, {
         custom: {
-          depScan: { loader },
+          depScan: importer ? { loader: scripts[importer]?.loader } : {},
         },
       })
       if (resolved) {
@@ -1044,7 +1050,7 @@ function rolldownScanPlugin(
     load: async function (id) {
       if (virtualModuleRE.test(id)) {
         return {
-          code: scripts[id.replace(virtualModulePrefix, '')],
+          code: scripts[id.replace(virtualModulePrefix, '')].contents,
         }
       }
 
