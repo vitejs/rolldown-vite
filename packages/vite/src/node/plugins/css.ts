@@ -27,7 +27,7 @@ import type { TransformOptions } from 'esbuild'
 import { formatMessages, transform } from 'esbuild'
 import type { RawSourceMap } from '@ampproject/remapping'
 import { WorkerWithFallback } from 'artichokie'
-// import { getCodeWithSourcemap, injectSourcesContent } from '../server/sourcemap'
+import { getCodeWithSourcemap, injectSourcesContent } from '../server/sourcemap'
 import type { ModuleNode } from '../server/moduleGraph'
 import type { ResolveFn, ViteDevServer } from '../'
 import {
@@ -489,13 +489,14 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
 
       if (config.command === 'serve') {
         const getContentWithSourcemap = async (content: string) => {
-          // if (config.css?.devSourcemap) {
-          //   const sourcemap = this.getCombinedSourcemap()
-          //   if (sourcemap.mappings) {
-          //     await injectSourcesContent(sourcemap, cleanUrl(id), config.logger)
-          //   }
-          //   return getCodeWithSourcemap('css', content, sourcemap)
-          // }
+          if (config.css?.devSourcemap) {
+            // @ts-expect-error missing types
+            const sourcemap = this.getCombinedSourcemap()
+            if (sourcemap.mappings) {
+              await injectSourcesContent(sourcemap, cleanUrl(id), config.logger)
+            }
+            return getCodeWithSourcemap('css', content, sourcemap)
+          }
           return content
         }
 
