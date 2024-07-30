@@ -521,25 +521,26 @@ class PluginContext implements Omit<RollupPluginContext, 'cache'> {
     return this._container.getModuleInfo(id)
   }
 
+  // @ts-expect-error
   async resolve(
     id: string,
     importer?: string,
     options?: {
-      // attributes?: Record<string, string>
-      // custom?: CustomPluginOptions
-      // isEntry?: boolean
-      // skipSelf?: boolean
+      attributes?: Record<string, string>
+      custom?: CustomPluginOptions
+      isEntry?: boolean
+      skipSelf?: boolean
     },
   ): ReturnType<RollupPluginContext['resolve']> {
     let skip: Set<Plugin> | undefined
-    // if (options?.skipSelf !== false && this._plugin) {
-    //   skip = new Set(this._resolveSkips)
-    //   skip.add(this._plugin)
-    // }
+    if (options?.skipSelf !== false && this._plugin) {
+      skip = new Set(this._resolveSkips)
+      skip.add(this._plugin)
+    }
     let out = await this._container.resolveId(id, importer, {
-      // attributes: options?.attributes,
-      // custom: options?.custom,
-      // isEntry: !!options?.isEntry,
+      attributes: options?.attributes,
+      custom: options?.custom,
+      isEntry: !!options?.isEntry,
       skip,
       ssr: this.ssr,
       scan: this._scan,
@@ -793,6 +794,7 @@ class LoadPluginContext extends PluginContext {
   }
 }
 
+// @ts-expect-error
 class TransformPluginContext
   extends LoadPluginContext
   implements Omit<RollupTransformPluginContext, 'cache'>
