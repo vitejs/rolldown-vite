@@ -367,7 +367,7 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
       const {
         code: css,
         modules,
-        //deps,
+        deps,
         map,
       } = await compileCSS(
         id,
@@ -380,11 +380,12 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
         moduleCache.set(id, modules)
       }
 
-      // if (deps) {
-      //   for (const file of deps) {
-      //     this.addWatchFile(file)
-      //   }
-      // }
+      if (deps && !isBuild) {
+        for (const file of deps) {
+          // @ts-expect-error
+          this.addWatchFile(file)
+        }
+      }
 
       return {
         code: css,
