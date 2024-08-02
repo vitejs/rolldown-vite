@@ -175,7 +175,10 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
       // raw requests, read from disk
       if (rawRE.test(id)) {
         const file = checkPublicFile(id, config) || cleanUrl(id)
-        // this.addWatchFile(file)
+        if (config.command !== 'build') {
+          // @ts-expect-error
+          this.addWatchFile(file)
+        }
         // raw query, read file and return as string
         return `export default ${JSON.stringify(
           await fsp.readFile(file, 'utf-8'),
