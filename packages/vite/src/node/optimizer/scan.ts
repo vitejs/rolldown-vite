@@ -4,7 +4,7 @@ import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import glob from 'fast-glob'
 import type { Plugin } from 'rolldown'
-import * as rolldown from 'rolldown'
+import { scan } from 'rolldown/experimental'
 import type { Loader } from 'esbuild'
 import  { transform } from 'esbuild'
 import colors from 'picocolors'
@@ -223,7 +223,7 @@ async function prepareRolldownScanner(
   plugins.push(rolldownScanPlugin(config, container, deps, missing, entries))
 
   async function build() {
-    await rolldown.experimental_scan({
+    await scan({
       input: entries,
       logLevel: 'silent',
       plugins,
