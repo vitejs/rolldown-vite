@@ -930,7 +930,7 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
             // chunks instead.
             chunk.imports = chunk.imports.filter((file) => {
               if (pureCssChunkNames.includes(file)) {
-                const { importedCss, importedAssets } =  getChunkMetadata((bundle[file] as OutputChunk).fileName)!
+                const { importedCss, importedAssets } =  getChunkMetadata((bundle[file] as OutputChunk).name)!
                 importedCss.forEach((file) =>
                   getChunkMetadata(chunk.name)!.importedCss.add(file),
                 )
