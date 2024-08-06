@@ -521,7 +521,6 @@ class PluginContext implements Omit<RollupPluginContext, 'cache'> {
     return this._container.getModuleInfo(id)
   }
 
-  // @ts-expect-error
   async resolve(
     id: string,
     importer?: string,
@@ -794,7 +793,6 @@ class LoadPluginContext extends PluginContext {
   }
 }
 
-// @ts-expect-error
 class TransformPluginContext
   extends LoadPluginContext
   implements Omit<RollupTransformPluginContext, 'cache'>
