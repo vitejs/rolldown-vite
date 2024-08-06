@@ -948,12 +948,14 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
           }
         }
 
-        const removedPureCssFiles = removedPureCssFilesCache.get(config)!
-        pureCssChunkNames.forEach((fileName) => {
-          removedPureCssFiles.set(fileName, bundle[fileName] as RenderedChunk)
-          delete bundle[fileName]
-          delete bundle[`${fileName}.map`]
-        })
+        // TODO The css module will be treated as a common-js like module, remove it from the bundle
+
+        // const removedPureCssFiles = removedPureCssFilesCache.get(config)!
+        // pureCssChunkNames.forEach((fileName) => {
+        //   removedPureCssFiles.set(fileName, bundle[fileName] as RenderedChunk)
+        //   delete bundle[fileName]
+        //   delete bundle[`${fileName}.map`]
+        // })
       }
     },
   }
