@@ -777,7 +777,9 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
             generatedAssets
               .get(config)!
               .set(referenceId, { originalName: originalFilename, isEntry })
-              getChunkMetadata(chunk.name)!.importedCss.add(this.getFileName(referenceId))
+            getChunkMetadata(chunk.name)!.importedCss.add(
+              this.getFileName(referenceId),
+            )
           } else if (!config.build.ssr) {
             // legacy build and inline css
 
@@ -930,7 +932,9 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
             // chunks instead.
             chunk.imports = chunk.imports.filter((file) => {
               if (pureCssChunkNames.includes(file)) {
-                const { importedCss, importedAssets } =  getChunkMetadata((bundle[file] as OutputChunk).name)!
+                const { importedCss, importedAssets } = getChunkMetadata(
+                  (bundle[file] as OutputChunk).name,
+                )!
                 importedCss.forEach((file) =>
                   getChunkMetadata(chunk.name)!.importedCss.add(file),
                 )
@@ -948,14 +952,12 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
           }
         }
 
-        // TODO The css module will be treated as a common-js like module, remove it from the bundle
-
-        // const removedPureCssFiles = removedPureCssFilesCache.get(config)!
-        // pureCssChunkNames.forEach((fileName) => {
-        //   removedPureCssFiles.set(fileName, bundle[fileName] as RenderedChunk)
-        //   delete bundle[fileName]
-        //   delete bundle[`${fileName}.map`]
-        // })
+        const removedPureCssFiles = removedPureCssFilesCache.get(config)!
+        pureCssChunkNames.forEach((fileName) => {
+          removedPureCssFiles.set(fileName, bundle[fileName] as RenderedChunk)
+          delete bundle[fileName]
+          delete bundle[`${fileName}.map`]
+        })
       }
     },
   }
@@ -2834,7 +2836,8 @@ function formatStylusSourceMap(
   if (!mapBefore) return undefined
   const map = { ...mapBefore }
 
-  const resolveFromRoot = (p: string | null) => normalizePath(path.resolve(root, p!))
+  const resolveFromRoot = (p: string | null) =>
+    normalizePath(path.resolve(root, p!))
 
   if (map.file) {
     map.file = resolveFromRoot(map.file)
