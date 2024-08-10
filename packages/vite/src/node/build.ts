@@ -20,6 +20,7 @@ import type {
 import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
 import type { TransformOptions } from 'esbuild'
+import { loadFallbackPlugin } from 'rolldown/experimental'
 import { withTrailingSlash } from '../shared/utils'
 import {
   DEFAULT_ASSETS_INLINE_LIMIT,
@@ -29,7 +30,7 @@ import {
 import type { InlineConfig, ResolvedConfig } from './config'
 import { resolveConfig } from './config'
 import { buildReporterPlugin } from './plugins/reporter'
-import { buildEsbuildPlugin } from './plugins/esbuild'
+// import { buildEsbuildPlugin } from './plugins/esbuild'
 import { type TerserOptions, terserPlugin } from './plugins/terser'
 import {
   arraify,
@@ -44,10 +45,10 @@ import {
 } from './utils'
 import { manifestPlugin } from './plugins/manifest'
 import type { Logger } from './logger'
-import { dataURIPlugin } from './plugins/dataUri'
-import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
+// import { dataURIPlugin } from './plugins/dataUri'
+// import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
 import { ssrManifestPlugin } from './ssr/ssrManifestPlugin'
-import { loadFallbackPlugin } from './plugins/loadFallback'
+// import { loadFallbackPlugin } from './plugins/loadFallback'
 import { findNearestPackageData } from './packages'
 import type { PackageCache } from './packages'
 import {
@@ -436,17 +437,17 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   const rollupOptionsPlugins = options.rollupOptions.plugins
   return {
     pre: [
-      completeSystemWrapPlugin(),
+      // completeSystemWrapPlugin(),
       // ...(usePluginCommonjs ? [commonjsPlugin(options.commonjsOptions)] : []),
-      dataURIPlugin(),
+      // dataURIPlugin(),
       ...((await asyncFlatten(arraify(rollupOptionsPlugins))).filter(
         Boolean,
       ) as Plugin[]),
       ...(config.isWorker ? [webWorkerPostPlugin()] : []),
     ],
     post: [
-      buildImportAnalysisPlugin(config),
-      ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
+      // buildImportAnalysisPlugin(config),
+      // ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
       ...(options.minify ? [terserPlugin(config)] : []),
       ...(!config.isWorker
         ? [
@@ -544,6 +545,9 @@ export async function build(
     external: options.rollupOptions?.external,
     onwarn(warning, warn) {
       onRollupWarning(warning, warn, config)
+    },
+    experimental: {
+      // enableComposingJsPlugins: true
     },
   }
 
@@ -785,6 +789,9 @@ export async function build(
     }
     throw e
   } finally {
+    if (bundle) {
+      await bundle.destroy()
+    }
     // if (bundle) await bundle.close()
   }
 }

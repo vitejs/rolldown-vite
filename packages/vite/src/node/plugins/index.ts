@@ -1,5 +1,10 @@
 import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
+import {
+  globImportPlugin,
+  modulePreloadPolyfillPlugin,
+  transformPlugin,
+} from 'rolldown/experimental'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepsOptimizerEnabled } from '../config'
 import type { HookHandler, Plugin, PluginWithRequiredHook } from '../plugin'
@@ -17,7 +22,7 @@ import { assetPlugin } from './asset'
 import { clientInjectionsPlugin } from './clientInjections'
 import { buildHtmlPlugin, htmlInlineProxyPlugin } from './html'
 import { wasmFallbackPlugin, wasmHelperPlugin } from './wasm'
-import { modulePreloadPolyfillPlugin } from './modulePreloadPolyfill'
+// import { modulePreloadPolyfillPlugin } from './modulePreloadPolyfill'
 import { webWorkerPlugin } from './worker'
 import { preAliasPlugin } from './preAlias'
 import { definePlugin } from './define'
@@ -25,7 +30,8 @@ import { workerImportMetaUrlPlugin } from './workerImportMetaUrl'
 import { assetImportMetaUrlPlugin } from './assetImportMetaUrl'
 import { metadataPlugin } from './metadata'
 import { dynamicImportVarsPlugin } from './dynamicImportVars'
-import { importGlobPlugin } from './importMetaGlob'
+// import { importGlobPlugin } from './importMetaGlob'
+// import { glob } from 'fast-glob'
 
 export async function resolvePlugins(
   config: ResolvedConfig,
@@ -44,18 +50,20 @@ export async function resolvePlugins(
     (isDepsOptimizerEnabled(config, false) ||
       isDepsOptimizerEnabled(config, true))
   return [
+    // transformPlugin(),
     depsOptimizerEnabled ? optimizedDepsPlugin(config) : null,
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
-    preAliasPlugin(config),
+    !isBuild ? preAliasPlugin(config) : null,
     aliasPlugin({
       entries: config.resolve.alias,
       customResolver: viteAliasCustomResolver,
     }),
     ...prePlugins,
-    modulePreload !== false && modulePreload.polyfill
-      ? modulePreloadPolyfillPlugin(config)
-      : null,
+    modulePreloadPolyfillPlugin(),
+    // modulePreload !== false && modulePreload.polyfill
+    //   ? modulePreloadPolyfillPlugin(config)
+    //   : null,
     resolvePlugin({
       ...config.resolve,
       root: config.root,
@@ -76,18 +84,18 @@ export async function resolvePlugins(
     htmlInlineProxyPlugin(config),
     cssPlugin(config),
     config.esbuild !== false ? esbuildPlugin(config) : null,
-    jsonPlugin(
-      {
-        namedExports: true,
-        ...config.json,
-      },
-      isBuild,
-    ),
-    wasmHelperPlugin(config),
+    // jsonPlugin(
+    //   {
+    //     namedExports: true,
+    //     ...config.json,
+    //   },
+    //   isBuild,
+    // ),
+    // wasmHelperPlugin(config),
     webWorkerPlugin(config),
     assetPlugin(config),
     ...normalPlugins,
-    wasmFallbackPlugin(),
+    // wasmFallbackPlugin(),
     definePlugin(config),
     cssPostPlugin(config),
     isBuild && buildHtmlPlugin(config),
@@ -95,7 +103,9 @@ export async function resolvePlugins(
     assetImportMetaUrlPlugin(config),
     ...buildPlugins.pre,
     dynamicImportVarsPlugin(config),
-    importGlobPlugin(config),
+    // dynamicImportVarsPlugin(),
+    // importGlobPlugin(config),
+    globImportPlugin(),
     ...postPlugins,
     ...buildPlugins.post,
     // internal server-only plugins are always applied after everything else
@@ -143,9 +153,9 @@ export function getSortedPluginsByHook<K extends keyof Plugin>(
   const sortedPlugins: Plugin[] = []
   // Use indexes to track and insert the ordered plugins directly in the
   // resulting array to avoid creating 3 extra temporary arrays per hook
-  const pre = 0;
-    let normal = 0;
-    // post = 0
+  const pre = 0
+  let normal = 0
+  // post = 0
   for (const plugin of plugins) {
     const hook = plugin[hookName]
     if (hook) {
