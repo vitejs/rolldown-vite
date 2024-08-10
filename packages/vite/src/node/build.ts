@@ -46,7 +46,7 @@ import {
 import { manifestPlugin } from './plugins/manifest'
 import type { Logger } from './logger'
 // import { dataURIPlugin } from './plugins/dataUri'
-// import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
+import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
 import { ssrManifestPlugin } from './ssr/ssrManifestPlugin'
 // import { loadFallbackPlugin } from './plugins/loadFallback'
 import { findNearestPackageData } from './packages'
@@ -56,7 +56,7 @@ import {
   // resolveChokidarOptions,
   resolveEmptyOutDir,
 } from './watch'
-import { completeSystemWrapPlugin } from './plugins/completeSystemWrap'
+// import { completeSystemWrapPlugin } from './plugins/completeSystemWrap'
 import { mergeConfig } from './publicUtils'
 import { webWorkerPostPlugin } from './plugins/worker'
 import { getHookHandler } from './plugins'
@@ -446,7 +446,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
       ...(config.isWorker ? [webWorkerPostPlugin()] : []),
     ],
     post: [
-      // buildImportAnalysisPlugin(config),
+      buildImportAnalysisPlugin(config),
       // ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
       ...(options.minify ? [terserPlugin(config)] : []),
       ...(!config.isWorker

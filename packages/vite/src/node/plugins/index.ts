@@ -49,8 +49,8 @@ export async function resolvePlugins(
     !isBuild &&
     (isDepsOptimizerEnabled(config, false) ||
       isDepsOptimizerEnabled(config, true))
+
   return [
-    // transformPlugin(),
     depsOptimizerEnabled ? optimizedDepsPlugin(config) : null,
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
@@ -83,7 +83,8 @@ export async function resolvePlugins(
     }),
     htmlInlineProxyPlugin(config),
     cssPlugin(config),
-    config.esbuild !== false ? esbuildPlugin(config) : null,
+    transformPlugin(),
+    // config.esbuild !== false ? esbuildPlugin(config) : null,
     // jsonPlugin(
     //   {
     //     namedExports: true,
