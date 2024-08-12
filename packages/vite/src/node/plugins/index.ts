@@ -3,6 +3,7 @@ import type { ObjectHook } from 'rolldown'
 import {
   dynamicImportVarsPlugin,
   globImportPlugin,
+  jsonPlugin,
   modulePreloadPolyfillPlugin,
   transformPlugin,
 } from 'rolldown/experimental'
@@ -13,7 +14,7 @@ import { getDepsOptimizer } from '../optimizer'
 import { shouldExternalizeForSSR } from '../ssr/ssrExternal'
 import { watchPackageDataPlugin } from '../packages'
 import { getFsUtils } from '../fsUtils'
-import { jsonPlugin } from './json'
+// import { jsonPlugin } from './json'
 import { resolvePlugin } from './resolve'
 import { optimizedDepsPlugin } from './optimizedDeps'
 import { esbuildPlugin } from './esbuild'
@@ -56,10 +57,10 @@ export async function resolvePlugins(
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
     !isBuild ? preAliasPlugin(config) : null,
-    // aliasPlugin({
-    //   entries: config.resolve.alias,
-    //   customResolver: viteAliasCustomResolver,
-    // }),
+    aliasPlugin({
+      entries: config.resolve.alias,
+      customResolver: viteAliasCustomResolver,
+    }),
     ...prePlugins,
     modulePreloadPolyfillPlugin(),
     // modulePreload !== false && modulePreload.polyfill
@@ -82,17 +83,21 @@ export async function resolvePlugins(
           ? (id, importer) => shouldExternalizeForSSR(id, importer, config)
           : undefined,
     }),
-    // htmlInlineProxyPlugin(config),
+    htmlInlineProxyPlugin(config),
     cssPlugin(config),
     transformPlugin(),
     // config.esbuild !== false ? esbuildPlugin(config) : null,
-    // jsonPlugin(
-    //   {
-    //     namedExports: true,
-    //     ...config.json,
-    //   },
-    //   isBuild,
-    // ),
+    jsonPlugin(
+      {
+        stringify: true,
+        isBuild,
+      },
+      // {
+      //   namedExports: true,
+      //   ...config.json,
+      // },
+      // isBuild,
+    ),
     // wasmHelperPlugin(config),
     webWorkerPlugin(config),
     assetPlugin(config),
