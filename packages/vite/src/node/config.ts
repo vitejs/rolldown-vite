@@ -843,6 +843,9 @@ export async function resolveConfig(
     normalPlugins,
     postPlugins,
   )
+  resolved.plugins.forEach((item) => {
+    // console.log(item.name)
+  })
   Object.assign(resolved, createPluginHookUtils(resolved.plugins))
 
   // call configResolved hooks

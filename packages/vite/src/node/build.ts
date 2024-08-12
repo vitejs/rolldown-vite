@@ -446,7 +446,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
       ...(config.isWorker ? [webWorkerPostPlugin()] : []),
     ],
     post: [
-      // buildImportAnalysisPlugin(config),
+      buildImportAnalysisPlugin(config),
       // ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
       ...(options.minify ? [terserPlugin(config)] : []),
       ...(!config.isWorker
@@ -547,7 +547,7 @@ export async function build(
       onRollupWarning(warning, warn, config)
     },
     experimental: {
-      enableComposingJsPlugins: true,
+      // enableComposingJsPlugins: true,
     },
   }
 
