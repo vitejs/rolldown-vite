@@ -1,6 +1,7 @@
 import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
 import {
+  dynamicImportVarsPlugin,
   globImportPlugin,
   modulePreloadPolyfillPlugin,
   transformPlugin,
@@ -29,7 +30,7 @@ import { definePlugin } from './define'
 import { workerImportMetaUrlPlugin } from './workerImportMetaUrl'
 import { assetImportMetaUrlPlugin } from './assetImportMetaUrl'
 import { metadataPlugin } from './metadata'
-import { dynamicImportVarsPlugin } from './dynamicImportVars'
+// import { dynamicImportVarsPlugin } from './dynamicImportVars'
 // import { importGlobPlugin } from './importMetaGlob'
 // import { glob } from 'fast-glob'
 
@@ -55,10 +56,10 @@ export async function resolvePlugins(
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
     !isBuild ? preAliasPlugin(config) : null,
-    aliasPlugin({
-      entries: config.resolve.alias,
-      customResolver: viteAliasCustomResolver,
-    }),
+    // aliasPlugin({
+    //   entries: config.resolve.alias,
+    //   customResolver: viteAliasCustomResolver,
+    // }),
     ...prePlugins,
     modulePreloadPolyfillPlugin(),
     // modulePreload !== false && modulePreload.polyfill
@@ -81,7 +82,7 @@ export async function resolvePlugins(
           ? (id, importer) => shouldExternalizeForSSR(id, importer, config)
           : undefined,
     }),
-    htmlInlineProxyPlugin(config),
+    // htmlInlineProxyPlugin(config),
     cssPlugin(config),
     transformPlugin(),
     // config.esbuild !== false ? esbuildPlugin(config) : null,
@@ -103,7 +104,7 @@ export async function resolvePlugins(
     workerImportMetaUrlPlugin(config),
     assetImportMetaUrlPlugin(config),
     ...buildPlugins.pre,
-    dynamicImportVarsPlugin(config),
+    dynamicImportVarsPlugin(),
     // dynamicImportVarsPlugin(),
     // importGlobPlugin(config),
     globImportPlugin(),
