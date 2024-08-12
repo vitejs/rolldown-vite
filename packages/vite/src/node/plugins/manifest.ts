@@ -184,8 +184,8 @@ export function getChunkOriginalFileName(
 ): string {
   if (chunk.facadeModuleId) {
     let name = normalizePath(path.relative(root, chunk.facadeModuleId))
-    // TODO @underfin format
-    if (/* format === 'system' && */ !chunk.name.includes('-legacy')) {
+    // @ts-expect-error TODO @underfin format system
+    if (format === 'system' && !chunk.name.includes('-legacy')) {
       const ext = path.extname(name)
       const endPos = ext.length !== 0 ? -ext.length : undefined
       name = name.slice(0, endPos) + `-legacy` + ext
