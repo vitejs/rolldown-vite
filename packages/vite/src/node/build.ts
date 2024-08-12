@@ -1093,9 +1093,14 @@ function wrapSsrTransform(hook?: Plugin['transform']): Plugin['transform'] {
   if (!hook) return
 
   const fn = getHookHandler(hook)
-  const handler: Plugin['transform'] = function (code, importer, ...args) {
+  const handler: Plugin['transform'] = function (
+    code,
+    importer,
+    meta,
+    ...args
+  ) {
     // @ts-expect-error: Receiving options param to be future-proof if Rollup adds it
-    return fn.call(this, code, importer, injectSsrFlag(args[0]))
+    return fn.call(this, code, importer, meta, injectSsrFlag(args[0]))
   }
 
   if ('handler' in hook) {
