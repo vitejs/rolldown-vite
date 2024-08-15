@@ -437,9 +437,9 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   const rollupOptionsPlugins = options.rollupOptions.plugins
   return {
     pre: [
-      // completeSystemWrapPlugin(),
+      completeSystemWrapPlugin(),
       // ...(usePluginCommonjs ? [commonjsPlugin(options.commonjsOptions)] : []),
-      // dataURIPlugin(),
+      dataURIPlugin(),
       ...((await asyncFlatten(arraify(rollupOptionsPlugins))).filter(
         Boolean,
       ) as Plugin[]),
@@ -789,9 +789,6 @@ export async function build(
     }
     throw e
   } finally {
-    if (bundle) {
-      await bundle.destroy()
-    }
     // if (bundle) await bundle.close()
   }
 }
@@ -1100,9 +1097,14 @@ function wrapSsrTransform(hook?: Plugin['transform']): Plugin['transform'] {
   if (!hook) return
 
   const fn = getHookHandler(hook)
-  const handler: Plugin['transform'] = function (code, importer, ...args) {
+  const handler: Plugin['transform'] = function (
+    code,
+    importer,
+    meta,
+    ...args
+  ) {
     // @ts-expect-error: Receiving options param to be future-proof if Rollup adds it
-    return fn.call(this, code, importer, injectSsrFlag(args[0]))
+    return fn.call(this, code, importer, meta, injectSsrFlag(args[0]))
   }
 
   if ('handler' in hook) {

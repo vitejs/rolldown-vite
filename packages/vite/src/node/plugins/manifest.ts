@@ -93,7 +93,9 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
           manifestChunk.css = [...getChunkMetadata(chunk.name)!.importedCss]
         }
         if (getChunkMetadata(chunk.name)?.importedAssets.size) {
-          manifestChunk.assets = [...getChunkMetadata(chunk.name)!.importedAssets]
+          manifestChunk.assets = [
+            ...getChunkMetadata(chunk.name)!.importedAssets,
+          ]
         }
 
         return manifestChunk
@@ -182,8 +184,8 @@ export function getChunkOriginalFileName(
 ): string {
   if (chunk.facadeModuleId) {
     let name = normalizePath(path.relative(root, chunk.facadeModuleId))
-    // TODO @underfin format
-    if (/* format === 'system' && */ !chunk.name.includes('-legacy')) {
+    // @ts-expect-error TODO @underfin format system
+    if (format === 'system' && !chunk.name.includes('-legacy')) {
       const ext = path.extname(name)
       const endPos = ext.length !== 0 ? -ext.length : undefined
       name = name.slice(0, endPos) + `-legacy` + ext

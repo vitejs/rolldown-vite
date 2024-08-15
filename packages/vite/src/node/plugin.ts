@@ -175,6 +175,7 @@ export interface Plugin<T = any> extends RolldownPlugin<T> {
       this: TransformPluginContext,
       code: string,
       id: string,
+      meta: any,
       options?: { ssr?: boolean },
     ) => Promise<TransformResult> | TransformResult
   >

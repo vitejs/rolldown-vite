@@ -382,7 +382,6 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
 
       if (deps && !isBuild) {
         for (const file of deps) {
-          // @ts-expect-error
           this.addWatchFile(file)
         }
       }
@@ -597,7 +596,9 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
 
         const toRelative = (filename: string) => {
           // relative base + extracted CSS
-          const relativePath = path.posix.relative(cssAssetDirname!, filename)
+          const relativePath = normalizePath(
+            path.relative(cssAssetDirname!, filename),
+          )
           return relativePath[0] === '.' ? relativePath : './' + relativePath
         }
 
@@ -618,9 +619,8 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
         })
         // resolve public URL from CSS paths
         if (encodedPublicUrls) {
-          const relativePathToPublicFromCSS = path.posix.relative(
-            cssAssetDirname!,
-            '',
+          const relativePathToPublicFromCSS = normalizePath(
+            path.relative(cssAssetDirname!, ''),
           )
           chunkCSS = chunkCSS.replace(publicAssetUrlRE, (_, hash) => {
             const publicUrl = publicAssetUrlMap.get(hash)!.slice(1)
@@ -3019,7 +3019,7 @@ async function compileLightningCSS(
         }
         deps.add(dep.url)
         if (urlReplacer) {
-          const replaceUrl = await urlReplacer(dep.url, id)
+          const replaceUrl = await urlReplacer(dep.url, dep.loc.filePath)
           css = css.replace(dep.placeholder, () => replaceUrl)
         } else {
           css = css.replace(dep.placeholder, () => dep.url)
