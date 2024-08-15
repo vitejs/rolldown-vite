@@ -382,7 +382,6 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
 
       if (deps && !isBuild) {
         for (const file of deps) {
-          // @ts-expect-error
           this.addWatchFile(file)
         }
       }
