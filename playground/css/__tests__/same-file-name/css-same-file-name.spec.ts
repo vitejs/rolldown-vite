@@ -11,7 +11,8 @@ for (let i = 0; i < 5; i++) {
       expect(findAssetFile('sub.css', 'same-file-name', '.')).toMatch(
         '.sub1-sub',
       )
-      expect(findAssetFile('sub2.css', 'same-file-name', '.')).toMatch(
+      //  // Changed this because rolldown generate duplicated name using `{name}~{count}`, the rollup using `{name}{count}`
+      expect(findAssetFile('sub_1.css', 'same-file-name', '.')).toMatch(
         '.sub2-sub',
       )
     })
