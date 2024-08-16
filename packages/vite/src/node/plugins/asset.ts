@@ -179,9 +179,12 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
           this.addWatchFile(file)
         }
         // raw query, read file and return as string
-        return `export default ${JSON.stringify(
-          await fsp.readFile(file, 'utf-8'),
-        )}`
+        return {
+          code: `export default ${JSON.stringify(
+            await fsp.readFile(file, 'utf-8'),
+          )}`,
+          moduleType: 'js',
+        }
       }
 
       if (!urlRE.test(id) && !config.assetsInclude(cleanUrl(id))) {
@@ -207,6 +210,7 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
           config.command === 'build' && this.getModuleInfo(id)?.isEntry
             ? 'no-treeshake'
             : false,
+        moduleType: 'js',
       }
     },
 

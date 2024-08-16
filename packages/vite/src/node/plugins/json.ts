@@ -56,6 +56,7 @@ export function jsonPlugin(
                 JSON.stringify(JSON.parse(json)),
               )})`,
               map: { mappings: '' },
+              moduleType: 'js',
             }
           } else {
             return `export default JSON.parse(${JSON.stringify(json)})`
