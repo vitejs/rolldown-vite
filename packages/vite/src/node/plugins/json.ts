@@ -69,6 +69,7 @@ export function jsonPlugin(
             namedExports: options.namedExports,
           }),
           map: { mappings: '' },
+          moduleType: 'js',
         }
       } catch (e) {
         const position = extractJsonErrorPosition(e.message, json.length)
