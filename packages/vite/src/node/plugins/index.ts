@@ -2,10 +2,12 @@ import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
 import {
   dynamicImportVarsPlugin,
-  globImportPlugin,
-  jsonPlugin,
+  importGlobPlugin,
+  // jsonPlugin,
   modulePreloadPolyfillPlugin,
   transformPlugin,
+  wasmFallbackPlugin,
+  wasmHelperPlugin,
 } from 'rolldown/experimental'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepsOptimizerEnabled } from '../config'
@@ -17,13 +19,13 @@ import { getFsUtils } from '../fsUtils'
 // import { jsonPlugin } from './json'
 import { resolvePlugin } from './resolve'
 import { optimizedDepsPlugin } from './optimizedDeps'
-import { esbuildPlugin } from './esbuild'
+// import { esbuildPlugin } from './esbuild'
 import { importAnalysisPlugin } from './importAnalysis'
 import { cssAnalysisPlugin, cssPlugin, cssPostPlugin } from './css'
 import { assetPlugin } from './asset'
 import { clientInjectionsPlugin } from './clientInjections'
 import { buildHtmlPlugin, htmlInlineProxyPlugin } from './html'
-import { wasmFallbackPlugin, wasmHelperPlugin } from './wasm'
+// import { wasmFallbackPlugin, wasmHelperPlugin } from './wasm'
 // import { modulePreloadPolyfillPlugin } from './modulePreloadPolyfill'
 import { webWorkerPlugin } from './worker'
 import { preAliasPlugin } from './preAlias'
@@ -46,7 +48,7 @@ export async function resolvePlugins(
   const buildPlugins = isBuild
     ? await (await import('../build')).resolveBuildPlugins(config)
     : { pre: [], post: [] }
-  const { modulePreload } = config.build
+  // const { modulePreload } = config.build
   const depsOptimizerEnabled =
     !isBuild &&
     (isDepsOptimizerEnabled(config, false) ||
@@ -87,22 +89,22 @@ export async function resolvePlugins(
     cssPlugin(config),
     transformPlugin(),
     // config.esbuild !== false ? esbuildPlugin(config) : null,
-    jsonPlugin(
-      {
-        stringify: true,
-        isBuild,
-      },
-      // {
-      //   namedExports: true,
-      //   ...config.json,
-      // },
-      // isBuild,
-    ),
-    // wasmHelperPlugin(config),
+    // jsonPlugin(
+    //   {
+    //     stringify: true,
+    //     isBuild,
+    //   },
+    //   // {
+    //   //   namedExports: true,
+    //   //   ...config.json,
+    //   // },
+    //   // isBuild,
+    // ),
+    wasmHelperPlugin(),
     webWorkerPlugin(config),
     assetPlugin(config),
     ...normalPlugins,
-    // wasmFallbackPlugin(),
+    wasmFallbackPlugin(),
     definePlugin(config),
     cssPostPlugin(config),
     isBuild && buildHtmlPlugin(config),
@@ -111,8 +113,8 @@ export async function resolvePlugins(
     ...buildPlugins.pre,
     dynamicImportVarsPlugin(),
     // dynamicImportVarsPlugin(),
-    // importGlobPlugin(config),
-    globImportPlugin(),
+    importGlobPlugin(),
+    // globImportPlugin(),
     ...postPlugins,
     ...buildPlugins.post,
     // internal server-only plugins are always applied after everything else
@@ -160,21 +162,21 @@ export function getSortedPluginsByHook<K extends keyof Plugin>(
   const sortedPlugins: Plugin[] = []
   // Use indexes to track and insert the ordered plugins directly in the
   // resulting array to avoid creating 3 extra temporary arrays per hook
-  const pre = 0
-  let normal = 0
-  // post = 0
+  let pre = 0,
+    normal = 0,
+    post = 0
   for (const plugin of plugins) {
     const hook = plugin[hookName]
     if (hook) {
       if (typeof hook === 'object') {
-        // if (hook.order === 'pre') {
-        //   sortedPlugins.splice(pre++, 0, plugin)
-        //   continue
-        // }
-        // if (hook.order === 'post') {
-        //   sortedPlugins.splice(pre + normal + post++, 0, plugin)
-        //   continue
-        // }
+        if (hook.order === 'pre') {
+          sortedPlugins.splice(pre++, 0, plugin)
+          continue
+        }
+        if (hook.order === 'post') {
+          sortedPlugins.splice(pre + normal + post++, 0, plugin)
+          continue
+        }
       }
       sortedPlugins.splice(pre + normal++, 0, plugin)
     }
