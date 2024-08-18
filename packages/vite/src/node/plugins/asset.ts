@@ -33,8 +33,8 @@ import type { ModuleGraph } from '../server/moduleGraph'
 import { cleanUrl, withTrailingSlash } from '../../shared/utils'
 import { getChunkMetadata } from './metadata'
 
-// referenceId is base64url but replaces - with $
-export const assetUrlRE = /__VITE_ASSET__([\w$]+)__(?:\$_(.*?)__)?/g
+// Not sure why rollup referenceId is base64url but replaces - with $ at https://github.com/rollup/rollup/pull/5155
+export const assetUrlRE = /__VITE_ASSET__([\w-]+)__(?:\$_(.*?)__)?/g
 
 const jsSourceMapRE = /\.[cm]?js\.map$/
 
