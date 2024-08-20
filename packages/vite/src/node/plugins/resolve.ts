@@ -447,15 +447,26 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
     load(id) {
       if (id.startsWith(browserExternalId)) {
         if (isProduction) {
-          return `export default {}`
+          // return `export default {}`
+          // The rolldown missing export is always error level, it will break build.
+          // So here using the cjs module to avoid it.
+          return `module.exports = {}`
         } else {
           id = id.slice(browserExternalId.length + 1)
+          // The rolldown using esbuild interop helper, so here copy the proxy module from https://github.com/vitejs/vite/blob/main/packages/vite/src/node/optimizer/esbuildDepPlugin.ts#L259
           return `\
-export default new Proxy({}, {
+module.exports = Object.create(new Proxy({}, {
   get(_, key) {
-    throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vitejs.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
+    if (
+      key !== '__esModule' &&
+      key !== '__proto__' &&
+      key !== 'constructor' &&
+      key !== 'splice'
+    ) {
+      throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vitejs.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
+    }
   }
-})`
+}))`
         }
       }
       if (id.startsWith(optionalPeerDepId)) {

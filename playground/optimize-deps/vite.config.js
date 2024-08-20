@@ -62,8 +62,8 @@ export default defineConfig({
     minify: false,
     rollupOptions: {
       onwarn(msg, warn) {
-        // filter `"Buffer" is not exported by "__vite-browser-external"` warning
-        if (msg.message.includes('Buffer')) return
+        // // filter `"Buffer" is not exported by "__vite-browser-external"` warning
+        // if (msg.message.includes('Buffer')) return
         warn(msg)
       },
     },
@@ -97,19 +97,20 @@ export default defineConfig({
         }
       },
     },
-    // TODO: Remove this one support for prebundling in build lands.
-    // It is expected that named importing in build doesn't work
-    // as it incurs a lot of overhead in build.
-    {
-      name: 'polyfill-named-fs-build',
-      apply: 'build',
-      enforce: 'pre',
-      load(id) {
-        if (id === '__vite-browser-external') {
-          return `export default {}; export function readFileSync() {}`
-        }
-      },
-    },
+    // Remove this one because the resolve plugin already handle '__vite-browser-external'
+    // // TODO: Remove this one support for prebundling in build lands.
+    // // It is expected that named importing in build doesn't work
+    // // as it incurs a lot of overhead in build.
+    // {
+    //   name: 'polyfill-named-fs-build',
+    //   apply: 'build',
+    //   enforce: 'pre',
+    //   load(id) {
+    //     if (id === '__vite-browser-external') {
+    //       return `export default {}; export function readFileSync() {}`
+    //     }
+    //   },
+    // },
   ],
 })
 
