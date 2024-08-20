@@ -20,7 +20,6 @@ export default defineConfig({
       './playground/css-codesplit/**/*.spec.[tj]s',
       './playground/css-dynamic-import/**/*.spec.[tj]s',
       './playground/dynamic-import/**/*.spec.[tj]s',
-      './playground/extensions/**/*.spec.[tj]s',
       './playground/external/**/*.spec.[tj]s',
       './playground/glob-import/**/*.spec.[tj]s',
       './playground/html/**/*.spec.[tj]s',
