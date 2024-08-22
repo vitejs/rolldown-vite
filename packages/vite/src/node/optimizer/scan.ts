@@ -577,6 +577,7 @@ function rolldownScanPlugin(
       if (htmlTypesRE.test(id)) {
         return {
           code: await htmlTypeOnLoadCallback(id),
+          moduleType: 'js'
         }
       }
 
@@ -607,11 +608,13 @@ function rolldownScanPlugin(
 
         if (contents.includes('import.meta.glob')) {
           return {
+            moduleType: 'js', // since it is transpiled,
             code: await doTransformGlobImport(contents, id),
           }
         }
 
         return {
+          moduleType: loader,
           code: contents,
         }
       }
