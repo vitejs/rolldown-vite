@@ -307,10 +307,12 @@ class PluginContainer {
        */
       scan?: boolean
       isEntry?: boolean
+      kind?: 'import' | 'dynamic-import' | 'require-call'
     },
   ): Promise<PartialResolvedId | null> {
     const skip = options?.skip
     const ssr = options?.ssr
+    const kind = options?.kind
     const scan = !!options?.scan
     const ctx = new ResolveIdContext(this, !!ssr, skip, scan)
 
@@ -334,6 +336,7 @@ class PluginContainer {
           isEntry: !!options?.isEntry,
           ssr,
           scan,
+          kind,
         }),
       )
       if (!result) continue

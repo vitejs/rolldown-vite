@@ -178,7 +178,9 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
 
       // this is passed by @rollup/plugin-commonjs
       const isRequire: boolean =
-        resolveOpts?.custom?.['node-resolve']?.isRequire ?? false
+        resolveOpts?.custom?.['node-resolve']?.isRequire ||
+        /* rolldown */ resolveOpts.kind === 'require-call' ||
+        false
 
       // end user can configure different conditions for ssr and client.
       // falls back to client conditions if no ssr conditions supplied
@@ -453,7 +455,7 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
           return `module.exports = {}`
         } else {
           id = id.slice(browserExternalId.length + 1)
-          // The rolldown using esbuild interop helper, so here copy the proxy module from https://github.com/vitejs/vite/blob/main/packages/vite/src/node/optimizer/esbuildDepPlugin.ts#L259
+          // The rolldown using esbuild interop helper, so here copy the proxy module from https://github.com/vitejs/vite/blob/main/packages/vite/src/node/optimizer/esbuildDepPlugin.ts#L259-------
           return `\
 module.exports = Object.create(new Proxy({}, {
   get(_, key) {

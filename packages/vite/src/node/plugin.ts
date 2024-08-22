@@ -160,6 +160,7 @@ export interface Plugin<T = any> extends RolldownPlugin<T> {
         //  */
         scan?: boolean
         isEntry: boolean
+        kind?: 'import' | 'dynamic-import' | 'require-call'
       },
     ) => Promise<ResolveIdResult> | ResolveIdResult
   >
