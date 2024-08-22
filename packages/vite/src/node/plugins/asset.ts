@@ -175,9 +175,7 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
       // raw requests, read from disk
       if (rawRE.test(id)) {
         const file = checkPublicFile(id, config) || cleanUrl(id)
-        if (config.command !== 'build') {
-          this.addWatchFile(file)
-        }
+        this.addWatchFile(file)
         // raw query, read file and return as string
         return {
           code: `export default ${JSON.stringify(

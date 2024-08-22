@@ -380,7 +380,7 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
         moduleCache.set(id, modules)
       }
 
-      if (deps && !isBuild) {
+      if (deps) {
         for (const file of deps) {
           this.addWatchFile(file)
         }
