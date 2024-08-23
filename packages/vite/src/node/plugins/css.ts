@@ -776,7 +776,7 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
             })
             generatedAssets
               .get(config)!
-              .set(referenceId, { originalName: originalFilename, isEntry })
+              .set(referenceId, { originalFileName, isEntry })
             getChunkMetadata(chunk.name)!.importedCss.add(
               this.getFileName(referenceId),
             )

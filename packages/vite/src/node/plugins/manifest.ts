@@ -9,7 +9,6 @@ import type { ResolvedConfig } from '..'
 import type { Plugin } from '../plugin'
 import { normalizePath, sortObjectKeys } from '../utils'
 import { generatedAssets } from './asset'
-import type { GeneratedAssetMeta } from './asset'
 import { getChunkMetadata } from './metadata'
 
 const endsWithJSRE = /\.[cm]?js$/
@@ -93,7 +92,9 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
           manifestChunk.css = [...getChunkMetadata(chunk.name)!.importedCss]
         }
         if (getChunkMetadata(chunk.name)?.importedAssets.size) {
-          manifestChunk.assets = [...getChunkMetadata(chunk.name)!.importedAssets]
+          manifestChunk.assets = [
+            ...getChunkMetadata(chunk.name)!.importedAssets,
+          ]
         }
 
         return manifestChunk
