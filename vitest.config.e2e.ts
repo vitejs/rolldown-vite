@@ -32,6 +32,8 @@ export default defineConfig({
       './playground/ssr-resolve/**/*.spec.[tj]s',
       './playground/ssr-webworker/**/*.spec.[tj]s',
       './playground/worker/**/*.spec.[tj]s',
+      // skip link vite tets at local
+      '**/node_modules/**',
     ],
     setupFiles: ['./playground/vitestSetup.ts'],
     globalSetup: ['./playground/vitestGlobalSetup.ts'],
