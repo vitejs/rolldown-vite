@@ -7,17 +7,15 @@ let transformCount = 1
 const transformPlugin = {
   name: 'transform',
   load(id) {
-    if (id === file && typeof this.addWatchFile === 'function') {
+    if (id === file) {
       // Ensure `index.js` is reloaded if 'plugin-dep-load.js' is changed
       this.addWatchFile('./plugin-dep-load.js')
     }
   },
   transform(code, id) {
     if (id === file) {
-      if (typeof this.addWatchFile === 'function'){
-        // Ensure `index.js` is reevaluated if 'plugin-dep.js' is changed
-        this.addWatchFile('./plugin-dep.js')
-      }
+      // Ensure `index.js` is reevaluated if 'plugin-dep.js' is changed
+      this.addWatchFile('./plugin-dep.js')
 
       return `
         // Inject TRANSFORM_COUNT
