@@ -4,12 +4,14 @@ import { performance } from 'node:perf_hooks'
 import { cac } from 'cac'
 import colors from 'picocolors'
 import { VERSION } from './constants'
-import type { BuildOptions } from './build'
+import { prepareOutDir, BuildOptions } from './build'
 import type { ServerOptions } from './server'
 import type { CLIShortcut } from './shortcuts'
 import type { LogLevel } from './logger'
 import { createLogger } from './logger'
 import { resolveConfig } from './config'
+import { RollupOutput } from 'rolldown'
+import { displayTime } from './utils'
 
 const cli = cac('vite')
 
@@ -268,8 +270,15 @@ cli
     const { build } = await import('./build')
     const buildOptions: BuildOptions = cleanOptions(options)
 
+    let startTime
     try {
-      await build({
+      const {
+        rollupOptions,
+        resolvedOutDirs,
+        emptyOutDir,
+        config,
+        normalizedOutputs
+      } = await build({
         root,
         base: options.base,
         mode: options.mode,
@@ -278,11 +287,36 @@ cli
         clearScreen: options.clearScreen,
         build: buildOptions,
       })
+
+      // write or generate files with rollup
+      const { rolldown } = await import('rolldown')
+       startTime = Date.now()
+      let bundle = await rolldown(rollupOptions)
+
+      if (options.write) {
+        prepareOutDir(resolvedOutDirs, emptyOutDir, config)
+      }
+
+      const res: RollupOutput[] = []
+      for (const output of normalizedOutputs) {
+        res.push(await bundle[options.write ? 'write' : 'generate'](output))
+      }
+      config.logger.info(
+        `${colors.green(`✓ built in ${displayTime(Date.now() - startTime)}`)}`,
+      )
+      // return Array.isArray(outputs) ? res : res[0]
     } catch (e) {
-      createLogger(options.logLevel).error(
+      let logger = createLogger(options.logLevel);
+      logger.error(
         colors.red(`error during build:\n${e.stack}`),
         { error: e },
       )
+
+      if (startTime) {
+        logger.error(
+          `${colors.red(`✓ built in ${displayTime(Date.now() - startTime)}`)}`,
+        )
+      }
       process.exit(1)
     } finally {
       stopProfiler((message) => createLogger(options.logLevel).info(message))

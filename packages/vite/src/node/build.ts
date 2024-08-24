@@ -9,11 +9,9 @@ import type {
   ModuleFormat,
   OutputOptions,
   Plugin,
-  RollupBuild,
   RollupError,
   RollupLog,
   RollupOptions,
-  RollupOutput,
   // RollupWatcher,
   // WatcherOptions,
 } from 'rolldown'
@@ -29,13 +27,12 @@ import {
 import type { InlineConfig, ResolvedConfig } from './config'
 import { resolveConfig } from './config'
 import { buildReporterPlugin } from './plugins/reporter'
-import { buildEsbuildPlugin } from './plugins/esbuild'
+// import { buildEsbuildPlugin } from './plugins/esbuild'
 import { type TerserOptions, terserPlugin } from './plugins/terser'
 import {
   arraify,
   asyncFlatten,
   copyDir,
-  displayTime,
   emptyDir,
   joinUrlSegments,
   normalizePath,
@@ -446,7 +443,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
     ],
     post: [
       buildImportAnalysisPlugin(config),
-      ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
+      // ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
       ...(options.minify ? [terserPlugin(config)] : []),
       ...(!config.isWorker
         ? [
@@ -459,6 +456,13 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
     ],
   }
 }
+interface CanonicalRolldownOptions {
+      rollupOptions: RollupOptions
+      resolvedOutDirs: Set<string>,
+      emptyOutDir: boolean,
+      config:ResolvedConfig
+      normalizedOutputs: OutputOptions[]
+}
 
 /**
  * Bundles the app for production.
@@ -466,7 +470,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
  */
 export async function build(
   inlineConfig: InlineConfig = {},
-): Promise<RollupOutput | RollupOutput[] /*| RollupWatcher */> {
+): Promise<CanonicalRolldownOptions> {
   const config = await resolveConfig(
     inlineConfig,
     'build',
@@ -607,8 +611,6 @@ export async function build(
   //   config.logger.error(e.message, { error: e })
   // }
 
-  let bundle: RollupBuild | undefined
-  let startTime: number | undefined
   try {
     const buildOutputOptions = (output: OutputOptions = {}): OutputOptions => {
       // @ts-expect-error See https://github.com/vitejs/vite/issues/5812#issuecomment-984345618
@@ -756,44 +758,27 @@ export async function build(
 
     //   return watcher
     // }
-
-    // write or generate files with rollup
-    const { rolldown } = await import('rolldown')
-    startTime = Date.now()
-    bundle = await rolldown(rollupOptions)
-
-    if (options.write) {
-      prepareOutDir(resolvedOutDirs, emptyOutDir, config)
+    return {
+      rollupOptions,
+      resolvedOutDirs,
+      emptyOutDir,
+      config,
+      normalizedOutputs
     }
-
-    const res: RollupOutput[] = []
-    for (const output of normalizedOutputs) {
-      res.push(await bundle[options.write ? 'write' : 'generate'](output))
-    }
-    logger.info(
-      `${colors.green(`✓ built in ${displayTime(Date.now() - startTime)}`)}`,
-    )
-    return Array.isArray(outputs) ? res : res[0]
   } catch (e) {
     enhanceRollupError(e)
     clearLine()
-    if (startTime) {
-      logger.error(
-        `${colors.red('x')} Build failed in ${displayTime(Date.now() - startTime)}`,
-      )
-      startTime = undefined
-    }
     throw e
   } finally {
     // if (bundle) await bundle.close()
   }
 }
 
-function prepareOutDir(
+export function prepareOutDir(
   outDirs: Set<string>,
   emptyOutDir: boolean | null,
   config: ResolvedConfig,
-) {
+): void {
   const outDirsArray = [...outDirs]
   for (const outDir of outDirs) {
     if (emptyOutDir !== false && fs.existsSync(outDir)) {
