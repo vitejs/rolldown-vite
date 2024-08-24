@@ -1,5 +1,5 @@
 import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
-import type { ObjectHook } from 'rolldown'
+import type { ObjectHook, RolldownPlugin } from 'rolldown'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepsOptimizerEnabled } from '../config'
 import type { HookHandler, Plugin, PluginWithRequiredHook } from '../plugin'
@@ -29,10 +29,10 @@ import { importGlobPlugin } from './importMetaGlob'
 
 export async function resolvePlugins(
   config: ResolvedConfig,
-  prePlugins: Plugin[],
-  normalPlugins: Plugin[],
-  postPlugins: Plugin[],
-): Promise<Plugin[]> {
+  prePlugins: RolldownPlugin[],
+  normalPlugins: RolldownPlugin[],
+  postPlugins: RolldownPlugin[],
+): Promise<RolldownPlugin[]> {
   const isBuild = config.command === 'build'
   const isWorker = config.isWorker
   const buildPlugins = isBuild

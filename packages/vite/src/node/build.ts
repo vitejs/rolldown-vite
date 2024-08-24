@@ -9,12 +9,14 @@ import type {
   ModuleFormat,
   OutputOptions,
   Plugin,
+  RolldownPlugin,
   RollupError,
   RollupLog,
   RollupOptions,
   // RollupWatcher,
   // WatcherOptions,
 } from 'rolldown'
+import { loadFallbackPlugin } from 'rolldown/experimental'
 import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
 import type { TransformOptions } from 'esbuild'
@@ -44,7 +46,7 @@ import type { Logger } from './logger'
 import { dataURIPlugin } from './plugins/dataUri'
 import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
 import { ssrManifestPlugin } from './ssr/ssrManifestPlugin'
-import { loadFallbackPlugin } from './plugins/loadFallback'
+// import { loadFallbackPlugin } from './plugins/loadFallback'
 import { findNearestPackageData } from './packages'
 import type { PackageCache } from './packages'
 import {
@@ -421,8 +423,8 @@ export function resolveBuildOptions(
 }
 
 export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
-  pre: Plugin[]
-  post: Plugin[]
+  pre: RolldownPlugin[]
+  post: RolldownPlugin[]
 }> {
   const options = config.build
   // Note: The rolldown internal support commonjs
@@ -435,7 +437,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
     pre: [
       completeSystemWrapPlugin(),
       // ...(usePluginCommonjs ? [commonjsPlugin(options.commonjsOptions)] : []),
-      dataURIPlugin(),
+      // dataURIPlugin(),
       ...((await asyncFlatten(arraify(rollupOptionsPlugins))).filter(
         Boolean,
       ) as Plugin[]),
@@ -457,11 +459,11 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   }
 }
 interface CanonicalRolldownOptions {
-      rollupOptions: RollupOptions
-      resolvedOutDirs: Set<string>,
-      emptyOutDir: boolean,
-      config:ResolvedConfig
-      normalizedOutputs: OutputOptions[]
+  rollupOptions: RollupOptions
+  resolvedOutDirs: Set<string>
+  emptyOutDir: boolean
+  config: ResolvedConfig
+  normalizedOutputs: OutputOptions[]
 }
 
 /**
@@ -763,7 +765,7 @@ export async function build(
       resolvedOutDirs,
       emptyOutDir,
       config,
-      normalizedOutputs
+      normalizedOutputs,
     }
   } catch (e) {
     enhanceRollupError(e)

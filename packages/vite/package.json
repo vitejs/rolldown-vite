@@ -87,7 +87,7 @@
   "dependencies": {
     "esbuild": "^0.21.3",
     "postcss": "^8.4.41",
-    "rolldown": "0.12.2-snapshot-f90de4e-20240823002907",
+    "rolldown": "../../../rolldown/packages/rolldown/",
     "rollup": "^4.20.0"
   },
   "optionalDependencies": {
