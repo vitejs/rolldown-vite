@@ -88,7 +88,7 @@
     "esbuild": "^0.21.3",
     "postcss": "^8.4.40",
     "rollup": "^4.13.0",
-    "rolldown": "0.12.2-snapshot-7ac1381-20240815002759"
+    "rolldown": "/home/victor/Documents/rolldown-rs/rolldown/packages/rolldown"
   },
   "optionalDependencies": {
     "fsevents": "~2.3.3"

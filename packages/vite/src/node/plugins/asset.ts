@@ -153,63 +153,80 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
       moduleGraph = server.moduleGraph
     },
 
-    resolveId(id) {
-      if (!config.assetsInclude(cleanUrl(id)) && !urlRE.test(id)) {
-        return
-      }
-      // imports to absolute urls pointing to files in /public
-      // will fail to resolve in the main resolver. handle them here.
-      const publicFile = checkPublicFile(id, config)
-      if (publicFile) {
-        return id
-      }
+    resolveId: {
+      // @ts-ignore
+      filter: {
+        id: {
+          include: [urlRE]
+        }
+      },
+      handler(id) {
+        console.log(`asset resolveId id: `, id)
+        if (!config.assetsInclude(cleanUrl(id)) && !urlRE.test(id)) {
+          return
+        }
+        // imports to absolute urls pointing to files in /public
+        // will fail to resolve in the main resolver. handle them here.
+        const publicFile = checkPublicFile(id, config)
+        if (publicFile) {
+          return id
+        }
+      },
     },
 
-    async load(id) {
-      if (id[0] === '\0') {
-        // Rollup convention, this id should be handled by the
-        // plugin that marked it with \0
-        return
-      }
-
-      // raw requests, read from disk
-      if (rawRE.test(id)) {
-        const file = checkPublicFile(id, config) || cleanUrl(id)
-        if (config.command !== 'build') {
-          this.addWatchFile(file)
+    load: {
+      // @ts-ignore
+      filter: {
+        id: {
+          include: [urlRE]
         }
-        // raw query, read file and return as string
-        return `export default ${JSON.stringify(
-          await fsp.readFile(file, 'utf-8'),
-        )}`
-      }
-
-      if (!urlRE.test(id) && !config.assetsInclude(cleanUrl(id))) {
-        return
-      }
-
-      id = removeUrlQuery(id)
-      let url = await fileToUrl(id, config, this)
-
-      // Inherit HMR timestamp if this asset was invalidated
-      if (moduleGraph) {
-        const mod = moduleGraph.getModuleById(id)
-        if (mod && mod.lastHMRTimestamp > 0) {
-          url = injectQuery(url, `t=${mod.lastHMRTimestamp}`)
+      },
+      async handler(id) {
+        console.log(`load asset id: `, id)
+        if (id[0] === '\0') {
+          // Rollup convention, this id should be handled by the
+          // plugin that marked it with \0
+          return
         }
-      }
 
-      return {
-        code: `export default ${JSON.stringify(encodeURIPath(url))}`,
-        // Force rollup to keep this module from being shared between other entry points if it's an entrypoint.
-        // If the resulting chunk is empty, it will be removed in generateBundle.
-        moduleSideEffects:
-          config.command === 'build' && this.getModuleInfo(id)?.isEntry
-            ? 'no-treeshake'
-            : false,
-      }
+        // raw requests, read from disk
+        if (rawRE.test(id)) {
+          const file = checkPublicFile(id, config) || cleanUrl(id)
+          if (config.command !== 'build') {
+            this.addWatchFile(file)
+          }
+          // raw query, read file and return as string
+          return `export default ${JSON.stringify(
+            await fsp.readFile(file, 'utf-8'),
+          )}`
+        }
+
+        if (!urlRE.test(id) && !config.assetsInclude(cleanUrl(id))) {
+          return
+        }
+
+        id = removeUrlQuery(id)
+        let url = await fileToUrl(id, config, this)
+
+        // Inherit HMR timestamp if this asset was invalidated
+        if (moduleGraph) {
+          const mod = moduleGraph.getModuleById(id)
+          if (mod && mod.lastHMRTimestamp > 0) {
+            url = injectQuery(url, `t=${mod.lastHMRTimestamp}`)
+          }
+        }
+
+        return {
+          code: `export default ${JSON.stringify(encodeURIPath(url))}`,
+          // Force rollup to keep this module from being shared between other entry points if it's an entrypoint.
+          // If the resulting chunk is empty, it will be removed in generateBundle.
+          moduleSideEffects:
+            config.command === 'build' && this.getModuleInfo(id)?.isEntry
+              ? 'no-treeshake'
+              : false,
+        }
+      },
     },
-
     renderChunk(code, chunk, opts) {
       const s = renderAssetUrlInJS(this, config, chunk, opts, code)
 

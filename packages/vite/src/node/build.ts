@@ -60,6 +60,7 @@ import {
 import { mergeConfig } from './publicUtils'
 import { webWorkerPostPlugin } from './plugins/worker'
 import { getHookHandler } from './plugins'
+import { RolldownPlugin, RolldownPluginRec } from '../../../../../rolldown/packages/rolldown/dist/types/plugin'
 
 export interface BuildOptions {
   /**
@@ -425,8 +426,8 @@ export function resolveBuildOptions(
 }
 
 export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
-  pre: Plugin[]
-  post: Plugin[]
+  pre: RolldownPlugin[]
+  post: RolldownPlugin[]
 }> {
   const options = config.build
   // Note: The rolldown internal support commonjs
@@ -437,9 +438,9 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   const rollupOptionsPlugins = options.rollupOptions.plugins
   return {
     pre: [
-      completeSystemWrapPlugin(),
+      // completeSystemWrapPlugin(),
       // ...(usePluginCommonjs ? [commonjsPlugin(options.commonjsOptions)] : []),
-      dataURIPlugin(),
+      // dataURIPlugin(),
       ...((await asyncFlatten(arraify(rollupOptionsPlugins))).filter(
         Boolean,
       ) as Plugin[]),
@@ -453,7 +454,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
         ? [
             ...(options.manifest ? [manifestPlugin(config)] : []),
             ...(options.ssrManifest ? [ssrManifestPlugin(config)] : []),
-            buildReporterPlugin(config),
+            // buildReporterPlugin(config),
           ]
         : []),
       loadFallbackPlugin(),

@@ -1,0 +1,22 @@
+item:  vite:build-metadata
+item:  vite:watch-package-data
+item:  8
+item:  3
+item:  vite:resolve
+item:  vite:html-inline-proxy
+item:  vite:css
+item:  6
+item:  0
+item:  vite:worker
+item:  vite:asset
+item:  7
+item:  vite:css-post
+item:  vite:build-html
+item:  vite:worker-import-meta-url
+item:  vite:asset-import-meta-url
+item:  2
+item:  1
+item:  vite:build-import-analysis
+item:  vite:reporter
+item:  5
+

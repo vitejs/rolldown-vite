@@ -1,4 +1,4 @@
-import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
+import { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
 import {
   dynamicImportVarsPlugin,
@@ -8,6 +8,7 @@ import {
   transformPlugin,
   wasmFallbackPlugin,
   wasmHelperPlugin,
+  aliasPlugin
 } from 'rolldown/experimental'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepsOptimizerEnabled } from '../config'
@@ -29,7 +30,7 @@ import { buildHtmlPlugin, htmlInlineProxyPlugin } from './html'
 // import { modulePreloadPolyfillPlugin } from './modulePreloadPolyfill'
 import { webWorkerPlugin } from './worker'
 import { preAliasPlugin } from './preAlias'
-import { definePlugin } from './define'
+// import { definePlugin } from './define'
 import { workerImportMetaUrlPlugin } from './workerImportMetaUrl'
 import { assetImportMetaUrlPlugin } from './assetImportMetaUrl'
 import { metadataPlugin } from './metadata'
@@ -54,14 +55,15 @@ export async function resolvePlugins(
     (isDepsOptimizerEnabled(config, false) ||
       isDepsOptimizerEnabled(config, true))
 
-  return [
+  let ret = [
     depsOptimizerEnabled ? optimizedDepsPlugin(config) : null,
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
     !isBuild ? preAliasPlugin(config) : null,
+    // TODO: determine if user pass function entries, and if so, fallback to rollup alias plugin
     aliasPlugin({
       entries: config.resolve.alias,
-      customResolver: viteAliasCustomResolver,
+      // customResolver: viteAliasCustomResolver,
     }),
     ...prePlugins,
     modulePreloadPolyfillPlugin(),
@@ -105,7 +107,7 @@ export async function resolvePlugins(
     assetPlugin(config),
     ...normalPlugins,
     wasmFallbackPlugin(),
-    definePlugin(config),
+    // definePlugin(config),
     cssPostPlugin(config),
     isBuild && buildHtmlPlugin(config),
     workerImportMetaUrlPlugin(config),
@@ -126,6 +128,10 @@ export async function resolvePlugins(
           importAnalysisPlugin(config),
         ]),
   ].filter(Boolean) as Plugin[]
+  ret.forEach(item => {
+    console.log(`item: `, item.name)
+  })
+  return ret
 }
 
 export function createPluginHookUtils(
@@ -201,3 +207,4 @@ export const viteAliasCustomResolver: ResolverFunction = async function (
   const resolved = await this.resolve(id, importer, options)
   return resolved || { id, meta: { 'vite:alias': { noResolved: true } } }
 }
+
