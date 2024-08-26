@@ -1,5 +1,15 @@
-import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
+// import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook, RolldownPlugin } from 'rolldown'
+import {
+  jsonPlugin,
+  aliasPlugin,
+  modulePreloadPolyfillPlugin,
+  transformPlugin,
+  wasmHelperPlugin,
+  wasmFallbackPlugin,
+  dynamicImportVarsPlugin,
+  importGlobPlugin,
+} from 'rolldown/experimental'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepsOptimizerEnabled } from '../config'
 import type { HookHandler, Plugin, PluginWithRequiredHook } from '../plugin'
@@ -7,25 +17,25 @@ import { getDepsOptimizer } from '../optimizer'
 import { shouldExternalizeForSSR } from '../ssr/ssrExternal'
 import { watchPackageDataPlugin } from '../packages'
 import { getFsUtils } from '../fsUtils'
-import { jsonPlugin } from './json'
+// import { jsonPlugin } from './json'
 import { resolvePlugin } from './resolve'
 import { optimizedDepsPlugin } from './optimizedDeps'
-import { esbuildPlugin } from './esbuild'
+// import { esbuildPlugin } from './esbuild'
 import { importAnalysisPlugin } from './importAnalysis'
 import { cssAnalysisPlugin, cssPlugin, cssPostPlugin } from './css'
 import { assetPlugin } from './asset'
 import { clientInjectionsPlugin } from './clientInjections'
 import { buildHtmlPlugin, htmlInlineProxyPlugin } from './html'
-import { wasmFallbackPlugin, wasmHelperPlugin } from './wasm'
-import { modulePreloadPolyfillPlugin } from './modulePreloadPolyfill'
+// import { wasmFallbackPlugin, wasmHelperPlugin } from './wasm'
+// import { modulePreloadPolyfillPlugin } from './modulePreloadPolyfill'
 import { webWorkerPlugin } from './worker'
 import { preAliasPlugin } from './preAlias'
-import { definePlugin } from './define'
+// import { definePlugin } from './define'
 import { workerImportMetaUrlPlugin } from './workerImportMetaUrl'
 import { assetImportMetaUrlPlugin } from './assetImportMetaUrl'
 import { metadataPlugin } from './metadata'
-import { dynamicImportVarsPlugin } from './dynamicImportVars'
-import { importGlobPlugin } from './importMetaGlob'
+// import { dynamicImportVarsPlugin } from './dynamicImportVars'
+// import { importGlobPlugin } from './importMetaGlob'
 
 export async function resolvePlugins(
   config: ResolvedConfig,
@@ -43,18 +53,18 @@ export async function resolvePlugins(
     !isBuild &&
     (isDepsOptimizerEnabled(config, false) ||
       isDepsOptimizerEnabled(config, true))
-  return [
+  let ret = [
     depsOptimizerEnabled ? optimizedDepsPlugin(config) : null,
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
-    preAliasPlugin(config),
+    !isBuild ? preAliasPlugin(config) : null,
     aliasPlugin({
       entries: config.resolve.alias,
-      customResolver: viteAliasCustomResolver,
+      // customResolver: viteAliasCustomResolver,
     }),
     ...prePlugins,
     modulePreload !== false && modulePreload.polyfill
-      ? modulePreloadPolyfillPlugin(config)
+      ? modulePreloadPolyfillPlugin()
       : null,
     resolvePlugin({
       ...config.resolve,
@@ -75,26 +85,27 @@ export async function resolvePlugins(
     }),
     htmlInlineProxyPlugin(config),
     cssPlugin(config),
-    config.esbuild !== false ? esbuildPlugin(config) : null,
+    // config.esbuild !== false ? esbuildPlugin(config) : null,
+    transformPlugin(),
     jsonPlugin(
       {
         namedExports: true,
         ...config.json,
       },
-      isBuild,
+      // isBuild,
     ),
-    wasmHelperPlugin(config),
+    wasmHelperPlugin(),
     webWorkerPlugin(config),
     assetPlugin(config),
     ...normalPlugins,
     wasmFallbackPlugin(),
-    definePlugin(config),
+    // definePlugin(config),
     cssPostPlugin(config),
     isBuild && buildHtmlPlugin(config),
     workerImportMetaUrlPlugin(config),
     assetImportMetaUrlPlugin(config),
     ...buildPlugins.pre,
-    dynamicImportVarsPlugin(config),
+    dynamicImportVarsPlugin(),
     importGlobPlugin(config),
     ...postPlugins,
     ...buildPlugins.post,
@@ -107,6 +118,10 @@ export async function resolvePlugins(
           importAnalysisPlugin(config),
         ]),
   ].filter(Boolean) as Plugin[]
+  ret.forEach(item => {
+    console.log(`item.name: `, item.name)
+  })
+  return ret
 }
 
 export function createPluginHookUtils(
@@ -174,11 +189,11 @@ export function getHookHandler<T extends ObjectHook<Function>>(
 
 // Same as `@rollup/plugin-alias` default resolver, but we attach additional meta
 // if we can't resolve to something, which will error in `importAnalysis`
-export const viteAliasCustomResolver: ResolverFunction = async function (
-  id,
-  importer,
-  options,
-) {
-  const resolved = await this.resolve(id, importer, options)
-  return resolved || { id, meta: { 'vite:alias': { noResolved: true } } }
-}
+// export const viteAliasCustomResolver: ResolverFunction = async function (
+//   id,
+//   importer,
+//   options,
+// ) {
+//   const resolved = await this.resolve(id, importer, options)
+//   return resolved || { id, meta: { 'vite:alias': { noResolved: true } } }
+// }

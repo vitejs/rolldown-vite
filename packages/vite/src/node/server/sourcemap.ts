@@ -126,7 +126,7 @@ export function applySourcemapIgnoreList(
     ) {
       const sourcePath = map.sources[sourcesIndex]
       if (!sourcePath) continue
-  
+
       const ignoreList = sourcemapIgnoreList(
         path.isAbsolute(sourcePath)
           ? sourcePath
@@ -136,7 +136,7 @@ export function applySourcemapIgnoreList(
       if (logger && typeof ignoreList !== 'boolean') {
         logger.warn('sourcemapIgnoreList function must return a boolean.')
       }
-  
+
       if (ignoreList && !x_google_ignoreList.includes(sourcesIndex)) {
         x_google_ignoreList.push(sourcesIndex)
       }

@@ -16,7 +16,10 @@ import type {
   // RollupWatcher,
   // WatcherOptions,
 } from 'rolldown'
-import { loadFallbackPlugin } from 'rolldown/experimental'
+import {
+  loadFallbackPlugin,
+  // buildImportAnalysisPlugin as nativeBuildAnalysis
+} from 'rolldown/experimental'
 import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
 import type { TransformOptions } from 'esbuild'
@@ -28,7 +31,7 @@ import {
 } from './constants'
 import type { InlineConfig, ResolvedConfig } from './config'
 import { resolveConfig } from './config'
-import { buildReporterPlugin } from './plugins/reporter'
+// import { buildReporterPlugin } from './plugins/reporter'
 // import { buildEsbuildPlugin } from './plugins/esbuild'
 import { type TerserOptions, terserPlugin } from './plugins/terser'
 import {
@@ -43,7 +46,7 @@ import {
 } from './utils'
 import { manifestPlugin } from './plugins/manifest'
 import type { Logger } from './logger'
-import { dataURIPlugin } from './plugins/dataUri'
+// import { dataURIPlugin } from './plugins/dataUri'
 import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
 import { ssrManifestPlugin } from './ssr/ssrManifestPlugin'
 // import { loadFallbackPlugin } from './plugins/loadFallback'
@@ -444,14 +447,14 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
       ...(config.isWorker ? [webWorkerPostPlugin()] : []),
     ],
     post: [
-      buildImportAnalysisPlugin(config),
+      ...buildImportAnalysisPlugin(config),
       // ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
       ...(options.minify ? [terserPlugin(config)] : []),
       ...(!config.isWorker
         ? [
             ...(options.manifest ? [manifestPlugin(config)] : []),
             ...(options.ssrManifest ? [ssrManifestPlugin(config)] : []),
-            buildReporterPlugin(config),
+            // buildReporterPlugin(config),
           ]
         : []),
       loadFallbackPlugin(),

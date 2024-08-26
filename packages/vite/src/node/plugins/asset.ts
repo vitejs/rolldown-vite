@@ -32,6 +32,7 @@ import { DEFAULT_ASSETS_INLINE_LIMIT, FS_PREFIX } from '../constants'
 import type { ModuleGraph } from '../server/moduleGraph'
 import { cleanUrl, withTrailingSlash } from '../../shared/utils'
 import { getChunkMetadata } from './metadata'
+import { RolldownPlugin } from '../../../../../../rolldown/packages/rolldown/dist/types/plugin'
 
 // Not sure why rollup referenceId is base64url but replaces - with $ at https://github.com/rollup/rollup/pull/5155
 export const assetUrlRE = /__VITE_ASSET__([\w-]+)__(?:\$_(.*?)__)?/g
@@ -136,7 +137,7 @@ export function renderAssetUrlInJS(
 /**
  * Also supports loading plain strings with import text from './foo.txt?raw'
  */
-export function assetPlugin(config: ResolvedConfig): Plugin {
+export function assetPlugin(config: ResolvedConfig): RolldownPlugin {
   registerCustomMime()
 
   let moduleGraph: ModuleGraph | undefined
@@ -153,16 +154,18 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
       moduleGraph = server.moduleGraph
     },
 
-    resolveId(id) {
-      if (!config.assetsInclude(cleanUrl(id)) && !urlRE.test(id)) {
-        return
-      }
-      // imports to absolute urls pointing to files in /public
-      // will fail to resolve in the main resolver. handle them here.
-      const publicFile = checkPublicFile(id, config)
-      if (publicFile) {
-        return id
-      }
+    resolveId: {
+      handler(id) {
+        if (!config.assetsInclude(cleanUrl(id)) && !urlRE.test(id)) {
+          return
+        }
+        // imports to absolute urls pointing to files in /public
+        // will fail to resolve in the main resolver. handle them here.
+        const publicFile = checkPublicFile(id, config)
+        if (publicFile) {
+          return id
+        }
+      },
     },
 
     async load(id) {

@@ -277,7 +277,7 @@ cli
         resolvedOutDirs,
         emptyOutDir,
         config,
-        normalizedOutputs
+        normalizedOutputs,
       } = await build({
         root,
         base: options.base,
@@ -290,7 +290,7 @@ cli
 
       // write or generate files with rollup
       const { rolldown } = await import('rolldown')
-       startTime = Date.now()
+      startTime = Date.now()
       let bundle = await rolldown(rollupOptions)
 
       if (options.write) {
@@ -298,19 +298,17 @@ cli
       }
 
       const res: RollupOutput[] = []
+      console.log(`options.write: `, options.write)
       for (const output of normalizedOutputs) {
-        res.push(await bundle[options.write ? 'write' : 'generate'](output))
+        res.push(await bundle[true ? 'write' : 'generate'](output))
       }
       config.logger.info(
         `${colors.green(`✓ built in ${displayTime(Date.now() - startTime)}`)}`,
       )
       // return Array.isArray(outputs) ? res : res[0]
     } catch (e) {
-      let logger = createLogger(options.logLevel);
-      logger.error(
-        colors.red(`error during build:\n${e.stack}`),
-        { error: e },
-      )
+      let logger = createLogger(options.logLevel)
+      logger.error(colors.red(`error during build:\n${e.stack}`), { error: e })
 
       if (startTime) {
         logger.error(
@@ -319,6 +317,7 @@ cli
       }
       process.exit(1)
     } finally {
+      process.exit(0)
       stopProfiler((message) => createLogger(options.logLevel).info(message))
     }
   })

@@ -11,7 +11,7 @@ import convertSourceMap from 'convert-source-map'
 import {
   combineSourcemaps,
   generateCodeFrame,
-  isInNodeModules,
+  // isInNodeModules,
   numberToPos,
 } from '../utils'
 import type { Plugin } from '../plugin'
@@ -19,8 +19,10 @@ import type { ResolvedConfig } from '../config'
 import { toOutputFilePathInJS } from '../build'
 import { genSourceMapUrl } from '../server/sourcemap'
 import { removedPureCssFilesCache } from './css'
-import { createParseErrorInfo } from './importAnalysis'
+// import { createParseErrorInfo } from './importAnalysis'
 import { getChunkMetadata } from './metadata'
+import { buildImportAnalysisPlugin as nativeAnalysis } from 'rolldown/experimental'
+import { RolldownPlugin } from '../../../../../../rolldown/packages/rolldown/dist/types/plugin'
 
 type FileDep = {
   url: string
@@ -162,7 +164,7 @@ function preload(
 /**
  * Build only. During serve this is performed as part of ./importAnalysis.
  */
-export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
+export function buildImportAnalysisPlugin(config: ResolvedConfig): RolldownPlugin[] {
   const ssr = !!config.build.ssr
   const isWorker = config.isWorker
   const insertPreload = !(ssr || !!config.build.lib || isWorker)
@@ -194,178 +196,179 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
         `function(dep) { return ${JSON.stringify(config.base)}+dep }`
   const preloadCode = `const scriptRel = ${scriptRel};const assetsURL = ${assetsURL};const seen = {};export const ${preloadMethod} = ${preload.toString()}`
 
-  return {
+
+  let js =  {
     name: 'vite:build-import-analysis',
-    resolveId(id) {
-      if (id === preloadHelperId) {
-        return id
-      }
-    },
-
-    load(id) {
-      if (id === preloadHelperId) {
-        return preloadCode
-      }
-    },
-
-    async transform(source, importer) {
-      if (isInNodeModules(importer) && !dynamicImportPrefixRE.test(source)) {
-        return
-      }
-
-      await init
-
-      let imports: readonly ImportSpecifier[] = []
-      try {
-        imports = parseImports(source)[0]
-      } catch (_e: unknown) {
-        const e = _e as EsModuleLexerParseError
-        const { message, showCodeFrame } = createParseErrorInfo(
-          importer,
-          source,
-        )
-        this.error(message, showCodeFrame ? e.idx : undefined)
-      }
-
-      if (!imports.length) {
-        return null
-      }
-
-      // when wrapping dynamic imports with a preload helper, Rollup is unable to analyze the
-      // accessed variables for treeshaking. This below tries to match common accessed syntax
-      // to "copy" it over to the dynamic import wrapped by the preload helper.
-      const dynamicImports: Record<
-        number,
-        { declaration?: string; names?: string }
-      > = {}
-
-      if (insertPreload) {
-        let match
-        while ((match = dynamicImportTreeshakenRE.exec(source))) {
-          /* handle `const {foo} = await import('foo')`
-           *
-           * match[1]: `const {foo} = await import('foo')`
-           * match[2]: `{foo}`
-           * import end: `const {foo} = await import('foo')_`
-           *                                               ^
-           */
-          if (match[1]) {
-            dynamicImports[dynamicImportTreeshakenRE.lastIndex] = {
-              declaration: `const ${match[2]}`,
-              names: match[2]?.trim(),
-            }
-            continue
-          }
-
-          /* handle `(await import('foo')).foo`
-           *
-           * match[3]: `(await import('foo')).foo`
-           * match[4]: `.foo`
-           * import end: `(await import('foo'))`
-           *                                  ^
-           */
-          if (match[3]) {
-            let names = /\.([^.?]+)/.exec(match[4])?.[1] || ''
-            // avoid `default` keyword error
-            if (names === 'default') {
-              names = 'default: __vite_default__'
-            }
-            dynamicImports[
-              dynamicImportTreeshakenRE.lastIndex - match[4]?.length - 1
-            ] = { declaration: `const {${names}}`, names: `{ ${names} }` }
-            continue
-          }
-
-          /* handle `import('foo').then(({foo})=>{})`
-           *
-           * match[5]: `.then(({foo})`
-           * match[6]: `foo`
-           * import end: `import('foo').`
-           *                           ^
-           */
-          const names = match[6]?.trim()
-          dynamicImports[
-            dynamicImportTreeshakenRE.lastIndex - match[5]?.length
-          ] = { declaration: `const {${names}}`, names: `{ ${names} }` }
-        }
-      }
-
-      let s: MagicString | undefined
-      const str = () => s || (s = new MagicString(source))
-      let needPreloadHelper = false
-
-      for (let index = 0; index < imports.length; index++) {
-        const {
-          s: start,
-          e: end,
-          ss: expStart,
-          se: expEnd,
-          d: dynamicIndex,
-          a: attributeIndex,
-        } = imports[index]
-
-        const isDynamicImport = dynamicIndex > -1
-
-        // strip import attributes as we can process them ourselves
-        if (!isDynamicImport && attributeIndex > -1) {
-          str().remove(end + 1, expEnd)
-        }
-
-        if (
-          isDynamicImport &&
-          insertPreload &&
-          // Only preload static urls
-          (source[start] === '"' ||
-            source[start] === "'" ||
-            source[start] === '`')
-        ) {
-          needPreloadHelper = true
-          const { declaration, names } = dynamicImports[expEnd] || {}
-          if (names) {
-            /* transform `const {foo} = await import('foo')`
-             * to `const {foo} = await __vitePreload(async () => { const {foo} = await import('foo');return {foo}}, ...)`
-             *
-             * transform `import('foo').then(({foo})=>{})`
-             * to `__vitePreload(async () => { const {foo} = await import('foo');return { foo }},...).then(({foo})=>{})`
-             *
-             * transform `(await import('foo')).foo`
-             * to `__vitePreload(async () => { const {foo} = (await import('foo')).foo; return { foo }},...)).foo`
-             */
-            str().prependLeft(
-              expStart,
-              `${preloadMethod}(async () => { ${declaration} = await `,
-            )
-            str().appendRight(expEnd, `;return ${names}}`)
-          } else {
-            str().prependLeft(expStart, `${preloadMethod}(() => `)
-          }
-
-          str().appendRight(
-            expEnd,
-            `,${isModernFlag}?${preloadMarker}:void 0${
-              renderBuiltUrl || isRelativeBase ? ',import.meta.url' : ''
-            })`,
-          )
-        }
-      }
-
-      if (
-        needPreloadHelper &&
-        insertPreload &&
-        !source.includes(`const ${preloadMethod} =`)
-      ) {
-        str().prepend(`import { ${preloadMethod} } from "${preloadHelperId}";`)
-      }
-
-      if (s) {
-        return {
-          code: s.toString(),
-          map: config.build.sourcemap
-            ? s.generateMap({ hires: 'boundary' })
-            : null,
-        }
-      }
-    },
+    // resolveId(id) {
+    //   if (id === preloadHelperId) {
+    //     return id
+    //   }
+    // },
+    //
+    // load(id) {
+    //   if (id === preloadHelperId) {
+    //     return preloadCode
+    //   }
+    // },
+    //
+    // async transform(source, importer) {
+    //   if (isInNodeModules(importer) && !dynamicImportPrefixRE.test(source)) {
+    //     return
+    //   }
+    //
+    //   await init
+    //
+    //   let imports: readonly ImportSpecifier[] = []
+    //   try {
+    //     imports = parseImports(source)[0]
+    //   } catch (_e: unknown) {
+    //     const e = _e as EsModuleLexerParseError
+    //     const { message, showCodeFrame } = createParseErrorInfo(
+    //       importer,
+    //       source,
+    //     )
+    //     this.error(message, showCodeFrame ? e.idx : undefined)
+    //   }
+    //
+    //   if (!imports.length) {
+    //     return null
+    //   }
+    //
+    //   // when wrapping dynamic imports with a preload helper, Rollup is unable to analyze the
+    //   // accessed variables for treeshaking. This below tries to match common accessed syntax
+    //   // to "copy" it over to the dynamic import wrapped by the preload helper.
+    //   const dynamicImports: Record<
+    //     number,
+    //     { declaration?: string; names?: string }
+    //   > = {}
+    //
+    //   if (insertPreload) {
+    //     let match
+    //     while ((match = dynamicImportTreeshakenRE.exec(source))) {
+    //       /* handle `const {foo} = await import('foo')`
+    //        *
+    //        * match[1]: `const {foo} = await import('foo')`
+    //        * match[2]: `{foo}`
+    //        * import end: `const {foo} = await import('foo')_`
+    //        *                                               ^
+    //        */
+    //       if (match[1]) {
+    //         dynamicImports[dynamicImportTreeshakenRE.lastIndex] = {
+    //           declaration: `const ${match[2]}`,
+    //           names: match[2]?.trim(),
+    //         }
+    //         continue
+    //       }
+    //
+    //       /* handle `(await import('foo')).foo`
+    //        *
+    //        * match[3]: `(await import('foo')).foo`
+    //        * match[4]: `.foo`
+    //        * import end: `(await import('foo'))`
+    //        *                                  ^
+    //        */
+    //       if (match[3]) {
+    //         let names = /\.([^.?]+)/.exec(match[4])?.[1] || ''
+    //         // avoid `default` keyword error
+    //         if (names === 'default') {
+    //           names = 'default: __vite_default__'
+    //         }
+    //         dynamicImports[
+    //           dynamicImportTreeshakenRE.lastIndex - match[4]?.length - 1
+    //         ] = { declaration: `const {${names}}`, names: `{ ${names} }` }
+    //         continue
+    //       }
+    //
+    //       /* handle `import('foo').then(({foo})=>{})`
+    //        *
+    //        * match[5]: `.then(({foo})`
+    //        * match[6]: `foo`
+    //        * import end: `import('foo').`
+    //        *                           ^
+    //        */
+    //       const names = match[6]?.trim()
+    //       dynamicImports[
+    //         dynamicImportTreeshakenRE.lastIndex - match[5]?.length
+    //       ] = { declaration: `const {${names}}`, names: `{ ${names} }` }
+    //     }
+    //   }
+    //
+    //   let s: MagicString | undefined
+    //   const str = () => s || (s = new MagicString(source))
+    //   let needPreloadHelper = false
+    //
+    //   for (let index = 0; index < imports.length; index++) {
+    //     const {
+    //       s: start,
+    //       e: end,
+    //       ss: expStart,
+    //       se: expEnd,
+    //       d: dynamicIndex,
+    //       a: attributeIndex,
+    //     } = imports[index]
+    //
+    //     const isDynamicImport = dynamicIndex > -1
+    //
+    //     // strip import attributes as we can process them ourselves
+    //     if (!isDynamicImport && attributeIndex > -1) {
+    //       str().remove(end + 1, expEnd)
+    //     }
+    //
+    //     if (
+    //       isDynamicImport &&
+    //       insertPreload &&
+    //       // Only preload static urls
+    //       (source[start] === '"' ||
+    //         source[start] === "'" ||
+    //         source[start] === '`')
+    //     ) {
+    //       needPreloadHelper = true
+    //       const { declaration, names } = dynamicImports[expEnd] || {}
+    //       if (names) {
+    //         /* transform `const {foo} = await import('foo')`
+    //          * to `const {foo} = await __vitePreload(async () => { const {foo} = await import('foo');return {foo}}, ...)`
+    //          *
+    //          * transform `import('foo').then(({foo})=>{})`
+    //          * to `__vitePreload(async () => { const {foo} = await import('foo');return { foo }},...).then(({foo})=>{})`
+    //          *
+    //          * transform `(await import('foo')).foo`
+    //          * to `__vitePreload(async () => { const {foo} = (await import('foo')).foo; return { foo }},...)).foo`
+    //          */
+    //         str().prependLeft(
+    //           expStart,
+    //           `${preloadMethod}(async () => { ${declaration} = await `,
+    //         )
+    //         str().appendRight(expEnd, `;return ${names}}`)
+    //       } else {
+    //         str().prependLeft(expStart, `${preloadMethod}(() => `)
+    //       }
+    //
+    //       str().appendRight(
+    //         expEnd,
+    //         `,${isModernFlag}?${preloadMarker}:void 0${
+    //           renderBuiltUrl || isRelativeBase ? ',import.meta.url' : ''
+    //         })`,
+    //       )
+    //     }
+    //   }
+    //
+    //   if (
+    //     needPreloadHelper &&
+    //     insertPreload &&
+    //     !source.includes(`const ${preloadMethod} =`)
+    //   ) {
+    //     str().prepend(`import { ${preloadMethod} } from "${preloadHelperId}";`)
+    //   }
+    //
+    //   if (s) {
+    //     return {
+    //       code: s.toString(),
+    //       map: config.build.sourcemap
+    //         ? s.generateMap({ hires: 'boundary' })
+    //         : null,
+    //     }
+    //   }
+    // },
 
     renderChunk(code, _, { format }) {
       // make sure we only perform the preload logic in modern builds.
@@ -533,9 +536,11 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
                       chunk.imports.forEach(addDeps)
                       // Ensure that the css imported by current chunk is loaded after the dependencies.
                       // So the style of current chunk won't be overwritten unexpectedly.
-                      getChunkMetadata(chunk.name)!.importedCss.forEach((file) => {
-                        deps.add(file)
-                      })
+                      getChunkMetadata(chunk.name)!.importedCss.forEach(
+                        (file) => {
+                          deps.add(file)
+                        },
+                      )
                     }
                   } else {
                     const removedPureCssFiles =
@@ -543,9 +548,11 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
                     const chunk = removedPureCssFiles.get(filename)
                     if (chunk) {
                       if (getChunkMetadata(chunk.name)!.importedCss.size) {
-                        getChunkMetadata(chunk.name)!.importedCss.forEach((file) => {
-                          deps.add(file)
-                        })
+                        getChunkMetadata(chunk.name)!.importedCss.forEach(
+                          (file) => {
+                            deps.add(file)
+                          },
+                        )
                         hasRemovedPureCssChunk = true
                       }
 
@@ -707,4 +714,10 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
       }
     },
   }
+  let rust = nativeAnalysis({
+    preloadCode: preloadCode,
+    insertPreload: insertPreload,
+    optimizeModulePreloadRelativePaths: false
+  });
+  return [js, rust]
 }

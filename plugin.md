@@ -1,0 +1,15 @@
+item.name:  vite:resolve
+item.name:  6
+item.name:  9
+item.name:  0
+item.name:  vite:asset
+item.name:  7
+item.name:  vite:worker-import-meta-url
+item.name:  vite:asset-import-meta-url
+item.name:  vite:force-systemjs-wrap-complete
+item.name:  2
+item.name:  1
+item.name:  vite:build-import-analysis
+item.name:  10
+item.name:  vite:reporter
+item.name:  5
