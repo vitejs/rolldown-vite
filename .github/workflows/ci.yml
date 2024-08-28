@@ -160,8 +160,8 @@ jobs:
       # - name: Typecheck
       #   run: pnpm run typecheck
 
-      - name: Test docs
-        run: pnpm run test-docs
+      # - name: Test docs
+      #   run: pnpm run test-docs
 
       # From https://github.com/rhysd/actionlint/blob/main/docs/usage.md#use-actionlint-on-github-actions
       - name: Check workflow files

@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['./playground/worker/**/*.spec.[tj]s'],
+    include: ['./playground/**/*.spec.[tj]s'],
     exclude: [
       './playground/alias/**/*.spec.[tj]s',
       './playground/assets/**/*.spec.[tj]s',
@@ -29,7 +29,7 @@ export default defineConfig({
       './playground/resolve-config/**/*.spec.[tj]s',
       './playground/ssr-resolve/**/*.spec.[tj]s',
       './playground/ssr-webworker/**/*.spec.[tj]s',
-      // './playground/worker/**/*.spec.[tj]s',
+      './playground/worker/**/*.spec.[tj]s',
       // skip link vite tets at local
       '**/node_modules/**',
     ],
