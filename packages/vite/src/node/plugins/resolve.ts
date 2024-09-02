@@ -176,7 +176,7 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
           : ['import', 'default', targetCondition],
       builtinModules: !targetWeb,
       extensions: resolveOptions.extensions,
-      symlinks: resolveOptions.preserveSymlinks ?? false,
+      symlinks: !resolveOptions.preserveSymlinks,
     })
     // strip /@fs/ for importer
     if (importer && importer.startsWith(FS_PREFIX)) {
