@@ -45,6 +45,7 @@ export async function fetchModule(
     const overrideConditions = ssr.resolve?.externalConditions || []
 
     const resolveOptions: InternalResolveOptionsWithOverrideConditions = {
+      alias: [],
       mainFields: ['main'],
       conditions: [],
       overrideConditions: [...overrideConditions, 'production', 'development'],

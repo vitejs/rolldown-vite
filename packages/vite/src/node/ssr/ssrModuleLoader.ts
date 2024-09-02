@@ -118,6 +118,7 @@ async function instantiateModule(
   const overrideConditions = ssr.resolve?.externalConditions || []
 
   const resolveOptions: NodeImportResolveOptions = {
+    alias: [],
     mainFields: ['main'],
     conditions: [],
     overrideConditions: [...overrideConditions, 'production', 'development'],

@@ -7,7 +7,7 @@ import { performance } from 'node:perf_hooks'
 import { createRequire } from 'node:module'
 import colors from 'picocolors'
 import type { Alias, AliasOptions } from 'dep-types/alias'
-import aliasPlugin from '@rollup/plugin-alias'
+// import aliasPlugin from '@rollup/plugin-alias'
 import { build } from 'esbuild'
 import type { RollupOptions } from 'rolldown'
 import { withTrailingSlash } from '../shared/utils'
@@ -637,7 +637,7 @@ export async function resolveConfig(
     // let aliasContainer: PluginContainer | undefined
     let resolverContainer: PluginContainer | undefined
     return async (id, importer, aliasOnly, ssr) => {
-      let container: PluginContainer
+      // let container: PluginContainer
       // if (aliasOnly) {
       //   container =
       //     aliasContainer ||
@@ -647,7 +647,7 @@ export async function resolveConfig(
       //       plugins: [aliasPlugin({ entries: resolved.resolve.alias })],
       //     }))
       // } else {
-      container =
+      const container: PluginContainer | undefined =
         resolverContainer ||
         (resolverContainer = await createPluginContainer({
           ...resolved,

@@ -1,4 +1,4 @@
-import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
+import { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepsOptimizerEnabled } from '../config'

@@ -1344,6 +1344,7 @@ function resolveDeepImport(
   }
 }
 
+// @ts-expect-error unused
 function tryResolveBrowserMapping(
   id: string,
   importer: string | undefined,
