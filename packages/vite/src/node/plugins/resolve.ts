@@ -153,6 +153,7 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
     if (typeof find === 'string') {
       aliasObject[find] = [replacement]
     }
+    // TODO handle regex alias
   }
 
   function tryOxcResolve(

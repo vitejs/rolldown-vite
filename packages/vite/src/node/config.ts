@@ -530,13 +530,22 @@ export async function resolveConfig(
 
   checkBadCharactersInPath(resolvedRoot, logger)
 
+  // oxc resolver only support string alias key matching
   const clientAlias = [
     {
-      find: /^\/?@vite\/env/,
+      find: '/@vite/env',
       replacement: path.posix.join(FS_PREFIX, normalizePath(ENV_ENTRY)),
     },
     {
-      find: /^\/?@vite\/client/,
+      find: '@vite/env',
+      replacement: path.posix.join(FS_PREFIX, normalizePath(ENV_ENTRY)),
+    },
+    {
+      find: '/@vite/client',
+      replacement: path.posix.join(FS_PREFIX, normalizePath(CLIENT_ENTRY)),
+    },
+    {
+      find: '@vite/client',
       replacement: path.posix.join(FS_PREFIX, normalizePath(CLIENT_ENTRY)),
     },
   ]
