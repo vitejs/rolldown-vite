@@ -88,7 +88,7 @@
     "esbuild": "^0.21.3",
     "postcss": "^8.4.41",
     "rollup": "^4.20.0",
-    "rolldown": "0.12.2-snapshot-8ea9f31-20240826003035"
+    "rolldown": "0.12.2-snapshot-aa5807f-20240902003235"
   },
   "optionalDependencies": {
     "fsevents": "~2.3.3"

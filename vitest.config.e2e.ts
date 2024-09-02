@@ -25,10 +25,8 @@ export default defineConfig({
       './playground/lib/**/*.spec.[tj]s',
       './playground/object-hooks/**/*.spec.[tj]s',
       './playground/optimize-deps/**/*.spec.[tj]s',
-      './playground/resolve/**/*.spec.[tj]s',
       './playground/resolve-config/**/*.spec.[tj]s',
       './playground/ssr-resolve/**/*.spec.[tj]s',
-      './playground/ssr-webworker/**/*.spec.[tj]s',
       './playground/worker/**/*.spec.[tj]s',
       // skip link vite tets at local
       '**/node_modules/**',

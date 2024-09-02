@@ -116,8 +116,6 @@ export function buildReporterPlugin(config: ResolvedConfig): Plugin {
     },
 
     renderChunk(code, chunk, options) {
-      // TODO @underfin
-      // @ts-expect-error
       if (!options.inlineDynamicImports) {
         for (const id of chunk.moduleIds) {
           const module = this.getModuleInfo(id)

@@ -658,23 +658,18 @@ export async function build(
         // - #764 add `Symbol.toStringTag` when build es module into cjs chunk
         // - #1048 add `Symbol.toStringTag` for module default export
         // generatedCode: 'es2015',
-        // entryFileNames: ssr
-        //   ? `[name].${jsExt}`
-        //   : libOptions
-        //     ? ({ name }) =>
-        //         resolveLibFilename(
-        //           libOptions,
-        //           format,
-        //           name,
-        //           config.root,
-        //           jsExt,
-        //           config.packageCache,
-        //         )
-        //     : path.posix.join(options.assetsDir, `[name]-[hash].${jsExt}`),
         entryFileNames: ssr
           ? `[name].${jsExt}`
           : libOptions
-            ? `[name]-[hash].${jsExt}`
+            ? ({ name }) =>
+                resolveLibFilename(
+                  libOptions,
+                  format,
+                  name,
+                  config.root,
+                  jsExt,
+                  config.packageCache,
+                )
             : path.posix.join(options.assetsDir, `[name]-[hash].${jsExt}`),
         chunkFileNames: libOptions
           ? `[name]-[hash].${jsExt}`
