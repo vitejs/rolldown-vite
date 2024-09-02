@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import colors from 'picocolors'
+import { ResolverFactory } from 'oxc-resolver'
 import type { PartialResolvedId } from 'rolldown'
 import { exports, imports } from 'resolve.exports'
 import { hasESMSyntax } from 'mlly'
@@ -37,7 +38,7 @@ import {
 } from '../utils'
 import { optimizedDepInfoFromFile, optimizedDepInfoFromId } from '../optimizer'
 import type { DepsOptimizer } from '../optimizer'
-import type { SSROptions } from '..'
+import type { Alias, SSROptions } from '..'
 import type { PackageCache, PackageData } from '../packages'
 import type { FsUtils } from '../fsUtils'
 import { commonFsUtils } from '../fsUtils'
@@ -91,6 +92,7 @@ export interface ResolveOptions {
 }
 
 export interface InternalResolveOptions extends Required<ResolveOptions> {
+  alias: Alias[]
   root: string
   isBuild: boolean
   isProduction: boolean
@@ -137,6 +139,7 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
     asSrc,
     ssrConfig,
     preferRelative = false,
+    alias,
   } = resolveOptions
 
   const {
@@ -144,6 +147,42 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
     noExternal: ssrNoExternal,
     external: ssrExternal,
   } = ssrConfig ?? {}
+
+  const aliasObject: Record<string, Array<string | undefined | null>> = {}
+  for (const { find, replacement } of alias) {
+    if (typeof find === 'string') {
+      aliasObject[find] = [replacement]
+    }
+  }
+
+  function tryOxcResolve(
+    targetWeb: boolean,
+    isRequire: boolean,
+    importer: string = process.cwd(),
+    request: string,
+    options: InternalResolveOptions,
+    depsOptimizer?: DepsOptimizer,
+  ): string | undefined {
+    const targetCondition = targetWeb ? 'node' : 'browser'
+    const resolver = new ResolverFactory({
+      alias: aliasObject,
+      mainFields:
+        (resolveOptions.mainFields ?? targetWeb)
+          ? ['browser', 'module', 'main']
+          : ['main', 'module'],
+      conditionNames:
+        (resolveOptions.conditions ?? isRequire)
+          ? ['require', 'default', targetCondition]
+          : ['import', 'default', targetCondition],
+      builtinModules: !targetWeb,
+      extensions: resolveOptions.extensions,
+      symlinks: resolveOptions.preserveSymlinks ?? false,
+    })
+    const result = resolver.sync(importer, request)
+    if (result.path) {
+      return ensureVersionQuery(result.path, request, options, depsOptimizer)
+    }
+  }
 
   // In unix systems, absolute paths inside root first needs to be checked as an
   // absolute URL (/root/root/path-to-file) resulting in failed checks before falling
@@ -251,10 +290,26 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
         id[0] === '/' &&
         (rootInRoot || !id.startsWith(withTrailingSlash(root)))
       ) {
-        const fsPath = path.resolve(root, id.slice(1))
-        if ((res = tryFsResolve(fsPath, options))) {
-          debug?.(`[url] ${colors.cyan(id)} -> ${colors.dim(res)}`)
-          return ensureVersionQuery(res, id, options, depsOptimizer)
+        // const fsPath = path.resolve(root, id.slice(1))
+        // if ((res = tryFsResolve(fsPath, options))) {
+        //   debug?.(`[url] ${colors.cyan(id)} -> ${colors.dim(res)}`)
+        //   return ensureVersionQuery(res, id, options, depsOptimizer)
+        // }
+        if (isBuild) {
+          // Using rolldown resolver
+          return
+        } else {
+          const res = tryOxcResolve(
+            targetWeb,
+            isRequire,
+            importer,
+            id,
+            options,
+            depsOptimizer,
+          )
+          if (res) {
+            return res
+          }
         }
       }
 
@@ -288,58 +343,104 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
           return normalizedFsPath
         }
 
-        if (
-          targetWeb &&
-          options.mainFields.includes('browser') &&
-          (res = tryResolveBrowserMapping(fsPath, importer, options, true))
-        ) {
-          return res
-        }
+        // if (
+        //   targetWeb &&
+        //   options.mainFields.includes('browser') &&
+        //   (res = tryResolveBrowserMapping(fsPath, importer, options, true))
+        // ) {
+        //   return res
+        // }
 
-        if ((res = tryFsResolve(fsPath, options))) {
-          res = ensureVersionQuery(res, id, options, depsOptimizer)
-          debug?.(`[relative] ${colors.cyan(id)} -> ${colors.dim(res)}`)
+        // if ((res = tryFsResolve(fsPath, options))) {
+        //   res = ensureVersionQuery(res, id, options, depsOptimizer)
+        //   debug?.(`[relative] ${colors.cyan(id)} -> ${colors.dim(res)}`)
 
-          // If this isn't a script imported from a .html file, include side effects
-          // hints so the non-used code is properly tree-shaken during build time.
-          if (
-            !options.idOnly &&
-            !options.scan &&
-            options.isBuild &&
-            !importer?.endsWith('.html')
-          ) {
-            const resPkg = findNearestPackageData(
-              path.dirname(res),
-              options.packageCache,
-            )
-            if (resPkg) {
-              return {
-                id: res,
-                moduleSideEffects: resPkg.hasSideEffects(res),
-              }
-            }
+        //   // If this isn't a script imported from a .html file, include side effects
+        //   // hints so the non-used code is properly tree-shaken during build time.
+        //   if (
+        //     !options.idOnly &&
+        //     !options.scan &&
+        //     options.isBuild &&
+        //     !importer?.endsWith('.html')
+        //   ) {
+        //     const resPkg = findNearestPackageData(
+        //       path.dirname(res),
+        //       options.packageCache,
+        //     )
+        //     if (resPkg) {
+        //       return {
+        //         id: res,
+        //         moduleSideEffects: resPkg.hasSideEffects(res),
+        //       }
+        //     }
+        //   }
+        //   return res
+        // }
+
+        if (isBuild) {
+          // Using rolldown resolver
+          return
+        } else {
+          const res = tryOxcResolve(
+            targetWeb,
+            isRequire,
+            importer,
+            id,
+            options,
+            depsOptimizer,
+          )
+          if (res) {
+            return res
           }
-          return res
         }
       }
 
       // drive relative fs paths (only windows)
       if (isWindows && id[0] === '/') {
-        const basedir = importer ? path.dirname(importer) : process.cwd()
-        const fsPath = path.resolve(basedir, id)
-        if ((res = tryFsResolve(fsPath, options))) {
-          debug?.(`[drive-relative] ${colors.cyan(id)} -> ${colors.dim(res)}`)
-          return ensureVersionQuery(res, id, options, depsOptimizer)
+        // const basedir = importer ? path.dirname(importer) : process.cwd()
+        // const fsPath = path.resolve(basedir, id)
+        // if ((res = tryFsResolve(fsPath, options))) {
+        //   debug?.(`[drive-relative] ${colors.cyan(id)} -> ${colors.dim(res)}`)
+        //   return ensureVersionQuery(res, id, options, depsOptimizer)
+        // }
+        if (isBuild) {
+          // Using rolldown resolver
+          return
+        } else {
+          const res = tryOxcResolve(
+            targetWeb,
+            isRequire,
+            importer,
+            id,
+            options,
+            depsOptimizer,
+          )
+          if (res) {
+            return res
+          }
         }
       }
 
       // absolute fs paths
+      // if (
+      //   isNonDriveRelativeAbsolutePath(id) &&
+      //   (res = tryFsResolve(id, options))
+      // ) {
+      //   debug?.(`[fs] ${colors.cyan(id)} -> ${colors.dim(res)}`)
+      //   return ensureVersionQuery(res, id, options, depsOptimizer)
+      // }
       if (
         isNonDriveRelativeAbsolutePath(id) &&
-        (res = tryFsResolve(id, options))
+        (res = tryOxcResolve(
+          targetWeb,
+          isRequire,
+          importer,
+          id,
+          options,
+          depsOptimizer,
+        ))
       ) {
-        debug?.(`[fs] ${colors.cyan(id)} -> ${colors.dim(res)}`)
-        return ensureVersionQuery(res, id, options, depsOptimizer)
+        return res
       }
 
       // external
@@ -355,50 +456,50 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
 
       // bare package imports, perform node resolve
       if (bareImportRE.test(id)) {
-        const external = options.shouldExternalize?.(id, importer)
-        if (
-          !external &&
-          asSrc &&
-          depsOptimizer &&
-          !options.scan &&
-          (res = await tryOptimizedResolve(
-            depsOptimizer,
-            id,
-            importer,
-            options.preserveSymlinks,
-            options.packageCache,
-          ))
-        ) {
-          return res
-        }
+        // const external = options.shouldExternalize?.(id, importer)
+        // if (
+        //   !external &&
+        //   asSrc &&
+        //   depsOptimizer &&
+        //   !options.scan &&
+        //   (res = await tryOptimizedResolve(
+        //     depsOptimizer,
+        //     id,
+        //     importer,
+        //     options.preserveSymlinks,
+        //     options.packageCache,
+        //   ))
+        // ) {
+        //   return res
+        // }
 
-        if (
-          targetWeb &&
-          options.mainFields.includes('browser') &&
-          (res = tryResolveBrowserMapping(
-            id,
-            importer,
-            options,
-            false,
-            external,
-          ))
-        ) {
-          return res
-        }
+        // if (
+        //   targetWeb &&
+        //   options.mainFields.includes('browser') &&
+        //   (res = tryResolveBrowserMapping(
+        //     id,
+        //     importer,
+        //     options,
+        //     false,
+        //     external,
+        //   ))
+        // ) {
+        //   return res
+        // }
 
-        if (
-          (res = tryNodeResolve(
-            id,
-            importer,
-            options,
-            targetWeb,
-            depsOptimizer,
-            ssr,
-            external,
-          ))
-        ) {
-          return res
-        }
+        // if (
+        //   (res = tryNodeResolve(
+        //     id,
+        //     importer,
+        //     options,
+        //     targetWeb,
+        //     depsOptimizer,
+        //     ssr,
+        //     external,
+        //   ))
+        // ) {
+        //   return res
+        // }
 
         // node built-ins.
         // externalize if building for SSR, otherwise redirect to empty module
@@ -440,6 +541,23 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
             return isProduction
               ? browserExternalId
               : `${browserExternalId}:${id}`
+          }
+        }
+
+        if (isBuild) {
+          // Using rolldown resolver
+          return
+        } else {
+          const res = tryOxcResolve(
+            targetWeb,
+            isRequire,
+            importer,
+            id,
+            options,
+            depsOptimizer,
+          )
+          if (res) {
+            return res
           }
         }
       }

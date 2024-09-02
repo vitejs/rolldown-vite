@@ -48,16 +48,18 @@ export async function resolvePlugins(
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
     preAliasPlugin(config),
-    aliasPlugin({
-      entries: config.resolve.alias,
-      customResolver: viteAliasCustomResolver,
-    }),
+    // TODO viteAliasCustomResolver
+    // aliasPlugin({
+    //   entries: config.resolve.alias,
+    //   customResolver: viteAliasCustomResolver,
+    // }),
     ...prePlugins,
     modulePreload !== false && modulePreload.polyfill
       ? modulePreloadPolyfillPlugin(config)
       : null,
     resolvePlugin({
       ...config.resolve,
+      alias: config.resolve.alias,
       root: config.root,
       isProduction: config.isProduction,
       isBuild,

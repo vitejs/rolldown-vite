@@ -530,6 +530,13 @@ export async function build(
     ssr ? config.plugins.map((p) => injectSsrFlagToHooks(p)) : config.plugins
   ) as Plugin[]
 
+  const alias: Record<string, string> = {}
+  for (const { find, replacement } of config.resolve.alias) {
+    if (typeof find === 'string') {
+      alias[find] = replacement
+    }
+  }
+
   const rollupOptions: RollupOptions = {
     // TODO @underfin preserveEntrySignatures
     // preserveEntrySignatures: ssr
@@ -541,6 +548,13 @@ export async function build(
     ...options.rollupOptions,
     input,
     plugins,
+    resolve: {
+      alias,
+      mainFields: config.resolve.mainFields,
+      conditionNames: config.resolve.conditions,
+      symlinks: config.resolve.preserveSymlinks,
+      extensions: config.resolve.extensions,
+    },
     external: options.rollupOptions?.external,
     onwarn(warning, warn) {
       onRollupWarning(warning, warn, config)

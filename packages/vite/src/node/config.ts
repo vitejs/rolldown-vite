@@ -634,42 +634,42 @@ export async function resolveConfig(
   // create an internal resolver to be used in special scenarios, e.g.
   // optimizer & handling css @imports
   const createResolver: ResolvedConfig['createResolver'] = (options) => {
-    let aliasContainer: PluginContainer | undefined
+    // let aliasContainer: PluginContainer | undefined
     let resolverContainer: PluginContainer | undefined
     return async (id, importer, aliasOnly, ssr) => {
       let container: PluginContainer
-      if (aliasOnly) {
-        container =
-          aliasContainer ||
-          (aliasContainer = await createPluginContainer({
-            ...resolved,
-            // @ts-expect-error  the aliasPlugin using rollup types
-            plugins: [aliasPlugin({ entries: resolved.resolve.alias })],
-          }))
-      } else {
-        container =
-          resolverContainer ||
-          (resolverContainer = await createPluginContainer({
-            ...resolved,
-            plugins: [
-              // @ts-expect-error the aliasPlugin using rollup types
-              aliasPlugin({ entries: resolved.resolve.alias }),
-              resolvePlugin({
-                ...resolved.resolve,
-                root: resolvedRoot,
-                isProduction,
-                isBuild: command === 'build',
-                ssrConfig: resolved.ssr,
-                asSrc: true,
-                preferRelative: false,
-                tryIndex: true,
-                ...options,
-                idOnly: true,
-                fsUtils: getFsUtils(resolved),
-              }),
-            ],
-          }))
-      }
+      // if (aliasOnly) {
+      //   container =
+      //     aliasContainer ||
+      //     (aliasContainer = await createPluginContainer({
+      //       ...resolved,
+      //       // @ts-expect-error  the aliasPlugin using rollup types
+      //       plugins: [aliasPlugin({ entries: resolved.resolve.alias })],
+      //     }))
+      // } else {
+      container =
+        resolverContainer ||
+        (resolverContainer = await createPluginContainer({
+          ...resolved,
+          plugins: [
+            //// @ts-expect-error the aliasPlugin using rollup types
+            // aliasPlugin({ entries: resolved.resolve.alias }),
+            resolvePlugin({
+              ...resolved.resolve,
+              root: resolvedRoot,
+              isProduction,
+              isBuild: command === 'build',
+              ssrConfig: resolved.ssr,
+              asSrc: true,
+              preferRelative: false,
+              tryIndex: true,
+              ...options,
+              idOnly: true,
+              fsUtils: getFsUtils(resolved),
+            }),
+          ],
+        }))
+      // }
       return (
         await container.resolveId(id, importer, {
           ssr,
@@ -1111,6 +1111,7 @@ async function bundleConfigFile(
               id,
               importer,
               {
+                alias: [],
                 root: path.dirname(fileName),
                 isBuild: true,
                 isProduction: true,
