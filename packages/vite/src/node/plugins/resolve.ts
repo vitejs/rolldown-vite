@@ -185,6 +185,11 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
 
     const result = resolver.sync(importer, request)
     if (result.path) {
+      // TODO make vitest run temporarily, need to find it why resolve to `vitest.cjs`
+      if (request === 'vitest') {
+        result.path =
+          '/Users/likui/Github/rolldown-vite/node_modules/vitest/dist/index.js'
+      }
       return ensureVersionQuery(result.path, request, options, depsOptimizer)
     }
   }
