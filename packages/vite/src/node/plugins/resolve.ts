@@ -178,6 +178,11 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
       extensions: resolveOptions.extensions,
       symlinks: resolveOptions.preserveSymlinks ?? false,
     })
+    // strip /@fs/ for importer
+    if (importer && importer.startsWith(FS_PREFIX)) {
+      importer = fsPathFromId(importer)
+    }
+
     const result = resolver.sync(importer, request)
     if (result.path) {
       return ensureVersionQuery(result.path, request, options, depsOptimizer)
