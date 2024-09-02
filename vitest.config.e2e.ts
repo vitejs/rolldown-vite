@@ -12,7 +12,6 @@ export default defineConfig({
   test: {
     include: ['./playground/**/*.spec.[tj]s'],
     exclude: [
-      './playground/alias/**/*.spec.[tj]s',
       './playground/assets/**/*.spec.[tj]s',
       './playground/backend-integration/**/*.spec.[tj]s',
       './playground/css-codesplit/**/*.spec.[tj]s',
@@ -27,7 +26,6 @@ export default defineConfig({
       './playground/optimize-deps/**/*.spec.[tj]s',
       './playground/resolve-config/**/*.spec.[tj]s',
       './playground/ssr-resolve/**/*.spec.[tj]s',
-      './playground/ssr-webworker/**/*.spec.[tj]s',
       './playground/worker/**/*.spec.[tj]s',
       // skip link vite tets at local
       '**/node_modules/**',

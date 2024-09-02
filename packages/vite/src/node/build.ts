@@ -635,7 +635,7 @@ export async function build(
       }
 
       const ssrNodeBuild = ssr && config.ssr.target === 'node'
-      // const ssrWorkerBuild = ssr && config.ssr.target === 'webworker'
+      const ssrWorkerBuild = ssr && config.ssr.target === 'webworker'
 
       const format = output.format || 'es'
       const jsExt =
@@ -677,11 +677,11 @@ export async function build(
         assetFileNames: libOptions
           ? `[name].[ext]`
           : path.posix.join(options.assetsDir, `[name]-[hash].[ext]`),
-        // inlineDynamicImports:
-        // output.format === 'umd' ||
-        // output.format === 'iife' ||
-        // (ssrWorkerBuild &&
-        //   (typeof input === 'string' || Object.keys(input).length === 1)),
+        inlineDynamicImports:
+          // output.format === 'umd' ||
+          output.format === 'iife' ||
+          (ssrWorkerBuild &&
+            (typeof input === 'string' || Object.keys(input).length === 1)),
         ...output,
       }
     }
