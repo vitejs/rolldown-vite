@@ -164,13 +164,9 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
     options: InternalResolveOptions,
     depsOptimizer?: DepsOptimizer,
   ): string | undefined {
-    // TODO make the `/@vite/env` alias could be work temporarily
-    if (aliasObject[request]) {
-      return aliasObject[request][0]
-    }
     const targetCondition = targetWeb ? 'node' : 'browser'
     const resolver = new ResolverFactory({
-      alias: aliasObject,
+      // alias: aliasObject,
       mainFields:
         (resolveOptions.mainFields ?? targetWeb)
           ? ['browser', 'module', 'main']

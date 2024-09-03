@@ -1,5 +1,6 @@
 import { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
+import aliasPlugin from '@rollup/plugin-alias'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepsOptimizerEnabled } from '../config'
 import type { HookHandler, Plugin, PluginWithRequiredHook } from '../plugin'
@@ -48,11 +49,10 @@ export async function resolvePlugins(
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
     preAliasPlugin(config),
-    // TODO viteAliasCustomResolver
-    // aliasPlugin({
-    //   entries: config.resolve.alias,
-    //   customResolver: viteAliasCustomResolver,
-    // }),
+    aliasPlugin({
+      entries: config.resolve.alias,
+      customResolver: viteAliasCustomResolver,
+    }),
     ...prePlugins,
     modulePreload !== false && modulePreload.polyfill
       ? modulePreloadPolyfillPlugin(config)
