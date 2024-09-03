@@ -148,7 +148,7 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
     external: ssrExternal,
   } = ssrConfig ?? {}
 
-  const aliasObject: Record<string, Array<string | undefined | null>> = {}
+  const aliasObject: Record<string, Array<string>> = {}
   for (const { find, replacement } of alias) {
     if (typeof find === 'string') {
       aliasObject[find] = [replacement]
@@ -164,6 +164,10 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
     options: InternalResolveOptions,
     depsOptimizer?: DepsOptimizer,
   ): string | undefined {
+    // TODO make the `/@vite/env` alias could be work temporarily
+    if (aliasObject[request]) {
+      return aliasObject[request][0]
+    }
     const targetCondition = targetWeb ? 'node' : 'browser'
     const resolver = new ResolverFactory({
       alias: aliasObject,
