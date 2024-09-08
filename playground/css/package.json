@@ -13,8 +13,7 @@
     "preview:relative-base": "vite --config ./vite.config-relative-base.js preview",
     "dev:no-css-minify": "vite --config ./vite.config-no-css-minify.js dev",
     "build:no-css-minify": "vite --config ./vite.config-no-css-minify.js build",
-    "preview:no-css-minify": "vite --config ./vite.config-no-css-minify.js preview",
-    "aaa": "vite --config ./vite.config-same-file-name.js build"
+    "preview:no-css-minify": "vite --config ./vite.config-no-css-minify.js preview"
   },
   "devDependencies": {
     "@vitejs/test-css-dep": "link:./css-dep",
