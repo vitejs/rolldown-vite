@@ -59,7 +59,7 @@ export async function resolvePlugins(
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
     preAliasPlugin(config),
-    (enableNativePlugin && isBuild)
+    (false && isBuild)
       ? nativeAliasPlugin({
           entries: config.resolve.alias.map((item) => {
             return {
@@ -100,7 +100,7 @@ export async function resolvePlugins(
         ? esbuildPlugin(config)
         : esbuildPlugin(config)
       : null,
-    enableNativePlugin
+    false
       ? nativeJsonPlugin({
           stringify: config.json?.stringify,
           isBuild,
