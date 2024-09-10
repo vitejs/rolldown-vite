@@ -30,7 +30,7 @@ import {
   jsonPlugin as nativeJsonPlugin,
   aliasPlugin as nativeAliasPlugin,
   // modulePreloadPolyfillPlugin as nativeModulePreloadPolyfillPlugin,
-  transformPlugin as nativeTransformPlugin,
+  // transformPlugin as nativeTransformPlugin,
   wasmHelperPlugin as nativeWasmHelperPlugin,
   wasmFallbackPlugin as nativeWasmFallbackPlugin,
   // dynamicImportVarsPlugin as nativeDynamicImportVarsPlugin,
@@ -59,7 +59,7 @@ export async function resolvePlugins(
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
     preAliasPlugin(config),
-    enableNativePlugin
+    (enableNativePlugin && isBuild)
       ? nativeAliasPlugin({
           entries: config.resolve.alias.map((item) => {
             return {
