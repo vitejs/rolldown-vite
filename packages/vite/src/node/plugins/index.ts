@@ -117,7 +117,7 @@ export async function resolvePlugins(
     assetPlugin(config),
     ...normalPlugins,
     enableNativePlugin ? nativeWasmFallbackPlugin() : wasmFallbackPlugin(),
-    (enableNativePlugin && isBuild) ? null : definePlugin(config),
+    (false && isBuild) ? null : definePlugin(config),
     cssPostPlugin(config),
     isBuild && buildHtmlPlugin(config),
     workerImportMetaUrlPlugin(config),
