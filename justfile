@@ -3,4 +3,6 @@ build-vite:
 
 test:
   pnpm run test-serve
+
+test-build:
   pnpm run test-build

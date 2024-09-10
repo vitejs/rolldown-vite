@@ -103,7 +103,7 @@ export async function resolvePlugins(
           },
           isBuild,
         ),
-    enableNativePlugin ? nativeWasmHelperPlugin():wasmHelperPlugin(config),
+    enableNativePlugin ? nativeWasmHelperPlugin() : wasmHelperPlugin(config),
     webWorkerPlugin(config),
     assetPlugin(config),
     ...normalPlugins,
