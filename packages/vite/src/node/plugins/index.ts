@@ -28,11 +28,11 @@ import { dynamicImportVarsPlugin } from './dynamicImportVars'
 import { importGlobPlugin } from './importMetaGlob'
 import {
   jsonPlugin as nativeJsonPlugin,
-  // aliasPlugin as nativeAliasPlugin,
+  aliasPlugin as nativeAliasPlugin,
   // modulePreloadPolyfillPlugin as nativeModulePreloadPolyfillPlugin,
   transformPlugin as nativeTransformPlugin,
   wasmHelperPlugin as nativeWasmHelperPlugin,
-  // wasmFallbackPlugin as nativeWasmFallbackPlugin,
+  wasmFallbackPlugin as nativeWasmFallbackPlugin,
   // dynamicImportVarsPlugin as nativeDynamicImportVarsPlugin,
   // importGlobPlugin as nativeImportGlobPlugin,
 } from 'rolldown/experimental'
@@ -88,7 +88,7 @@ export async function resolvePlugins(
     cssPlugin(config),
     config.esbuild !== false
       ? enableNativePlugin
-        ? nativeTransformPlugin()
+        ? esbuildPlugin(config)
         : esbuildPlugin(config)
       : null,
     enableNativePlugin
@@ -107,8 +107,8 @@ export async function resolvePlugins(
     webWorkerPlugin(config),
     assetPlugin(config),
     ...normalPlugins,
-    wasmFallbackPlugin(),
-    definePlugin(config),
+    enableNativePlugin ? nativeWasmFallbackPlugin() : wasmFallbackPlugin(),
+    enableNativePlugin ? null : definePlugin(config),
     cssPostPlugin(config),
     isBuild && buildHtmlPlugin(config),
     workerImportMetaUrlPlugin(config),
