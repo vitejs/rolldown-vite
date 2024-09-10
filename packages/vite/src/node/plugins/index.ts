@@ -26,6 +26,16 @@ import { assetImportMetaUrlPlugin } from './assetImportMetaUrl'
 import { metadataPlugin } from './metadata'
 import { dynamicImportVarsPlugin } from './dynamicImportVars'
 import { importGlobPlugin } from './importMetaGlob'
+import {
+  jsonPlugin as nativeJsonPlugin,
+  // aliasPlugin as nativeAliasPlugin,
+  // modulePreloadPolyfillPlugin as nativeModulePreloadPolyfillPlugin,
+  transformPlugin as nativeTransformPlugin,
+  wasmHelperPlugin as nativeWasmHelperPlugin,
+  // wasmFallbackPlugin as nativeWasmFallbackPlugin,
+  // dynamicImportVarsPlugin as nativeDynamicImportVarsPlugin,
+  // importGlobPlugin as nativeImportGlobPlugin,
+} from 'rolldown/experimental'
 
 export async function resolvePlugins(
   config: ResolvedConfig,
@@ -39,6 +49,7 @@ export async function resolvePlugins(
     ? await (await import('../build')).resolveBuildPlugins(config)
     : { pre: [], post: [] }
   const { modulePreload } = config.build
+  const enableNativePlugin = config.experimental.enableNativePlugin
   const depsOptimizerEnabled =
     !isBuild &&
     (isDepsOptimizerEnabled(config, false) ||
@@ -75,15 +86,24 @@ export async function resolvePlugins(
     }),
     htmlInlineProxyPlugin(config),
     cssPlugin(config),
-    config.esbuild !== false ? esbuildPlugin(config) : null,
-    jsonPlugin(
-      {
-        namedExports: true,
-        ...config.json,
-      },
-      isBuild,
-    ),
-    wasmHelperPlugin(config),
+    config.esbuild !== false
+      ? enableNativePlugin
+        ? nativeTransformPlugin()
+        : esbuildPlugin(config)
+      : null,
+    enableNativePlugin
+      ? nativeJsonPlugin({
+          stringify: config.json?.stringify,
+          isBuild,
+        })
+      : jsonPlugin(
+          {
+            namedExports: true,
+            ...config.json,
+          },
+          isBuild,
+        ),
+    enableNativePlugin ? nativeWasmHelperPlugin():wasmHelperPlugin(config),
     webWorkerPlugin(config),
     assetPlugin(config),
     ...normalPlugins,
