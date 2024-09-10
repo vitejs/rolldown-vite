@@ -59,10 +59,19 @@ export async function resolvePlugins(
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
     preAliasPlugin(config),
-    aliasPlugin({
-      entries: config.resolve.alias,
-      customResolver: viteAliasCustomResolver,
-    }),
+    enableNativePlugin
+      ? nativeAliasPlugin({
+          entries: config.resolve.alias.map((item) => {
+            return {
+              find: item.find,
+              replacement: item.replacement,
+            }
+          }),
+        })
+      : aliasPlugin({
+          entries: config.resolve.alias,
+          customResolver: viteAliasCustomResolver,
+        }),
     ...prePlugins,
     modulePreload !== false && modulePreload.polyfill
       ? modulePreloadPolyfillPlugin(config)

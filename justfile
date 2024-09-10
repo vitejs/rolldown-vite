@@ -6,3 +6,6 @@ test:
 
 test-build:
   pnpm run test-build
+
+fmt:
+  pnpm --filter vite run format
