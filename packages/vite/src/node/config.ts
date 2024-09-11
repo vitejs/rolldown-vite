@@ -690,6 +690,7 @@ export const configDefaults = Object.freeze({
     exclude: [],
     needsInterop: [],
     // esbuildOptions
+    rollupOptions: {},
     /** @experimental */
     extensions: [],
     /** @deprecated @experimental */
