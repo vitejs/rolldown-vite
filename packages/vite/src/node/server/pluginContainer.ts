@@ -492,11 +492,11 @@ class PluginContainer {
       (plugin) => this._getPluginContext(plugin, false),
       () => [],
     )
-    // await this.hookParallel(
-    //   'closeBundle',
-    //   (plugin) => this._getPluginContext(plugin, false),
-    //   () => [],
-    // )
+    await this.hookParallel(
+      'closeBundle',
+      (plugin) => this._getPluginContext(plugin, false),
+      () => [],
+    )
   }
 }
 

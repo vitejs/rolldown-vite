@@ -87,8 +87,8 @@
   "dependencies": {
     "esbuild": "^0.21.3",
     "postcss": "^8.4.41",
-    "rollup": "^4.20.0",
-    "rolldown": "0.13.2-snapshot-afc4825-20240908003426"
+    "rolldown": "https://pkg.pr.new/rolldown@648f688",
+    "rollup": "^4.20.0"
   },
   "optionalDependencies": {
     "fsevents": "~2.3.3"
