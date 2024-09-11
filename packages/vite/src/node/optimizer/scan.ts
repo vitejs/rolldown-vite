@@ -6,7 +6,7 @@ import glob from 'fast-glob'
 import type { Plugin } from 'rolldown'
 import { scan } from 'rolldown/experimental'
 import type { Loader } from 'esbuild'
-import  { transform } from 'esbuild'
+import { transform } from 'esbuild'
 import colors from 'picocolors'
 import type { ResolvedConfig } from '..'
 import {
@@ -101,15 +101,13 @@ export function scanImports(config: ResolvedConfig): {
       if (!context || scanContext?.cancelled) {
         return { deps: {}, missing: {} }
       }
-      return context
-        .build()
-        .then(() => {
-          return {
-            // Ensure a fixed order so hashes are stable and improve logs
-            deps: orderedDependencies(deps),
-            missing,
-          }
-        })
+      return context.build().then(() => {
+        return {
+          // Ensure a fixed order so hashes are stable and improve logs
+          deps: orderedDependencies(deps),
+          missing,
+        }
+      })
     })
     .catch(async (e) => {
       // if (e.errors && e.message.includes('The build was canceled')) {
@@ -130,7 +128,7 @@ export function scanImports(config: ResolvedConfig): {
       //   })
       //   e.message = prependMessage + msgs.join('\n')
       // } else {
-        e.message = prependMessage + e.message
+      e.message = prependMessage + e.message
       // }
       throw e
     })
@@ -381,11 +379,12 @@ function rolldownScanPlugin(
         if (contents.includes('import.meta.glob')) {
           scripts[key] = {
             contents: await doTransformGlobImport(contents, p),
-            loader
+            loader,
           }
         } else {
           scripts[key] = {
-            contents, loader
+            contents,
+            loader,
           }
         }
 
@@ -418,10 +417,13 @@ function rolldownScanPlugin(
     return js
   }
 
-  const scripts: Record<string, {
-    contents: string,
-    loader: Loader,
-  }> = {}
+  const scripts: Record<
+    string,
+    {
+      contents: string
+      loader: Loader
+    }
+  > = {}
 
   const ASSET_TYPE_RE = new RegExp(`\\.(${KNOWN_ASSET_TYPES.join('|')})$`)
 
@@ -577,7 +579,7 @@ function rolldownScanPlugin(
       if (htmlTypesRE.test(id)) {
         return {
           code: await htmlTypeOnLoadCallback(id),
-          moduleType: 'js'
+          moduleType: 'js',
         }
       }
 
@@ -598,7 +600,7 @@ function rolldownScanPlugin(
         if (loader !== 'js') {
           let tsconfigRaw
           const tsconfigResult = await loadTsconfigJsonForFile(
-                  path.join(config.root, '_dummy.js'),
+            path.join(config.root, '_dummy.js'),
           )
           if (tsconfigResult.compilerOptions?.experimentalDecorators) {
             tsconfigRaw = { compilerOptions: { experimentalDecorators: true } }
@@ -621,7 +623,6 @@ function rolldownScanPlugin(
     },
   }
 }
-
 
 /**
  * when using TS + (Vue + `<script setup>`) or Svelte, imports may seem
