@@ -1,5 +1,15 @@
 import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
+import {
+  aliasPlugin as nativeAliasPlugin,
+  dynamicImportVarsPlugin as nativeDynamicImportVarsPlugin,
+  importGlobPlugin as nativeImportGlobPlugin,
+  jsonPlugin as nativeJsonPlugin,
+  modulePreloadPolyfillPlugin as nativeModulePreloadPolyfillPlugin,
+  transformPlugin as nativeTransformPlugin,
+  wasmFallbackPlugin as nativeWasmFallbackPlugin,
+  wasmHelperPlugin as nativeWasmHelperPlugin,
+} from 'rolldown/experimental'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepsOptimizerEnabled } from '../config'
 import type { HookHandler, Plugin, PluginWithRequiredHook } from '../plugin'
@@ -39,6 +49,7 @@ export async function resolvePlugins(
     ? await (await import('../build')).resolveBuildPlugins(config)
     : { pre: [], post: [] }
   const { modulePreload } = config.build
+  const enableNativePlugin = config.experimental.enableNativePlugin
   const depsOptimizerEnabled =
     !isBuild &&
     (isDepsOptimizerEnabled(config, false) ||
@@ -48,13 +59,26 @@ export async function resolvePlugins(
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
     preAliasPlugin(config),
-    aliasPlugin({
-      entries: config.resolve.alias,
-      customResolver: viteAliasCustomResolver,
-    }),
+    enableNativePlugin
+      ? nativeAliasPlugin({
+          entries: config.resolve.alias.map((item) => {
+            return {
+              find: item.find,
+              replacement: item.replacement,
+            }
+          }),
+        })
+      : aliasPlugin({
+          entries: config.resolve.alias,
+          customResolver: viteAliasCustomResolver,
+        }),
     ...prePlugins,
     modulePreload !== false && modulePreload.polyfill
-      ? modulePreloadPolyfillPlugin(config)
+      ? enableNativePlugin
+        ? nativeModulePreloadPolyfillPlugin({
+            skip: Boolean(config.command !== 'build' || config.build.ssr),
+          })
+        : modulePreloadPolyfillPlugin(config)
       : null,
     resolvePlugin({
       ...config.resolve,
@@ -75,27 +99,44 @@ export async function resolvePlugins(
     }),
     htmlInlineProxyPlugin(config),
     cssPlugin(config),
-    config.esbuild !== false ? esbuildPlugin(config) : null,
-    jsonPlugin(
-      {
-        namedExports: true,
-        ...config.json,
-      },
-      isBuild,
-    ),
-    wasmHelperPlugin(config),
+    config.esbuild !== false
+      ? enableNativePlugin
+        ? nativeTransformPlugin()
+        : esbuildPlugin(config)
+      : null,
+    enableNativePlugin
+      ? nativeJsonPlugin({
+          stringify: config.json?.stringify,
+          isBuild,
+        })
+      : jsonPlugin(
+          {
+            namedExports: true,
+            ...config.json,
+          },
+          isBuild,
+        ),
+    enableNativePlugin ? nativeWasmHelperPlugin() : wasmHelperPlugin(config),
     webWorkerPlugin(config),
     assetPlugin(config),
     ...normalPlugins,
-    wasmFallbackPlugin(),
+    enableNativePlugin ? nativeWasmFallbackPlugin() : wasmFallbackPlugin(),
+    // TODO: support nativedefinePlugin
     definePlugin(config),
     cssPostPlugin(config),
     isBuild && buildHtmlPlugin(config),
     workerImportMetaUrlPlugin(config),
     assetImportMetaUrlPlugin(config),
     ...buildPlugins.pre,
-    dynamicImportVarsPlugin(config),
-    importGlobPlugin(config),
+    enableNativePlugin
+      ? nativeDynamicImportVarsPlugin()
+      : dynamicImportVarsPlugin(config),
+    enableNativePlugin
+      ? nativeImportGlobPlugin({
+          root: config.root,
+          restoreQueryExtension: config.experimental.importGlobRestoreExtension,
+        })
+      : importGlobPlugin(config),
     ...postPlugins,
     ...buildPlugins.post,
     // internal server-only plugins are always applied after everything else
