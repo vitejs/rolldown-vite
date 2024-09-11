@@ -112,6 +112,7 @@ const nodeConfig = defineConfig({
     'fsevents',
     'rollup/parseAst',
     /^tsx\//,
+    'rolldown/experimental',
     ...Object.keys(pkg.dependencies),
     ...Object.keys(pkg.peerDependencies),
   ],
