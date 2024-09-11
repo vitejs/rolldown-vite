@@ -836,7 +836,7 @@ export async function resolveConfig(
     experimental: {
       importGlobRestoreExtension: false,
       hmrPartialAccept: false,
-      enableNativePlugin: true,
+      enableNativePlugin: false,
       ...config.experimental,
     },
     getSortedPlugins: undefined!,

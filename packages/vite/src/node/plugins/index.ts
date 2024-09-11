@@ -1,5 +1,15 @@
 import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
+import {
+  aliasPlugin as nativeAliasPlugin,
+  dynamicImportVarsPlugin as nativeDynamicImportVarsPlugin,
+  importGlobPlugin as nativeImportGlobPlugin,
+  jsonPlugin as nativeJsonPlugin,
+  modulePreloadPolyfillPlugin as nativeModulePreloadPolyfillPlugin,
+  transformPlugin as nativeTransformPlugin,
+  wasmFallbackPlugin as nativeWasmFallbackPlugin,
+  wasmHelperPlugin as nativeWasmHelperPlugin,
+} from 'rolldown/experimental'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepsOptimizerEnabled } from '../config'
 import type { HookHandler, Plugin, PluginWithRequiredHook } from '../plugin'
@@ -26,16 +36,6 @@ import { assetImportMetaUrlPlugin } from './assetImportMetaUrl'
 import { metadataPlugin } from './metadata'
 import { dynamicImportVarsPlugin } from './dynamicImportVars'
 import { importGlobPlugin } from './importMetaGlob'
-import {
-  jsonPlugin as nativeJsonPlugin,
-  aliasPlugin as nativeAliasPlugin,
-  // modulePreloadPolyfillPlugin as nativeModulePreloadPolyfillPlugin,
-  // transformPlugin as nativeTransformPlugin,
-  wasmHelperPlugin as nativeWasmHelperPlugin,
-  wasmFallbackPlugin as nativeWasmFallbackPlugin,
-  // dynamicImportVarsPlugin as nativeDynamicImportVarsPlugin,
-  // importGlobPlugin as nativeImportGlobPlugin,
-} from 'rolldown/experimental'
 
 export async function resolvePlugins(
   config: ResolvedConfig,
@@ -59,7 +59,7 @@ export async function resolvePlugins(
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
     preAliasPlugin(config),
-    (false && isBuild)
+    enableNativePlugin
       ? nativeAliasPlugin({
           entries: config.resolve.alias.map((item) => {
             return {
@@ -74,7 +74,11 @@ export async function resolvePlugins(
         }),
     ...prePlugins,
     modulePreload !== false && modulePreload.polyfill
-      ? modulePreloadPolyfillPlugin(config)
+      ? enableNativePlugin
+        ? nativeModulePreloadPolyfillPlugin({
+            skip: Boolean(config.command !== 'build' || config.build.ssr),
+          })
+        : modulePreloadPolyfillPlugin(config)
       : null,
     resolvePlugin({
       ...config.resolve,
@@ -97,10 +101,10 @@ export async function resolvePlugins(
     cssPlugin(config),
     config.esbuild !== false
       ? enableNativePlugin
-        ? esbuildPlugin(config)
+        ? nativeTransformPlugin()
         : esbuildPlugin(config)
       : null,
-    false
+    enableNativePlugin
       ? nativeJsonPlugin({
           stringify: config.json?.stringify,
           isBuild,
@@ -112,20 +116,27 @@ export async function resolvePlugins(
           },
           isBuild,
         ),
-    (enableNativePlugin && isBuild) ? nativeWasmHelperPlugin() : wasmHelperPlugin(config),
+    enableNativePlugin ? nativeWasmHelperPlugin() : wasmHelperPlugin(config),
     webWorkerPlugin(config),
     assetPlugin(config),
     ...normalPlugins,
-    (enableNativePlugin && isBuild) ? nativeWasmFallbackPlugin() : wasmFallbackPlugin(),
+    enableNativePlugin ? nativeWasmFallbackPlugin() : wasmFallbackPlugin(),
     // TODO: support nativedefinePlugin
-    (false && isBuild) ? null : definePlugin(config),
+    definePlugin(config),
     cssPostPlugin(config),
     isBuild && buildHtmlPlugin(config),
     workerImportMetaUrlPlugin(config),
     assetImportMetaUrlPlugin(config),
     ...buildPlugins.pre,
-    dynamicImportVarsPlugin(config),
-    importGlobPlugin(config),
+    enableNativePlugin
+      ? nativeDynamicImportVarsPlugin()
+      : dynamicImportVarsPlugin(config),
+    enableNativePlugin
+      ? nativeImportGlobPlugin({
+          root: config.root,
+          restoreQueryExtension: config.experimental.importGlobRestoreExtension,
+        })
+      : importGlobPlugin(config),
     ...postPlugins,
     ...buildPlugins.post,
     // internal server-only plugins are always applied after everything else
