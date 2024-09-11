@@ -263,7 +263,7 @@ export async function startDefaultServe(): Promise<void> {
     const buildConfig = mergeConfig(
       await loadConfig({ command: 'build', mode: 'production' }),
       {
-        plugins: [resolvedPlugin() as any],
+        plugins: [resolvedPlugin()],
       },
     )
     const rollupOutput = await build(buildConfig)
