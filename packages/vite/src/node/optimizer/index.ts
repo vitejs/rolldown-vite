@@ -7,12 +7,7 @@ import colors from 'picocolors'
 import type { BuildOptions as EsbuildBuildOptions } from 'esbuild'
 import { init, parse } from 'es-module-lexer'
 import glob from 'fast-glob'
-import {
-  type RollupOptions,
-  type RollupOutput,
-  type OutputOptions as RollupOutputOptions,
-  rolldown,
-} from 'rolldown'
+import { type RollupOptions, type RollupOutput, rolldown } from 'rolldown'
 import type { ResolvedConfig } from '../config'
 import {
   asyncFlatten,
@@ -108,15 +103,7 @@ export interface DepOptimizationConfig {
     | 'outExtension'
     | 'metafile'
   >
-  rollupOptions?: Omit<
-    RollupOptions,
-    'input' | 'logLevel' | 'platform' | 'output'
-  > & {
-    output?: Omit<
-      RollupOutputOptions,
-      'format' | 'sourcemap' | 'dir' | 'banner'
-    >
-  }
+  rollupOptions?: RollupOptions
   /**
    * List of file extensions that can be optimized. A corresponding esbuild
    * plugin must exist to handle the specific extension.
@@ -783,11 +770,9 @@ async function prepareRolldownOptimizerRun(
   let canceled = false
   async function build() {
     const bundle = await rolldown({
-      ...rollupOptions,
       input: flatIdDeps,
       logLevel: 'warn',
       plugins,
-      platform,
       resolve: {
         // TODO: set aliasFields, conditionNames depending on `platform`
         mainFields: ['module', 'main'],
@@ -795,18 +780,13 @@ async function prepareRolldownOptimizerRun(
         extensions: ['.js', '.css'],
         conditionNames: ['browser'],
       },
-      // TODO: remove this and enable rolldown's CSS support later
-      moduleTypes: {
-        '.css': 'js',
-        ...rollupOptions.moduleTypes,
-      },
+      ...rollupOptions,
     })
     if (canceled) {
       await bundle.close()
       throw new Error('The build was canceled')
     }
     const result = await bundle.write({
-      ...rollupOptions.output,
       format: 'esm',
       sourcemap: true,
       dir: processingCacheDir,
@@ -814,6 +794,7 @@ async function prepareRolldownOptimizerRun(
         platform === 'node'
           ? `import { createRequire } from 'module';const require = createRequire(import.meta.url);`
           : undefined,
+      ...rollupOptions.output,
     })
     await bundle.close()
     return result
@@ -1081,16 +1062,10 @@ export async function extractExportsData(
       ...remainingRollupOptions,
       plugins,
       input: [filePath],
-      // TODO: remove this and enable rolldown's CSS support later
-      moduleTypes: {
-        '.css': 'js',
-        ...remainingRollupOptions.moduleTypes,
-      },
     })
     const result = await build.generate({
       ...rollupOptions.output,
       format: 'esm',
-      sourcemap: false,
     })
     const [, exports, , hasModuleSyntax] = parse(result.output[0].code)
     return {

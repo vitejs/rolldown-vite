@@ -253,6 +253,14 @@ async function prepareRolldownScanner(
 ): Promise<{ build: () => Promise<void> } | undefined> {
   if (scanContext?.cancelled) return
 
+  if (environment.config.dev.optimizeDeps.esbuildOptions) {
+    environment.logger.error(
+      `You've set "optimizeDeps.esbuildOptions" in your config. ` +
+        `This is deprecated and vite already use rollup to optimize packages. ` +
+        `Please use "optimizeDeps.rollupOptions" instead.`,
+    )
+  }
+
   const { plugins: pluginsFromConfig = [], ...rollupOptions } =
     environment.config.dev.optimizeDeps.rollupOptions ?? {}
 
@@ -262,10 +270,10 @@ async function prepareRolldownScanner(
 
   async function build() {
     await scan({
-      ...rollupOptions,
       input: entries,
       logLevel: 'silent',
       plugins,
+      ...rollupOptions,
     })
   }
 
