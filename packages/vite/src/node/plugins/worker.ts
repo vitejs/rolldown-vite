@@ -137,7 +137,7 @@ function emitSourcemapForWorkerEntry(
       config.build.sourcemap === 'hidden' ||
       config.build.sourcemap === true
     ) {
-      const data = sourcemap.toString()
+      const data = JSON.stringify(sourcemap)
       const mapFileName = chunk.fileName + '.map'
       saveEmitWorkerAsset(config, {
         fileName: mapFileName,
@@ -186,7 +186,7 @@ export async function workerFileToUrl(
 export function webWorkerPostPlugin(): Plugin {
   return {
     name: 'vite:worker-post',
-    // TODO @underfin it's not unsupported yet
+    // TODO @underfin it's not unsupported yet, use transform hook for now
     //   resolveImportMeta(property, { format }) {
     //     // document is undefined in the worker, so we need to avoid it in iife
     //     if (format === 'iife') {
@@ -206,6 +206,11 @@ export function webWorkerPostPlugin(): Plugin {
 
     //     return null
     //   },
+    transform(code, id, meta, options) {
+      if (code.includes('import.meta.url')) {
+        return code.replaceAll('import.meta.url', 'self.location.href')
+      }
+    },
   }
 }
 
