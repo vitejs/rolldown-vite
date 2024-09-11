@@ -30,7 +30,6 @@ export default defineConfig({
       // skip link vite tets at local
       '**/node_modules/**',
 
-      './playground/css/__tests__/same-file-name/*.spec.ts', // fails with build after bumping rolldown (https://github.com/rolldown/rolldown/issues/2183)
       // (probably) windows fails
       './playground/ssr-deps/**/*.spec.[tj]s', // fails with serve/build
       './playground/optimize-deps-no-discovery/**/*.spec.[tj]s', // fails with serve
