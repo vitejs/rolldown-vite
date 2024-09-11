@@ -9,7 +9,6 @@ import type {
   ModuleFormat,
   OutputOptions,
   Plugin,
-  RolldownPlugin,
   RollupBuild,
   RollupError,
   RollupLog,
@@ -425,10 +424,9 @@ export function resolveBuildOptions(
 }
 
 export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
-  pre: (RolldownPlugin | null)[]
-  post: (RolldownPlugin | null)[]
+  pre: Plugin[]
+  post: Plugin[]
 }> {
-  // const enableNativePlugin = config.experimental.enableNativePlugin;
   const options = config.build
   // Note: The rolldown internal support commonjs
   // const { commonjsOptions } = options
