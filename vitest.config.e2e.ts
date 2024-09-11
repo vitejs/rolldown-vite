@@ -29,11 +29,6 @@ export default defineConfig({
       './playground/worker/**/*.spec.[tj]s',
       // skip link vite tets at local
       '**/node_modules/**',
-
-      // (probably) windows fails
-      './playground/ssr-deps/**/*.spec.[tj]s', // fails with serve/build
-      './playground/optimize-deps-no-discovery/**/*.spec.[tj]s', // fails with serve
-      './playground/ssr-noexternal/**/*.spec.[tj]s', // fails with serve
     ],
     setupFiles: ['./playground/vitestSetup.ts'],
     globalSetup: ['./playground/vitestGlobalSetup.ts'],
