@@ -47,7 +47,6 @@ const externalTypes = [
   ...KNOWN_ASSET_TYPES,
 ]
 
-
 const optionalPeerDepNamespace = 'optional-peer-dep:'
 const browserExternalNamespace = 'browser-external:'
 

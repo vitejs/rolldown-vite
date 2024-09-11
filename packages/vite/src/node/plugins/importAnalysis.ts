@@ -56,7 +56,11 @@ import { getDepOptimizationConfig } from '../config'
 import type { ResolvedConfig } from '../config'
 import type { Plugin } from '../plugin'
 import { shouldExternalizeForSSR } from '../ssr/ssrExternal'
-import { getDepsOptimizer, optimizedDepInfoFromFile, optimizedDepNeedsInterop } from '../optimizer'
+import {
+  getDepsOptimizer,
+  optimizedDepInfoFromFile,
+  optimizedDepNeedsInterop,
+} from '../optimizer'
 import {
   cleanUrl,
   unwrapId,
