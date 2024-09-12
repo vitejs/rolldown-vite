@@ -58,7 +58,7 @@ export async function resolvePlugins(
     depsOptimizerEnabled ? optimizedDepsPlugin(config) : null,
     isBuild ? metadataPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
-    preAliasPlugin(config),
+    !isBuild ? preAliasPlugin(config) : null,
     enableNativePlugin
       ? nativeAliasPlugin({
           entries: config.resolve.alias.map((item) => {
