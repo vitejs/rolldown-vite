@@ -9,6 +9,7 @@ import type {
   LogOrStringHandler,
   ModuleFormat,
   OutputOptions,
+  RolldownPlugin,
   RollupBuild,
   RollupError,
   RollupLog,
@@ -17,7 +18,11 @@ import type {
   // RollupWatcher,
   WarningHandlerWithDefault,
   // WatcherOptions,
-} from 'rollup'
+} from 'rolldown'
+import {
+  loadFallbackPlugin as nativeLoadFallbackPlugin,
+  manifestPlugin as nativeManifestPlugin,
+} from 'rolldown/experimental'
 import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
 import type { TransformOptions } from 'esbuild'
@@ -457,13 +462,15 @@ export function resolveBuildEnvironmentOptions(
 
 export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   pre: Plugin[]
-  post: Plugin[]
+  post: RolldownPlugin[]
 }> {
+  const enableNativePlugin = config.experimental.enableNativePlugin
   // TODO: support commonjs options?
   return {
     pre: [
       completeSystemWrapPlugin(),
-      dataURIPlugin(),
+      // rolldown has builtin support datauri, use a switch to control it for convenience
+      ...(enableNativePlugin ? [] : [dataURIPlugin()]),
       perEnvironmentPlugin(
         'vite:rollup-options-plugins',
         async (environment) =>
@@ -476,13 +483,28 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
       ...(config.isWorker ? [webWorkerPostPlugin()] : []),
     ],
     post: [
-      buildImportAnalysisPlugin(config),
+      ...buildImportAnalysisPlugin(config),
       buildEsbuildPlugin(),
       terserPlugin(config),
       ...(!config.isWorker
-        ? [manifestPlugin(), ssrManifestPlugin(), buildReporterPlugin(config)]
+        ? [
+            config.build.manifest && enableNativePlugin
+              ? // TODO: make this environment-specific
+                nativeManifestPlugin({
+                  root: config.root,
+                  outPath:
+                    config.build.manifest === true
+                      ? '.vite/manifest.json'
+                      : config.build.manifest,
+                })
+              : manifestPlugin(),
+            ssrManifestPlugin(),
+            buildReporterPlugin(config),
+          ]
         : []),
-      buildLoadFallbackPlugin(),
+      enableNativePlugin
+        ? nativeLoadFallbackPlugin()
+        : buildLoadFallbackPlugin(),
     ],
   }
 }
