@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import colors from 'picocolors'
-import type { PartialResolvedId, RolldownPlugin } from 'rolldown'
+import type { PartialResolvedId } from 'rolldown'
 import { exports, imports } from 'resolve.exports'
 import { hasESMSyntax } from 'mlly'
 import type { Plugin } from '../plugin'
@@ -561,7 +561,7 @@ module.exports = Object.create(new Proxy({}, {
       key !== 'constructor' &&
       key !== 'splice'
     ) {
-      throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
+      throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vitejs.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
     }
   }
   }))`

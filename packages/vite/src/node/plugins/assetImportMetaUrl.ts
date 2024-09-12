@@ -2,7 +2,7 @@ import path from 'node:path'
 import MagicString from 'magic-string'
 import { stripLiteral } from 'strip-literal'
 import { parseAst } from 'rollup/parseAst'
-import type { RolldownPlugin } from 'rolldown'
+import type { Plugin } from '../plugin'
 import type { ResolvedConfig } from '../config'
 import {
   injectQuery,
@@ -76,41 +76,23 @@ export function assetImportMetaUrlPlugin(
 
             if (!s) s = new MagicString(code)
 
-            // potential dynamic template string
-            if (rawUrl[0] === '`' && rawUrl.includes('${')) {
-              const queryDelimiterIndex = getQueryDelimiterIndex(rawUrl)
-              const hasQueryDelimiter = queryDelimiterIndex !== -1
-              const pureUrl = hasQueryDelimiter
-                ? rawUrl.slice(0, queryDelimiterIndex) + '`'
-                : rawUrl
-              const queryString = hasQueryDelimiter
-                ? rawUrl.slice(queryDelimiterIndex, -1)
-                : ''
-              const ast = parseAst(pureUrl)
-              const templateLiteral = (ast as any).body[0].expression
-              if (templateLiteral.expressions.length) {
-                const pattern = buildGlobPattern(templateLiteral)
-                if (pattern.startsWith('**')) {
-                  // don't transform for patterns like this
-                  // because users won't intend to do that in most cases
-                  continue
-                }
-
-                const globOptions = {
-                  eager: true,
-                  import: 'default',
-                  // A hack to allow 'as' & 'query' exist at the same time
-                  query: injectQuery(queryString, 'url'),
-                }
-                s.update(
-                  startIndex,
-                  endIndex,
-                  `new URL((import.meta.glob(${JSON.stringify(
-                    pattern,
-                  )}, ${JSON.stringify(
-                    globOptions,
-                  )}))[${pureUrl}], import.meta.url)`,
-                )
+          // potential dynamic template string
+          if (rawUrl[0] === '`' && rawUrl.includes('${')) {
+            const queryDelimiterIndex = getQueryDelimiterIndex(rawUrl)
+            const hasQueryDelimiter = queryDelimiterIndex !== -1
+            const pureUrl = hasQueryDelimiter
+              ? rawUrl.slice(0, queryDelimiterIndex) + '`'
+              : rawUrl
+            const queryString = hasQueryDelimiter
+              ? rawUrl.slice(queryDelimiterIndex, -1)
+              : ''
+            const ast = parseAst(pureUrl)
+            const templateLiteral = (ast as any).body[0].expression
+            if (templateLiteral.expressions.length) {
+              const pattern = buildGlobPattern(templateLiteral)
+              if (pattern.startsWith('**')) {
+                // don't transform for patterns like this
+                // because users won't intend to do that in most cases
                 continue
               }
             }

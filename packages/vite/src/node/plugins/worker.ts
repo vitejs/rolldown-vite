@@ -1,6 +1,6 @@
 import path from 'node:path'
 import MagicString from 'magic-string'
-import type { OutputChunk, RolldownPlugin } from 'rolldown'
+import type { OutputChunk } from 'rolldown'
 import type { ResolvedConfig } from '../config'
 import type { Plugin } from '../plugin'
 import { ENV_ENTRY, ENV_PUBLIC_PATH } from '../constants'
@@ -84,11 +84,6 @@ async function bundleWorkerEntry(
     ),
     onwarn(warning, warn) {
       onRollupWarning(warning, warn, workerEnvironment)
-    },
-    // TODO: remove this and enable rolldown's CSS support later
-    moduleTypes: {
-      '.css': 'js',
-      ...rollupOptions.moduleTypes,
     },
     // preserveEntrySignatures: false,
   })

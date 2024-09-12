@@ -1,6 +1,6 @@
 import path from 'node:path'
 import MagicString from 'magic-string'
-import type { RolldownPlugin, RollupError } from 'rolldown'
+import type { RollupError } from 'rolldown'
 import { stripLiteral } from 'strip-literal'
 import type { ResolvedConfig } from '../config'
 import { evalValue, injectQuery, transformStableResult } from '../utils'

@@ -15,7 +15,7 @@ export function metadataPlugin(): Plugin {
     async renderChunk(_code, chunk) {
       // Since the chunk come from rust side, mutate it directly will not sync back to rust side.
       // The next usage will lost the metadata
-      chunkMetadataMap.set(chunk.fileName, {
+      chunkMetadataMap.set(chunk.name, {
         importedAssets: new Set(),
         importedCss: new Set(),
       })
@@ -28,7 +28,6 @@ export function metadataPlugin(): Plugin {
 export function getChunkMetadata(
   chunk: RenderedChunk | OutputChunk,
 ): ChunkMetadata | undefined {
-  const preliminaryFileName =
-    'preliminaryFileName' in chunk ? chunk.preliminaryFileName : chunk.fileName
-  return chunkMetadataMap.get(preliminaryFileName)
+  // TODO: chunk.name is not unique, use something unique like chunk.preliminaryFileName / chunk.fileName
+  return chunkMetadataMap.get(chunk.name)
 }

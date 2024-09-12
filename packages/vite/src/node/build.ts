@@ -17,10 +17,6 @@ import type {
   // RollupWatcher,
   // WatcherOptions,
 } from 'rolldown'
-import {
-  loadFallbackPlugin as nativeLoadFallbackPlugin,
-  manifestPlugin as nativeManifestPlugin,
-} from 'rolldown/experimental'
 import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
 import type { TransformOptions } from 'esbuild'
@@ -389,7 +385,6 @@ export function resolveBuildEnvironmentOptions(
     emitAssets: consumer === 'client',
     reportCompressedSize: true,
     chunkSizeWarningLimit: 500,
-    enableBuildReport: true,
     // watch: null,
     createEnvironment: (name, config) => new BuildEnvironment(name, config),
   }
@@ -467,14 +462,11 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   pre: Plugin[]
   post: RolldownPlugin[]
 }> {
-  const enableNativePlugin = config.experimental.enableNativePlugin
-  const enableBuildReport = config.build.enableBuildReport
   // TODO: support commonjs options?
   return {
     pre: [
       completeSystemWrapPlugin(),
-      // rolldown has builtin support datauri, use a switch to control it for convenience
-      ...(enableNativePlugin ? [] : [dataURIPlugin()]),
+      dataURIPlugin(),
       /**
        * environment.config.build.rollupOptions.plugins isn't supported
        * when builder.sharedConfigBuild or builder.sharedPlugins is enabled.
