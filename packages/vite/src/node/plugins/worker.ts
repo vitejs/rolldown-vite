@@ -1,6 +1,6 @@
 import path from 'node:path'
 import MagicString from 'magic-string'
-import type { OutputChunk, RollupError } from 'rollup'
+import type { OutputChunk, RollupError } from 'rolldown'
 import type { ResolvedConfig } from '../config'
 import type { Plugin } from '../plugin'
 import { ENV_ENTRY, ENV_PUBLIC_PATH } from '../constants'
@@ -73,12 +73,12 @@ async function bundleWorkerEntry(
   }
 
   // bundle the file as entry to support imports
-  const { rollup } = await import('rollup')
+  const { rolldown } = await import('rolldown')
   const { plugins, rollupOptions, format } = config.worker
   const { plugins: resolvedPlugins, config: workerConfig } =
     await plugins(newBundleChain)
   const workerEnvironment = new BuildEnvironment('client', workerConfig) // TODO: should this be 'worker'?
-  const bundle = await rollup({
+  const bundle = await rolldown({
     ...rollupOptions,
     input,
     plugins: resolvedPlugins.map((p) =>
@@ -87,7 +87,7 @@ async function bundleWorkerEntry(
     onwarn(warning, warn) {
       onRollupWarning(warning, warn, workerEnvironment)
     },
-    preserveEntrySignatures: false,
+    // preserveEntrySignatures: false,
   })
   let chunk: OutputChunk
   try {
@@ -157,7 +157,8 @@ function emitSourcemapForWorkerEntry(
       config.build.sourcemap === 'hidden' ||
       config.build.sourcemap === true
     ) {
-      const data = sourcemap.toString()
+      // TODO: rolldown does not support sourcemap.toString()
+      const data = JSON.stringify(sourcemap)
       const mapFileName = chunk.fileName + '.map'
       saveEmitWorkerAsset(config, {
         fileName: mapFileName,
@@ -208,24 +209,30 @@ export async function workerFileToUrl(
 export function webWorkerPostPlugin(): Plugin {
   return {
     name: 'vite:worker-post',
-    resolveImportMeta(property, { format }) {
-      // document is undefined in the worker, so we need to avoid it in iife
-      if (format === 'iife') {
-        // compiling import.meta
-        if (!property) {
-          // rollup only supports `url` property. we only support `url` property as well.
-          // https://github.com/rollup/rollup/blob/62b648e1cc6a1f00260bb85aa2050097bb4afd2b/src/ast/nodes/MetaProperty.ts#L164-L173
-          return `{
-            url: self.location.href
-          }`
-        }
-        // compiling import.meta.url
-        if (property === 'url') {
-          return 'self.location.href'
-        }
-      }
+    // TODO: resolveImportMeta is not supported yet, use transform hook for now
+    // resolveImportMeta(property, { format }) {
+    //   // document is undefined in the worker, so we need to avoid it in iife
+    //   if (format === 'iife') {
+    //     // compiling import.meta
+    //     if (!property) {
+    //       // rollup only supports `url` property. we only support `url` property as well.
+    //       // https://github.com/rollup/rollup/blob/62b648e1cc6a1f00260bb85aa2050097bb4afd2b/src/ast/nodes/MetaProperty.ts#L164-L173
+    //       return `{
+    //         url: self.location.href
+    //       }`
+    //     }
+    //     // compiling import.meta.url
+    //     if (property === 'url') {
+    //       return 'self.location.href'
+    //     }
+    //   }
 
-      return null
+    //   return null
+    // },
+    transform(code) {
+      if (code.includes('import.meta.url')) {
+        return code.replaceAll('import.meta.url', 'self.location.href')
+      }
     },
   }
 }
@@ -254,11 +261,11 @@ export function webWorkerPlugin(config: ResolvedConfig): Plugin {
       }
     },
 
-    shouldTransformCachedModule({ id }) {
-      if (isBuild && config.build.watch && workerOrSharedWorkerRE.test(id)) {
-        return true
-      }
-    },
+    // shouldTransformCachedModule({ id }) {
+    //   if (isBuild && config.build.watch && workerOrSharedWorkerRE.test(id)) {
+    //     return true
+    //   }
+    // },
 
     async transform(raw, id) {
       const workerFileMatch = workerFileRE.exec(id)
