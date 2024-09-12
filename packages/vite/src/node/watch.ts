@@ -1,7 +1,7 @@
 import path from 'node:path'
 import type { WatchOptions } from 'dep-types/chokidar'
 import picomatch from 'picomatch'
-import type { OutputOptions } from 'rollup'
+import type { OutputOptions } from 'rolldown'
 import colors from 'picocolors'
 import { escapePath } from 'tinyglobby'
 import { withTrailingSlash } from '../shared/utils'
