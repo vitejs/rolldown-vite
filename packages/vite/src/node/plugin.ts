@@ -1,6 +1,7 @@
 import type {
   CustomPluginOptions,
   LoadResult,
+  ModuleType,
   ObjectHook,
   ResolveIdResult,
   Plugin as RollupPlugin,
@@ -8,7 +9,7 @@ import type {
   TransformPluginContext as RollupTransformPluginContext,
   SourceMap,
   TransformResult,
-} from 'rollup'
+} from 'rolldown'
 import type {
   ConfigEnv,
   EnvironmentOptions,
@@ -81,7 +82,7 @@ export interface TransformPluginContext
     TransformPluginContextExtension {}
 
 // Argument Rollup types to have the PluginContextExtension
-declare module 'rollup' {
+declare module 'rolldown' {
   export interface PluginContext extends PluginContextExtension {}
   export interface TransformPluginContext
     extends TransformPluginContextExtension {}
@@ -132,7 +133,7 @@ export interface Plugin<A = any> extends RollupPlugin<A> {
       source: string,
       importer: string | undefined,
       options: {
-        attributes: Record<string, string>
+        // attributes: Record<string, string>
         custom?: CustomPluginOptions
         ssr?: boolean
         /**
@@ -140,6 +141,7 @@ export interface Plugin<A = any> extends RollupPlugin<A> {
          */
         scan?: boolean
         isEntry: boolean
+        kind?: 'import' | 'dynamic-import' | 'require-call'
       },
     ) => Promise<ResolveIdResult> | ResolveIdResult
   >
@@ -162,6 +164,7 @@ export interface Plugin<A = any> extends RollupPlugin<A> {
       code: string,
       id: string,
       options?: {
+        moduleType: ModuleType
         ssr?: boolean
       },
     ) => Promise<TransformResult> | TransformResult
