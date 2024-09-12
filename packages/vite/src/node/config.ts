@@ -1582,7 +1582,9 @@ export async function resolveConfig(
 
   // Check if all assetFileNames have the same reference.
   // If not, display a warn for user.
-  const outputOption = config.build?.rollupOptions?.output ?? []
+
+  // Note: the rolldown `output` option is object.
+  const outputOption = config.build?.rollupOptions?.output ?? {}
   // Use isArray to narrow its type to array
   if (Array.isArray(outputOption)) {
     const assetFileNamesList = outputOption.map(
