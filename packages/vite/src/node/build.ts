@@ -444,12 +444,13 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
     pre: [
       completeSystemWrapPlugin(),
       // ...(usePluginCommonjs ? [commonjsPlugin(options.commonjsOptions)] : []),
-      dataURIPlugin(),
+      // rolldown has builtin support datauri, use a switch to control it for convenience
+      enableNativePlugin ? null : dataURIPlugin(),
       ...((await asyncFlatten(arraify(rollupOptionsPlugins))).filter(
         Boolean,
       ) as Plugin[]),
       ...(config.isWorker ? [webWorkerPostPlugin()] : []),
-    ],
+    ].filter(Boolean) as Plugin[],
     post: [
       ...buildImportAnalysisPlugin(config),
       ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
