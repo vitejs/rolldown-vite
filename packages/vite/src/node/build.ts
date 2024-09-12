@@ -48,7 +48,7 @@ import {
   requireResolveFromRootWithFallback,
 } from './utils'
 import { manifestPlugin } from './plugins/manifest'
-import type { Logger } from './logger';
+import type { Logger } from './logger'
 import { LogLevels } from './logger'
 import { dataURIPlugin } from './plugins/dataUri'
 import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
@@ -455,7 +455,9 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
     ].filter(Boolean) as Plugin[],
     post: [
       ...buildImportAnalysisPlugin(config),
-      ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
+      ...(config.esbuild !== false && !enableNativePlugin
+        ? [buildEsbuildPlugin(config)]
+        : []),
       ...(options.minify ? [terserPlugin(config)] : []),
       ...((!config.isWorker
         ? [
