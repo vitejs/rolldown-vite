@@ -9,6 +9,7 @@ import type {
   ModuleFormat,
   OutputOptions,
   Plugin,
+  RolldownPlugin,
   RollupBuild,
   RollupError,
   RollupLog,
@@ -17,6 +18,10 @@ import type {
   // RollupWatcher,
   // WatcherOptions,
 } from 'rolldown'
+import {
+  loadFallbackPlugin as nativeLoadFallbackPlugin,
+  manifestPlugin as nativeManifestPlugin,
+} from 'rolldown/experimental'
 import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
 import type { TransformOptions } from 'esbuild'
@@ -425,7 +430,7 @@ export function resolveBuildOptions(
 
 export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   pre: Plugin[]
-  post: Plugin[]
+  post: RolldownPlugin[]
 }> {
   const options = config.build
   // Note: The rolldown internal support commonjs
@@ -434,6 +439,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   //   !Array.isArray(commonjsOptions?.include) ||
   //   commonjsOptions?.include.length !== 0
   const rollupOptionsPlugins = options.rollupOptions.plugins
+  const enableNativePlugin = config.experimental.enableNativePlugin
   return {
     pre: [
       completeSystemWrapPlugin(),
@@ -445,17 +451,23 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
       ...(config.isWorker ? [webWorkerPostPlugin()] : []),
     ],
     post: [
-      buildImportAnalysisPlugin(config),
+      ...buildImportAnalysisPlugin(config),
       ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
       ...(options.minify ? [terserPlugin(config)] : []),
       ...(!config.isWorker
         ? [
-            ...(options.manifest ? [manifestPlugin(config)] : []),
+            ...(options.manifest
+              ? [
+                  enableNativePlugin
+                    ? nativeManifestPlugin()
+                    : manifestPlugin(config),
+                ]
+              : []),
             ...(options.ssrManifest ? [ssrManifestPlugin(config)] : []),
             buildReporterPlugin(config),
           ]
         : []),
-      loadFallbackPlugin(),
+      enableNativePlugin ? nativeLoadFallbackPlugin() : loadFallbackPlugin(),
     ],
   }
 }

@@ -8,6 +8,7 @@ import { init, parse as parseImports } from 'es-module-lexer'
 import type { SourceMap } from 'rolldown'
 import type { RawSourceMap } from '@ampproject/remapping'
 import convertSourceMap from 'convert-source-map'
+import { buildImportAnalysisPlugin as nativeBuildImportAnalysisPlugin } from 'rolldown/experimental'
 import {
   combineSourcemaps,
   generateCodeFrame,
@@ -162,9 +163,10 @@ function preload(
 /**
  * Build only. During serve this is performed as part of ./importAnalysis.
  */
-export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
+export function buildImportAnalysisPlugin(config: ResolvedConfig): [Plugin] {
   const ssr = !!config.build.ssr
   const isWorker = config.isWorker
+  const enableNativePlugin = config.experimental.enableNativePlugin
   const insertPreload = !(ssr || !!config.build.lib || isWorker)
 
   const renderBuiltUrl = config.experimental.renderBuiltUrl
@@ -194,7 +196,7 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
         `function(dep) { return ${JSON.stringify(config.base)}+dep }`
   const preloadCode = `const scriptRel = ${scriptRel};const assetsURL = ${assetsURL};const seen = {};export const ${preloadMethod} = ${preload.toString()}`
 
-  return {
+  const jsPlugin = {
     name: 'vite:build-import-analysis',
     resolveId(id) {
       if (id === preloadHelperId) {
@@ -710,5 +712,23 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
         }
       }
     },
+  } as Plugin
+  if (enableNativePlugin) {
+    delete jsPlugin.transform
+    delete jsPlugin.resolveId
+    delete jsPlugin.load
   }
+  return [
+    jsPlugin,
+    enableNativePlugin
+      ? nativeBuildImportAnalysisPlugin({
+          preloadCode: preloadCode,
+          insertPreload: insertPreload,
+          /// this field looks redundant, put a dummy value for now
+          optimizeModulePreloadRelativePaths: false,
+          renderBuiltUrl: Boolean(renderBuiltUrl),
+          isRelativeBase: isRelativeBase,
+        })
+      : null,
+  ].filter(Boolean) as [Plugin]
 }
