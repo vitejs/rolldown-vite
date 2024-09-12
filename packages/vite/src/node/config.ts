@@ -8,7 +8,7 @@ import { builtinModules, createRequire } from 'node:module'
 import colors from 'picocolors'
 import type { Alias, AliasOptions } from 'dep-types/alias'
 import { build } from 'esbuild'
-import type { RollupOptions } from 'rollup'
+import type { RollupOptions } from 'rolldown'
 import picomatch from 'picomatch'
 import type { AnymatchFn } from '../types/anymatch'
 import { withTrailingSlash } from '../shared/utils'
@@ -1516,7 +1516,9 @@ export async function resolveConfig(
 
   // Check if all assetFileNames have the same reference.
   // If not, display a warn for user.
-  const outputOption = config.build?.rollupOptions?.output ?? []
+
+  // Note: the rolldown `output` option is object.
+  const outputOption = config.build?.rollupOptions?.output ?? {}
   // Use isArray to narrow its type to array
   if (Array.isArray(outputOption)) {
     const assetFileNamesList = outputOption.map(
