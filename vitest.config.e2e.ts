@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['./playground/html/**/*.spec.[tj]s'],
+    include: ['./playground/**/*.spec.[tj]s'],
     exclude: [
       './playground/assets/**/*.spec.[tj]s',
       './playground/backend-integration/**/*.spec.[tj]s',
