@@ -48,7 +48,8 @@ import {
   requireResolveFromRootWithFallback,
 } from './utils'
 import { manifestPlugin } from './plugins/manifest'
-import type { Logger } from './logger'
+import type { Logger } from './logger';
+import { LogLevels } from './logger'
 import { dataURIPlugin } from './plugins/dataUri'
 import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
 import { ssrManifestPlugin } from './ssr/ssrManifestPlugin'
@@ -440,6 +441,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   //   commonjsOptions?.include.length !== 0
   const rollupOptionsPlugins = options.rollupOptions.plugins
   const enableNativePlugin = config.experimental.enableNativePlugin
+  const shouldLogInfo = LogLevels[config.logLevel || 'info'] >= LogLevels.info
   return {
     pre: [
       completeSystemWrapPlugin(),
@@ -455,7 +457,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
       ...buildImportAnalysisPlugin(config),
       ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
       ...(options.minify ? [terserPlugin(config)] : []),
-      ...(!config.isWorker
+      ...((!config.isWorker
         ? [
             ...(options.manifest
               ? [
@@ -465,9 +467,10 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
                 ]
               : []),
             ...(options.ssrManifest ? [ssrManifestPlugin(config)] : []),
-            buildReporterPlugin(config),
+            shouldLogInfo ? buildReporterPlugin(config) : null,
           ]
-        : []),
+        : []
+      ).filter(Boolean) as Plugin[]),
       enableNativePlugin ? nativeLoadFallbackPlugin() : loadFallbackPlugin(),
     ],
   }
