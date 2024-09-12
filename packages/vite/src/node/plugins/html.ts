@@ -5,7 +5,7 @@ import type {
   OutputChunk,
   RollupError,
   SourceMapInput,
-} from 'rollup'
+} from 'rolldown'
 import MagicString from 'magic-string'
 import colors from 'picocolors'
 import type { DefaultTreeAdapterMap, ParserError, Token } from 'parse5'
@@ -41,6 +41,7 @@ import {
 } from './asset'
 import { isCSSRequest } from './css'
 import { modulePreloadPolyfillId } from './modulePreloadPolyfill'
+import { getChunkMetadata } from './metadata'
 
 interface ScriptAssetsUrl {
   start: number
@@ -762,7 +763,7 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
           })
         }
 
-        chunk.viteMetadata!.importedCss.forEach((file) => {
+        getChunkMetadata(chunk)!.importedCss.forEach((file) => {
           if (!seen.has(file)) {
             seen.add(file)
             tags.push({
@@ -912,7 +913,7 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
         result = result.replace(assetUrlRE, (_, fileHash, postfix = '') => {
           const file = this.getFileName(fileHash)
           if (chunk) {
-            chunk.viteMetadata!.importedAssets.add(cleanUrl(file))
+            getChunkMetadata(chunk)!.importedAssets.add(cleanUrl(file))
           }
           return encodeURIPath(toOutputAssetFilePath(file)) + postfix
         })
