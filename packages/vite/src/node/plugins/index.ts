@@ -121,7 +121,6 @@ export async function resolvePlugins(
     assetPlugin(config),
     ...normalPlugins,
     enableNativePlugin ? nativeWasmFallbackPlugin() : wasmFallbackPlugin(),
-    // TODO: support nativedefinePlugin
     definePlugin(config),
     cssPostPlugin(config),
     isBuild && buildHtmlPlugin(config),
