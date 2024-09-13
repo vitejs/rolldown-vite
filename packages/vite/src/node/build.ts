@@ -276,6 +276,7 @@ export interface BuildEnvironmentOptions {
     name: string,
     config: ResolvedConfig,
   ) => Promise<BuildEnvironment> | BuildEnvironment
+  enableBuildReport?: boolean
 }
 
 export type BuildOptions = BuildEnvironmentOptions
@@ -388,6 +389,7 @@ export function resolveBuildEnvironmentOptions(
     emitAssets: consumer === 'client',
     reportCompressedSize: true,
     chunkSizeWarningLimit: 500,
+    enableBuildReport: true,
     // watch: null,
     createEnvironment: (name, config) => new BuildEnvironment(name, config),
   }
@@ -466,6 +468,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   post: RolldownPlugin[]
 }> {
   const enableNativePlugin = config.experimental.enableNativePlugin
+  const enableBuildReport = config.build.enableBuildReport
   // TODO: support commonjs options?
   return {
     pre: [
@@ -500,7 +503,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
                 nativeManifestPlugin()
               : manifestPlugin(),
             ssrManifestPlugin(),
-            buildReporterPlugin(config),
+            ...(enableBuildReport ? [buildReporterPlugin(config)] : []),
           ]
         : []),
       enableNativePlugin
