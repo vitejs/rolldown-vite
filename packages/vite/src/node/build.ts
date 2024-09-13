@@ -49,7 +49,6 @@ import {
 } from './utils'
 import { manifestPlugin } from './plugins/manifest'
 import type { Logger } from './logger'
-import { LogLevels } from './logger'
 import { dataURIPlugin } from './plugins/dataUri'
 import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
 import { ssrManifestPlugin } from './ssr/ssrManifestPlugin'
@@ -252,6 +251,7 @@ export interface BuildOptions {
    * @default null
    */
   // watch?: WatcherOptions | null
+  enableBuildReport?: boolean
 }
 
 export interface LibraryOptions {
@@ -357,6 +357,7 @@ export function resolveBuildOptions(
     ssrEmitAssets: false,
     reportCompressedSize: true,
     chunkSizeWarningLimit: 500,
+    enableBuildReport: true,
     // watch: null,
   }
 
@@ -441,7 +442,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   //   commonjsOptions?.include.length !== 0
   const rollupOptionsPlugins = options.rollupOptions.plugins
   const enableNativePlugin = config.experimental.enableNativePlugin
-  const shouldLogInfo = LogLevels[config.logLevel || 'info'] >= LogLevels.info
+  const enableBuildReport = config.build.enableBuildReport
   return {
     pre: [
       completeSystemWrapPlugin(),
@@ -469,7 +470,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
                 ]
               : []),
             ...(options.ssrManifest ? [ssrManifestPlugin(config)] : []),
-            shouldLogInfo ? buildReporterPlugin(config) : null,
+            enableBuildReport ? buildReporterPlugin(config) : null,
           ]
         : []
       ).filter(Boolean) as Plugin[]),
