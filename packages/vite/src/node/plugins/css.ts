@@ -11,6 +11,7 @@ import type {
   OutputAsset,
   OutputChunk,
   RenderedChunk,
+  RolldownPlugin,
   RollupError,
   SourceMapInput,
 } from 'rolldown'
@@ -255,7 +256,7 @@ const cssUrlAssetRE = /__VITE_CSS_URL__([\da-f]+)__/g
 /**
  * Plugin applied before user plugins
  */
-export function cssPlugin(config: ResolvedConfig): Plugin {
+export function cssPlugin(config: ResolvedConfig): RolldownPlugin {
   const isBuild = config.command === 'build'
   let moduleCache: Map<string, Record<string, string>>
 
@@ -294,102 +295,116 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
     buildEnd() {
       preprocessorWorkerController?.close()
     },
+    load: {
+      filter: {
+        id: {
+          include: [CSS_LANGS_RE, urlRE],
+        },
+      },
+      async handler(id) {
+        if (!isCSSRequest(id)) return
 
-    async load(id) {
-      if (!isCSSRequest(id)) return
-
-      if (urlRE.test(id)) {
-        if (isModuleCSSRequest(id)) {
-          throw new Error(
-            `?url is not supported with CSS modules. (tried to import ${JSON.stringify(
-              id,
-            )})`,
-          )
-        }
-
-        // *.css?url
-        // in dev, it's handled by assets plugin.
-        if (isBuild) {
-          id = injectQuery(removeUrlQuery(id), 'transform-only')
-          return (
-            `import ${JSON.stringify(id)};` +
-            `export default "__VITE_CSS_URL__${Buffer.from(id).toString(
-              'hex',
-            )}__"`
-          )
-        }
-      }
-    },
-
-    async transform(raw, id) {
-      if (
-        !isCSSRequest(id) ||
-        commonjsProxyRE.test(id) ||
-        SPECIAL_QUERY_RE.test(id)
-      ) {
-        return
-      }
-      const urlReplacer: CssUrlReplacer = async (url, importer) => {
-        const decodedUrl = decodeURI(url)
-        if (checkPublicFile(decodedUrl, config)) {
-          if (encodePublicUrlsInCSS(config)) {
-            return publicFileToBuiltUrl(decodedUrl, config)
-          } else {
-            return joinUrlSegments(config.base, decodedUrl)
-          }
-        }
-        const [id, fragment] = decodedUrl.split('#')
-        let resolved = await resolveUrl(id, importer)
-        if (resolved) {
-          if (fragment) resolved += '#' + fragment
-          return fileToUrl(resolved, config, this)
-        }
-        if (config.command === 'build') {
-          const isExternal = config.build.rollupOptions.external
-            ? resolveUserExternal(
-                config.build.rollupOptions.external,
-                decodedUrl, // use URL as id since id could not be resolved
+        if (urlRE.test(id)) {
+          if (isModuleCSSRequest(id)) {
+            throw new Error(
+              `?url is not supported with CSS modules. (tried to import ${JSON.stringify(
                 id,
-                false,
-              )
-            : false
+              )})`,
+            )
+          }
 
-          if (!isExternal) {
-            // #9800 If we cannot resolve the css url, leave a warning.
-            config.logger.warnOnce(
-              `\n${decodedUrl} referenced in ${id} didn't resolve at build time, it will remain unchanged to be resolved at runtime`,
+          // *.css?url
+          // in dev, it's handled by assets plugin.
+          if (isBuild) {
+            id = injectQuery(removeUrlQuery(id), 'transform-only')
+            return (
+              `import ${JSON.stringify(id)};` +
+              `export default "__VITE_CSS_URL__${Buffer.from(id).toString(
+                'hex',
+              )}__"`
             )
           }
         }
-        return url
-      }
+      },
+    },
 
-      const {
-        code: css,
-        modules,
-        deps,
-        map,
-      } = await compileCSS(
-        id,
-        raw,
-        config,
-        preprocessorWorkerController!,
-        urlReplacer,
-      )
-      if (modules) {
-        moduleCache.set(id, modules)
-      }
-
-      if (deps) {
-        for (const file of deps) {
-          this.addWatchFile(file)
+    transform: {
+      filter: {
+        id: {
+          include: [CSS_LANGS_RE],
+          exclude: [commonjsProxyRE, SPECIAL_QUERY_RE],
+        },
+      },
+      async handler(raw, id) {
+        if (
+          !isCSSRequest(id) ||
+          commonjsProxyRE.test(id) ||
+          SPECIAL_QUERY_RE.test(id)
+        ) {
+          return
         }
-      }
+        const urlReplacer: CssUrlReplacer = async (url, importer) => {
+          const decodedUrl = decodeURI(url)
+          if (checkPublicFile(decodedUrl, config)) {
+            if (encodePublicUrlsInCSS(config)) {
+              return publicFileToBuiltUrl(decodedUrl, config)
+            } else {
+              return joinUrlSegments(config.base, decodedUrl)
+            }
+          }
+          const [id, fragment] = decodedUrl.split('#')
+          let resolved = await resolveUrl(id, importer)
+          if (resolved) {
+            if (fragment) resolved += '#' + fragment
+            return fileToUrl(resolved, config, this)
+          }
+          if (config.command === 'build') {
+            const isExternal = config.build.rollupOptions.external
+              ? resolveUserExternal(
+                  config.build.rollupOptions.external,
+                  decodedUrl, // use URL as id since id could not be resolved
+                  id,
+                  false,
+                )
+              : false
 
-      return {
-        code: css,
-        map,
-      }
+            if (!isExternal) {
+              // #9800 If we cannot resolve the css url, leave a warning.
+              config.logger.warnOnce(
+                `\n${decodedUrl} referenced in ${id} didn't resolve at build time, it will remain unchanged to be resolved at runtime`,
+              )
+            }
+          }
+          return url
+        }
+
+        const {
+          code: css,
+          modules,
+          deps,
+          map,
+        } = await compileCSS(
+          id,
+          raw,
+          config,
+          preprocessorWorkerController!,
+          urlReplacer,
+        )
+        if (modules) {
+          moduleCache.set(id, modules)
+        }
+
+        if (deps) {
+          for (const file of deps) {
+            this.addWatchFile(file)
+          }
+        }
+
+        return {
+          code: css,
+          map,
+        }
+      },
     },
   }
 }
