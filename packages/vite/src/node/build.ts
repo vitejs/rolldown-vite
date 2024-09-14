@@ -456,9 +456,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
     ].filter(Boolean) as Plugin[],
     post: [
       ...buildImportAnalysisPlugin(config),
-      ...(config.esbuild !== false && !enableNativePlugin
-        ? [buildEsbuildPlugin(config)]
-        : []),
+      ...(config.esbuild !== false ? [buildEsbuildPlugin(config)] : []),
       ...(options.minify ? [terserPlugin(config)] : []),
       ...((!config.isWorker
         ? [
