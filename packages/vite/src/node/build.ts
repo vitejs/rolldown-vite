@@ -72,7 +72,7 @@ import { mergeConfig } from './publicUtils'
 import { webWorkerPostPlugin } from './plugins/worker'
 import { getHookHandler } from './plugins'
 import { BaseEnvironment } from './baseEnvironment'
-import type { Plugin, PluginContext } from './plugin'
+import type { MinimalPluginContext, Plugin, PluginContext } from './plugin'
 import type { RollupPluginHooks } from './typeUtils'
 
 export interface BuildEnvironmentOptions {
@@ -1268,7 +1268,7 @@ function wrapEnvironmentHook<HookName extends keyof Plugin>(
   }
 }
 
-function injectEnvironmentInContext<Context extends PluginContext>(
+function injectEnvironmentInContext<Context extends MinimalPluginContext>(
   context: Context,
   environment: BuildEnvironment,
 ) {

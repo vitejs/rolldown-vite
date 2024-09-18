@@ -40,7 +40,6 @@ import type {
   FunctionPluginHooks,
   InputOptions,
   LoadResult,
-  MinimalPluginContext,
   ModuleInfo,
   ModuleOptions,
   NormalizedInputOptions,
@@ -62,7 +61,7 @@ import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping'
 import MagicString from 'magic-string'
 import type { FSWatcher } from 'dep-types/chokidar'
 import colors from 'picocolors'
-import type { Plugin } from '../plugin'
+import type { MinimalPluginContext, Plugin } from '../plugin'
 import {
   combineSourcemaps,
   createDebugger,
@@ -185,6 +184,7 @@ class EnvironmentPluginContainer {
       warn: noop,
       // @ts-expect-error noop
       error: noop,
+      environment,
     }
     const utils = createPluginHookUtils(plugins)
     this.getSortedPlugins = utils.getSortedPlugins

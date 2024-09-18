@@ -49,6 +49,7 @@ const identifierReplacements: Record<string, Record<string, string>> = {
   rolldown: {
     Plugin$1: 'rolldown.Plugin',
     PluginContext$1: 'rolldown.PluginContext',
+    MinimalPluginContext$1: 'rolldown.MinimalPluginContext',
     TransformPluginContext$1: 'rolldown.TransformPluginContext',
     TransformResult$2: 'rolldown.TransformResult',
   },

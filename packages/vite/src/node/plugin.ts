@@ -4,6 +4,7 @@ import type {
   ModuleType,
   ObjectHook,
   ResolveIdResult,
+  MinimalPluginContext as RollupMinimalPluginContext,
   Plugin as RollupPlugin,
   PluginContext as RollupPluginContext,
   TransformPluginContext as RollupTransformPluginContext,
@@ -68,6 +69,10 @@ export interface TransformPluginContextExtension {
   getCombinedSourcemap: () => SourceMap
 }
 
+export interface MinimalPluginContext
+  extends RollupMinimalPluginContext,
+    PluginContextExtension {}
+
 export interface PluginContext
   extends RollupPluginContext,
     PluginContextExtension {}
@@ -83,6 +88,7 @@ export interface TransformPluginContext
 
 // Argument Rollup types to have the PluginContextExtension
 declare module 'rolldown' {
+  export interface MinimalPluginContext extends PluginContextExtension {}
   export interface PluginContext extends PluginContextExtension {}
   export interface TransformPluginContext
     extends TransformPluginContextExtension {}
