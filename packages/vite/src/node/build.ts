@@ -620,6 +620,11 @@ async function buildEnvironment(
     onLog(level, log) {
       onRollupLog(level, log, environment)
     },
+    // TODO: remove this and enable rolldown's CSS support later
+    moduleTypes: {
+      ...options.rollupOptions.moduleTypes,
+      '.css': 'js',
+    },
   }
 
   /**

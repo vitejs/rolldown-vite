@@ -74,6 +74,7 @@ import {
   normalizePath,
   numberToPos,
   prettifyUrl,
+  rolldownVersion,
   rollupVersion,
   timeFrom,
 } from '../utils'
@@ -189,7 +190,7 @@ class EnvironmentPluginContainer {
   ) {
     this._started = !autoStart
     this.minimalContext = new MinimalPluginContext(
-      { rollupVersion, watchMode: true },
+      { rollupVersion, rolldownVersion, watchMode: true },
       environment,
     )
     const utils = createPluginHookUtils(plugins)
