@@ -7,7 +7,12 @@ import colors from 'picocolors'
 import type { BuildOptions as EsbuildBuildOptions } from 'esbuild'
 import { init, parse } from 'es-module-lexer'
 import { isDynamicPattern } from 'tinyglobby'
-import { type RollupOptions, type RollupOutput, rolldown } from 'rolldown'
+import {
+  type RollupOptions,
+  type RollupOutput,
+  type OutputOptions as RollupOutputOptions,
+  rolldown,
+} from 'rolldown'
 import type { ResolvedConfig } from '../config'
 import {
   asyncFlatten,
@@ -103,7 +108,12 @@ export interface DepOptimizationConfig {
     | 'outExtension'
     | 'metafile'
   >
-  rollupOptions?: RollupOptions
+  rollupOptions?: Omit<RollupOptions, 'input' | 'logLevel' | 'output'> & {
+    output?: Omit<
+      RollupOutputOptions,
+      'format' | 'sourcemap' | 'dir' | 'banner'
+    >
+  }
   /**
    * List of file extensions that can be optimized. A corresponding esbuild
    * plugin must exist to handle the specific extension.
@@ -800,9 +810,11 @@ async function prepareRolldownOptimizerRun(
   let canceled = false
   async function build() {
     const bundle = await rolldown({
+      ...rollupOptions,
       input: flatIdDeps,
       logLevel: 'warn',
       plugins,
+      platform,
       resolve: {
         // TODO: set aliasFields, conditionNames depending on `platform`
         mainFields: ['module', 'main'],
@@ -810,7 +822,6 @@ async function prepareRolldownOptimizerRun(
         extensions: ['.js', '.css'],
         conditionNames: ['browser'],
       },
-      ...rollupOptions,
       // TODO: remove this and enable rolldown's CSS support later
       moduleTypes: {
         '.css': 'js',
@@ -822,6 +833,7 @@ async function prepareRolldownOptimizerRun(
       throw new Error('The build was canceled')
     }
     const result = await bundle.write({
+      ...rollupOptions.output,
       format: 'esm',
       sourcemap: true,
       dir: processingCacheDir,
@@ -829,7 +841,6 @@ async function prepareRolldownOptimizerRun(
         platform === 'node'
           ? `import { createRequire } from 'module';const require = createRequire(import.meta.url);`
           : undefined,
-      ...rollupOptions.output,
     })
     await bundle.close()
     return result
@@ -1104,6 +1115,7 @@ export async function extractExportsData(
     const result = await build.generate({
       ...rollupOptions.output,
       format: 'esm',
+      sourcemap: false,
     })
     const [, exports, , hasModuleSyntax] = parse(result.output[0].code)
     return {
