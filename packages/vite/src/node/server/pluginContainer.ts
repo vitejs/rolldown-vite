@@ -73,6 +73,7 @@ import {
   normalizePath,
   numberToPos,
   prettifyUrl,
+  rolldownVersion,
   rollupVersion,
   timeFrom,
 } from '../utils'
@@ -178,6 +179,7 @@ class EnvironmentPluginContainer {
     this.minimalContext = {
       meta: {
         rollupVersion,
+        rolldownVersion,
         watchMode: true,
       },
       debug: noop,
@@ -539,7 +541,7 @@ class PluginContext implements Omit<RollupPluginContext, 'cache'> {
   _activeId: string | null = null
   _activeCode: string | null = null
   _resolveSkips?: Set<Plugin>
-  // meta: RollupPluginContext['meta']
+  meta: RollupPluginContext['meta']
   environment: Environment
 
   constructor(
@@ -547,7 +549,7 @@ class PluginContext implements Omit<RollupPluginContext, 'cache'> {
     public _container: EnvironmentPluginContainer,
   ) {
     this.environment = this._container.environment
-    // this.meta = this._container.minimalContext.meta
+    this.meta = this._container.minimalContext.meta
   }
 
   parse(code: string, opts: any) {
