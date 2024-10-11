@@ -237,7 +237,7 @@ importers:
         specifier: 0.13.2-snapshot-e65437c-20241011073722
         version: 0.13.2-snapshot-e65437c-20241011073722
       rollup:
-        specifier: ^4.20.0
+        specifier: ^4.22.5
         version: 4.22.5
     optionalDependencies:
       fsevents:
