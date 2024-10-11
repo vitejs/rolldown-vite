@@ -1348,10 +1348,11 @@ export async function resolveConfig(
       oxc === false
         ? false
         : {
+            ...oxc,
             jsx: {
               development: !isProduction,
+              ...oxc?.jsx,
             },
-            ...oxc,
           },
     // preserve esbuild for buildEsbuildPlugin
     esbuild: config.esbuild,
