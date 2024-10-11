@@ -176,6 +176,7 @@ export function rolldownDepPlugin(
               external: false,
             }
           }
+
           if (kind === 'require-call') {
             // here it is not set to `external: true` to convert `require` to `import`
             return {
