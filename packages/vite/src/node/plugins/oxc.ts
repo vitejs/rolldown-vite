@@ -63,10 +63,15 @@ export async function transformWithOxc(
     const loadedCompilerOptions = loadedTsconfig.compilerOptions ?? {}
     // tsc compiler alwaysStrict/experimentalDecorators/importsNotUsedAsValues/preserveValueImports/target/useDefineForClassFields/verbatimModuleSyntax
 
-    resolvedOptions.jsx = {
-      pragma: loadedCompilerOptions.jsxFactory,
-      pragmaFrag: loadedCompilerOptions.jsxFragmentFactory,
-      importSource: loadedCompilerOptions.jsxImportSource,
+    resolvedOptions.jsx ??= {}
+    if (loadedCompilerOptions.jsxFactory) {
+      resolvedOptions.jsx.pragma = loadedCompilerOptions.jsxFactory
+    }
+    if (loadedCompilerOptions.jsxFragmentFactory) {
+      resolvedOptions.jsx.pragmaFrag = loadedCompilerOptions.jsxFragmentFactory
+    }
+    if (loadedCompilerOptions.jsxImportSource) {
+      resolvedOptions.jsx.importSource = loadedCompilerOptions.jsxImportSource
     }
 
     switch (loadedCompilerOptions.jsx) {
@@ -74,24 +79,21 @@ export async function transformWithOxc(
         resolvedOptions.jsx.runtime = 'automatic'
         resolvedOptions.jsx.development = true
         break
-
       case 'react':
         resolvedOptions.jsx.runtime = 'classic'
         break
-
       case 'react-jsx':
         resolvedOptions.jsx.runtime = 'automatic'
         break
       case 'preserve':
         ctx.warn('The tsconfig jsx preserve is not supported at oxc')
         break
-
       default:
         break
     }
   }
 
-  const result = await transform(filename, code, resolvedOptions)
+  const result = transform(filename, code, resolvedOptions)
 
   if (result.errors.length > 0) {
     throw new Error(result.errors[0])
