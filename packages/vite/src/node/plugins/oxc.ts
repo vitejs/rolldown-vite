@@ -1,4 +1,8 @@
 import path from 'node:path'
+import type {
+  TransformOptions as OxcTransformOptions,
+  TransformResult as OxcTransformResult,
+} from 'rolldown/experimental'
 import { transform } from 'rolldown/experimental'
 import type { RawSourceMap } from '@ampproject/remapping'
 import type { SourceMap } from 'rolldown'
@@ -17,10 +21,6 @@ import {
 const jsxExtensionsRE = /\.(?:j|t)sx\b/
 const validExtensionRE = /\.\w+$/
 
-// should import from rolldown
-declare type OxcTransformOptions = any
-declare type OxcTransformResult = any
-
 export interface OxcOptions extends OxcTransformOptions {
   include?: string | RegExp | string[] | RegExp[]
   exclude?: string | RegExp | string[] | RegExp[]
@@ -34,21 +34,36 @@ export async function transformWithOxc(
   options?: OxcTransformOptions,
   inMap?: object,
 ): Promise<OxcTransformResult> {
+  let lang = options?.lang
+
+  if (!lang) {
+    // if the id ends with a valid ext, use it (e.g. vue blocks)
+    // otherwise, cleanup the query before checking the ext
+    const ext = path
+      .extname(validExtensionRE.test(filename) ? filename : cleanUrl(filename))
+      .slice(1)
+
+    if (ext === 'cjs' || ext === 'mjs') {
+      lang = 'js'
+    } else if (ext === 'cts' || ext === 'mts') {
+      lang = 'ts'
+    } else {
+      lang = ext as 'js' | 'jsx' | 'ts' | 'tsx'
+    }
+  }
+
   const resolvedOptions = {
     sourcemap: true,
     ...options,
+    lang,
   }
 
-  const ext = path
-    .extname(validExtensionRE.test(filename) ? filename : cleanUrl(filename))
-    .slice(1)
-
-  if (ext === 'cts' || ext === 'mts' || ext === 'tsx' || ext === 'ts') {
+  if (lang === 'ts' || lang === 'tsx') {
     const loadedTsconfig = await loadTsconfigJsonForFile(filename)
     const loadedCompilerOptions = loadedTsconfig.compilerOptions ?? {}
     // tsc compiler alwaysStrict/experimentalDecorators/importsNotUsedAsValues/preserveValueImports/target/useDefineForClassFields/verbatimModuleSyntax
 
-    resolvedOptions.react = {
+    resolvedOptions.jsx = {
       pragma: loadedCompilerOptions.jsxFactory,
       pragmaFrag: loadedCompilerOptions.jsxFragmentFactory,
       importSource: loadedCompilerOptions.jsxImportSource,
@@ -56,16 +71,16 @@ export async function transformWithOxc(
 
     switch (loadedCompilerOptions.jsx) {
       case 'react-jsxdev':
-        resolvedOptions.react.runtime = 'automatic'
-        resolvedOptions.react.development = true
+        resolvedOptions.jsx.runtime = 'automatic'
+        resolvedOptions.jsx.development = true
         break
 
       case 'react':
-        resolvedOptions.react.runtime = 'classic'
+        resolvedOptions.jsx.runtime = 'classic'
         break
 
       case 'react-jsx':
-        resolvedOptions.react.runtime = 'automatic'
+        resolvedOptions.jsx.runtime = 'automatic'
         break
       case 'preserve':
         ctx.warn('The tsconfig jsx preserve is not supported at oxc')
@@ -149,16 +164,16 @@ export function convertEsbuildConfigToOxcConfig(
     jsxInject,
     include,
     exclude,
-    react: {},
+    jsx: {},
   }
 
   switch (esbuildTransformOptions.jsx) {
     case 'automatic':
-      oxcOptions.react.runtime = 'automatic'
+      oxcOptions.jsx!.runtime = 'automatic'
       break
 
     case 'transform':
-      oxcOptions.react.runtime = 'classic'
+      oxcOptions.jsx!.runtime = 'classic'
       break
 
     case 'preserve':
@@ -170,16 +185,34 @@ export function convertEsbuildConfigToOxcConfig(
   }
 
   if (esbuildTransformOptions.jsxDev) {
-    oxcOptions.react.development = true
+    oxcOptions.jsx!.development = true
   }
   if (esbuildTransformOptions.jsxFactory) {
-    oxcOptions.react.pragma = esbuildTransformOptions.jsxFactory
+    oxcOptions.jsx!.pragma = esbuildTransformOptions.jsxFactory
   }
   if (esbuildTransformOptions.jsxFragment) {
-    oxcOptions.react.pragmaFrag = esbuildTransformOptions.jsxFragment
+    oxcOptions.jsx!.pragmaFrag = esbuildTransformOptions.jsxFragment
   }
   if (esbuildTransformOptions.jsxImportSource) {
-    oxcOptions.react.importSource = esbuildTransformOptions.jsxImportSource
+    oxcOptions.jsx!.importSource = esbuildTransformOptions.jsxImportSource
+  }
+  if (esbuildTransformOptions.loader) {
+    if (
+      ['.js', '.jsx', '.ts', 'tsx'].includes(esbuildTransformOptions.loader)
+    ) {
+      oxcOptions.lang = esbuildTransformOptions.loader as
+        | 'js'
+        | 'jsx'
+        | 'ts'
+        | 'tsx'
+    } else {
+      logger.warn(
+        `The esbuild loader ${esbuildTransformOptions.loader} is not supported at oxc`,
+      )
+    }
+  }
+  if (esbuildTransformOptions.define) {
+    oxcOptions.define = esbuildTransformOptions.define
   }
 
   switch (esbuildTransformOptions.sourcemap) {

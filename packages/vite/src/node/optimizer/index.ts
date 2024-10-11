@@ -768,7 +768,7 @@ async function prepareRolldownOptimizerRun(
       if (/\.(?:m?[jt]s|[jt]sx)$/.test(id)) {
         const result = await transformWithOxc(this, code, id, {
           sourcemap: true,
-          jsx: jsxLoader && /\.js$/.test(id) ? true : undefined,
+          lang: jsxLoader && /\.js$/.test(id) ? 'jsx' : undefined,
         })
         return {
           code: result.code,

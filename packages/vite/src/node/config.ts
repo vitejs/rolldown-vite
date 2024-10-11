@@ -1348,7 +1348,7 @@ export async function resolveConfig(
       oxc === false
         ? false
         : {
-            react: {
+            jsx: {
               development: !isProduction,
             },
             ...oxc,
