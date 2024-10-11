@@ -699,7 +699,7 @@ export function buildHtmlPlugin(config: ResolvedConfig): RolldownPlugin {
             }
           }
 
-          processedHtml.set(id, s.toString())
+          processedHtml(this).set(id, s.toString())
 
           // inject module preload polyfill only when configured and needed
           const { modulePreload } = this.environment.config.build

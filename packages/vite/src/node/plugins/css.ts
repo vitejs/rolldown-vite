@@ -577,7 +577,8 @@ export function cssPostPlugin(config: ResolvedConfig): RolldownPlugin {
           code = `export default ${JSON.stringify(content)}`
         } else {
           // empty module when it's not a CSS module nor `?inline`
-          code = ''
+          // NOTE: add `export {}` otherwise rolldown treats the module as CJS (https://github.com/rolldown/rolldown/issues/2394)
+          code = 'export {}'
         }
 
         return {

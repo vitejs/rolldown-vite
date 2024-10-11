@@ -116,6 +116,9 @@ export function assetImportMetaUrlPlugin(
             }
 
             const url = rawUrl.slice(1, -1)
+            if (isDataUrl(url)) {
+              continue
+            }
             let file: string | undefined
             if (url[0] === '.') {
               file = slash(path.resolve(path.dirname(id), url))

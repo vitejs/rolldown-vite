@@ -1,5 +1,15 @@
 import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
+import {
+  aliasPlugin as nativeAliasPlugin,
+  dynamicImportVarsPlugin as nativeDynamicImportVarsPlugin,
+  importGlobPlugin as nativeImportGlobPlugin,
+  jsonPlugin as nativeJsonPlugin,
+  modulePreloadPolyfillPlugin as nativeModulePreloadPolyfillPlugin,
+  transformPlugin as nativeTransformPlugin,
+  wasmFallbackPlugin as nativeWasmFallbackPlugin,
+  wasmHelperPlugin as nativeWasmHelperPlugin,
+} from 'rolldown/experimental'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepOptimizationDisabled } from '../optimizer'
 import type { HookHandler, Plugin, PluginWithRequiredHook } from '../plugin'
