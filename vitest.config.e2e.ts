@@ -17,8 +17,8 @@ export default defineConfig({
       './playground/legacy/**/*.spec.[tj]s', // system format
       ...(isBuild
         ? [
-            './playground/backend-integration/**/*.spec.[tj]s', // https://github.com/rolldown/rolldown/issues/2207
-            './playground/dynamic-import/**/*.spec.[tj]s', // https://github.com/rolldown/rolldown/issues/1842, https://github.com/rolldown/rolldown/issues/1843
+            './playground/backend-integration/**/*.spec.[tj]s', // https://github.com/rolldown/rolldown/issues/2392
+            './playground/dynamic-import/**/*.spec.[tj]s', // https://github.com/rolldown/rolldown/issues/1843
             './playground/external/**/*.spec.[tj]s', // https://github.com/rolldown/rolldown/issues/2041
             './playground/lib/**/*.spec.[tj]s', // umd format
             './playground/object-hooks/**/*.spec.[tj]s', // object hook sequential
