@@ -561,7 +561,7 @@ module.exports = Object.create(new Proxy({}, {
       key !== 'constructor' &&
       key !== 'splice'
     ) {
-      throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vitejs.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
+      throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
     }
   }
   }))`
@@ -575,7 +575,7 @@ module.exports = Object.create(new Proxy({}, {
             return `\
 export default new Proxy({}, {
   get(_, key) {
-    throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vitejs.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
+    throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
   }
 })`
           }
