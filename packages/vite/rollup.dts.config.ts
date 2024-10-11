@@ -52,6 +52,9 @@ const identifierReplacements: Record<string, Record<string, string>> = {
     TransformPluginContext$1: 'rolldown.TransformPluginContext',
     TransformResult$2: 'rolldown.TransformResult',
   },
+  'rolldown/experimental': {
+    TransformOptions$2: 'rolldown_experimental_TransformOptions',
+  },
   esbuild: {
     TransformResult$1: 'esbuild_TransformResult',
     TransformOptions$1: 'esbuild_TransformOptions',
