@@ -263,8 +263,8 @@ module.exports = Object.create(new Proxy({}, {
         key !== 'constructor' &&
         key !== 'splice'
     ) {
-        console.warn(\`Module "${path}" has been externalized for browser compatibility. Cannot access "${path}.\${key}" in client code. See http://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)  
-      }
+        console.warn(\`Module "${path}" has been externalized for browser compatibility. Cannot access "${path}.\${key}" in client code. See http://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
+    }
     }
 }))`,
           }
