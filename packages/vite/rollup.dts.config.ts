@@ -17,6 +17,7 @@ const external = [
   /^node:*/,
   /^vite\//,
   'rollup/parseAst',
+  'rolldown/experimental',
   ...Object.keys(pkg.dependencies),
   // lightningcss types are bundled
   ...Object.keys(pkg.devDependencies).filter((d) => d !== 'lightningcss'),
