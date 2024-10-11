@@ -17,6 +17,7 @@ const external = [
   /^node:*/,
   /^vite\//,
   'rollup/parseAst',
+  'rolldown/experimental',
   ...Object.keys(pkg.dependencies),
   ...Object.keys(pkg.peerDependencies),
   ...Object.keys(pkg.devDependencies),
@@ -53,6 +54,9 @@ const identifierReplacements: Record<string, Record<string, string>> = {
     TransformPluginContext$1: 'rolldown.TransformPluginContext',
     TransformResult$1: 'rolldown.TransformResult',
     RollupOptions$1: 'rolldown.RollupOptions',
+  },
+  'rolldown/experimental': {
+    TransformOptions$2: 'rolldown_experimental_TransformOptions',
   },
   esbuild: {
     TransformResult$2: 'esbuild_TransformResult',
