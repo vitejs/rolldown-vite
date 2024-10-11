@@ -86,7 +86,7 @@ export async function transformWithOxc(
         resolvedOptions.jsx.runtime = 'automatic'
         break
       case 'preserve':
-        ctx.warn('The tsconfig jsx preserve is not supported at oxc')
+        ctx.warn('The tsconfig jsx preserve is not supported by oxc')
         break
       default:
         break
@@ -179,7 +179,7 @@ export function convertEsbuildConfigToOxcConfig(
       break
 
     case 'preserve':
-      logger.warn('The esbuild jsx preserve is not supported at oxc')
+      logger.warn('The esbuild jsx preserve is not supported by oxc')
       break
 
     default:
@@ -209,7 +209,7 @@ export function convertEsbuildConfigToOxcConfig(
         | 'tsx'
     } else {
       logger.warn(
-        `The esbuild loader ${esbuildTransformOptions.loader} is not supported at oxc`,
+        `The esbuild loader ${esbuildTransformOptions.loader} is not supported by oxc`,
       )
     }
   }
@@ -225,7 +225,7 @@ export function convertEsbuildConfigToOxcConfig(
 
     default:
       logger.warn(
-        `The esbuild sourcemap ${esbuildTransformOptions.sourcemap} is not supported at oxc`,
+        `The esbuild sourcemap ${esbuildTransformOptions.sourcemap} is not supported by oxc`,
       )
       break
   }
