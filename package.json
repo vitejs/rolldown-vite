@@ -76,7 +76,7 @@
     "tsx": "^4.19.1",
     "typescript": "^5.6.2",
     "typescript-eslint": "^8.8.0",
-    "vite": "workspace:*",
+    "vite": "workspace:rolldown-vite@*",
     "vitest": "^2.1.2"
   },
   "simple-git-hooks": {
@@ -99,7 +99,7 @@
   "packageManager": "pnpm@9.12.0",
   "pnpm": {
     "overrides": {
-      "vite": "workspace:*"
+      "vite": "workspace:rolldown-vite@*"
     },
     "patchedDependencies": {
       "acorn@8.12.1": "patches/acorn@8.12.1.patch",
