@@ -343,4 +343,38 @@ export function resolveEnvironmentPlugins(environment: Environment): Plugin[] {
       (plugin) =>
         !plugin.applyToEnvironment || plugin.applyToEnvironment(environment),
     )
+    .map((plugin) =>
+      plugin.api && 'getBuiltinPlugin' in plugin.api
+        ? plugin.api.getBuiltinPlugin?.(environment)
+        : plugin,
+    )
+}
+
+export function createBuiltinPluginWithEnvironmentSupport<BP>(
+  name: string,
+  plugin: (environment: Environment) => BP | false,
+): Plugin<{
+  getBuiltinPlugin: (environment: Environment) => BP | undefined
+}> {
+  const pluginForEnvironment = new WeakMap<Environment, BP>()
+
+  return {
+    name,
+    applyToEnvironment(environment) {
+      if (pluginForEnvironment.has(environment)) {
+        return true
+      }
+
+      const pluginForEnv = plugin(environment)
+      if (pluginForEnv) {
+        pluginForEnvironment.set(environment, pluginForEnv)
+      }
+      return !!pluginForEnv
+    },
+    api: {
+      getBuiltinPlugin(environment) {
+        return pluginForEnvironment.get(environment)
+      },
+    },
+  }
 }

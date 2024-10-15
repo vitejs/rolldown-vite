@@ -12,7 +12,12 @@ import {
 } from 'rolldown/experimental'
 import type { PluginHookUtils, ResolvedConfig } from '../config'
 import { isDepOptimizationDisabled } from '../optimizer'
-import type { HookHandler, Plugin, PluginWithRequiredHook } from '../plugin'
+import {
+  type HookHandler,
+  type Plugin,
+  type PluginWithRequiredHook,
+  createBuiltinPluginWithEnvironmentSupport,
+} from '../plugin'
 import { watchPackageDataPlugin } from '../packages'
 import { jsonPlugin } from './json'
 import { filteredResolvePlugin, resolvePlugin } from './resolve'
@@ -76,9 +81,19 @@ export async function resolvePlugins(
 
     modulePreload !== false && modulePreload.polyfill
       ? enableNativePlugin
-        ? nativeModulePreloadPolyfillPlugin({
-            skip: Boolean(config.command !== 'build' || config.build.ssr),
-          })
+        ? createBuiltinPluginWithEnvironmentSupport(
+            'native:modulepreload-polyfill',
+            (environment) => {
+              if (
+                config.command !== 'build' ||
+                environment.config.consumer !== 'client'
+              )
+                return false
+              return nativeModulePreloadPolyfillPlugin({
+                skip: false,
+              })
+            },
+          )
         : modulePreloadPolyfillPlugin(config)
       : null,
     enableNativePlugin
