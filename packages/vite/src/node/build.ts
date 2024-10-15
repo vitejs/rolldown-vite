@@ -53,7 +53,10 @@ import {
   partialEncodeURIPath,
   requireResolveFromRootWithFallback,
 } from './utils'
-import { resolveEnvironmentPlugins } from './plugin'
+import {
+  createBuiltinPluginWithEnvironmentSupport,
+  resolveEnvironmentPlugins,
+} from './plugin'
 import { manifestPlugin } from './plugins/manifest'
 import type { Logger } from './logger'
 import { dataURIPlugin } from './plugins/dataUri'
@@ -499,14 +502,20 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
       ...(!config.isWorker
         ? [
             config.build.manifest && enableNativePlugin
-              ? // TODO: make this environment-specific
-                nativeManifestPlugin({
-                  root: config.root,
-                  outPath:
-                    config.build.manifest === true
-                      ? '.vite/manifest.json'
-                      : config.build.manifest,
-                })
+              ? createBuiltinPluginWithEnvironmentSupport(
+                  'native:manifest',
+                  (environment) => {
+                    if (!environment.config.build.manifest) return false
+
+                    return nativeManifestPlugin({
+                      root: environment.config.root,
+                      outPath:
+                        environment.config.build.manifest === true
+                          ? '.vite/manifest.json'
+                          : environment.config.build.manifest,
+                    })
+                  },
+                )
               : manifestPlugin(),
             ssrManifestPlugin(),
             ...(enableBuildReport ? [buildReporterPlugin(config)] : []),
