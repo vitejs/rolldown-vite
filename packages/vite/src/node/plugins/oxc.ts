@@ -195,10 +195,10 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
       // recycle serve to avoid preventing Node self-exit (#6815)
       setServer(null)
     },
-    async transform(code, id, options) {
+    async transform(code, id) {
       if (filter(id) || filter(cleanUrl(id))) {
         // disable refresh at ssr
-        if (options?.ssr && oxcTransformOptions.jsx?.refresh) {
+        if (this.environment.config.consumer === 'server' && oxcTransformOptions.jsx?.refresh) {
           oxcTransformOptions.jsx.refresh = false
         }
         if (
