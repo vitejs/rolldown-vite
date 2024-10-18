@@ -177,7 +177,7 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
     defaultInclude.concat(jsxInclude || []),
     exclude || /\.js$/,
   )
-  const jsxFilter = createFilter(jsxInclude, jsxExclude)
+  const jsxFilter = createFilter(jsxInclude, jsxExclude || /\.m?tsx?$/)
 
   return {
     name: 'vite:oxc',
