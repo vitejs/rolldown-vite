@@ -198,7 +198,10 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
     async transform(code, id) {
       if (filter(id) || filter(cleanUrl(id))) {
         // disable refresh at ssr
-        if (this.environment.config.consumer === 'server' && oxcTransformOptions.jsx?.refresh) {
+        if (
+          this.environment.config.consumer === 'server' &&
+          oxcTransformOptions.jsx?.refresh
+        ) {
           oxcTransformOptions.jsx.refresh = false
         }
         if (
