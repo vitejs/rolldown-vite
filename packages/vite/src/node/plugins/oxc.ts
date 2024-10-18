@@ -179,7 +179,7 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
   )
   const jsxFilter = createFilter(
     jsxInclude || /\.jsx$/,
-    jsxExclude || /\.m?tsx?$/,
+    jsxExclude || /\.(m?[jt]s|tsx)$/,
   )
 
   return {
