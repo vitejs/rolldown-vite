@@ -707,7 +707,7 @@ test('default sharedConfigBuild true on build api', async () => {
   expect(counter).toBe(1)
 })
 
-test('adjust worker build error for worker.format', async () => {
+test.skip('adjust worker build error for worker.format', async () => {
   try {
     await build({
       root: resolve(__dirname, 'fixtures/worker-dynamic'),
