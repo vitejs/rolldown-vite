@@ -356,7 +356,7 @@ export function oxcResolvePlugin(
   return {
     name: 'vite:resolve',
 
-    async resolveId(id, importer, resolveOpts) {
+    resolveId(id, importer, resolveOpts) {
       if (
         id[0] === '\0' ||
         id.startsWith('virtual:') ||
@@ -501,7 +501,7 @@ export function oxcResolvePlugin(
           asSrc &&
           depsOptimizer &&
           !options.scan &&
-          (res = await tryOptimizedResolve(
+          (res = tryOptimizedResolve(
             depsOptimizer,
             id,
             importer,
@@ -950,7 +950,7 @@ export function resolvePlugin(
           asSrc &&
           depsOptimizer &&
           !options.scan &&
-          (res = await tryOptimizedResolve(
+          (res = tryOptimizedResolve(
             depsOptimizer,
             id,
             importer,
@@ -1425,19 +1425,13 @@ export function tryNodeResolve(
   return { id: resolved }
 }
 
-export async function tryOptimizedResolve(
+export function tryOptimizedResolve(
   depsOptimizer: DepsOptimizer,
   id: string,
   importer?: string,
   preserveSymlinks?: boolean,
   packageCache?: PackageCache,
-): Promise<string | undefined> {
-  // TODO: we need to wait until scanning is done here as this function
-  // is used in the preAliasPlugin to decide if an aliased dep is optimized,
-  // and avoid replacing the bare import with the resolved path.
-  // We should be able to remove this in the future
-  await depsOptimizer.scanProcessing
-
+): string | undefined {
   const metadata = depsOptimizer.metadata
 
   const depInfo = optimizedDepInfoFromId(metadata, id)
