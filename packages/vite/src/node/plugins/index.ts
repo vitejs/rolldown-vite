@@ -20,7 +20,7 @@ import {
 } from '../plugin'
 import { watchPackageDataPlugin } from '../packages'
 import { jsonPlugin } from './json'
-import { filteredResolvePlugin, resolvePlugin } from './resolve'
+import { oxcResolvePlugin, resolvePlugin } from './resolve'
 import { optimizedDepsPlugin } from './optimizedDeps'
 import { importAnalysisPlugin } from './importAnalysis'
 import { cssAnalysisPlugin, cssPlugin, cssPostPlugin } from './css'
@@ -97,7 +97,7 @@ export async function resolvePlugins(
         : modulePreloadPolyfillPlugin(config)
       : null,
     enableNativePlugin
-      ? filteredResolvePlugin({
+      ? oxcResolvePlugin({
           root: config.root,
           isProduction: config.isProduction,
           isBuild,
