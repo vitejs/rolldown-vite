@@ -43,8 +43,17 @@ const svgExtRE = /\.svg(?:$|\?)/
 
 const assetCache = new WeakMap<Environment, Map<string, string>>()
 
-/** a set of referenceId for entry CSS assets for each environment */
-export const cssEntriesMap = new WeakMap<Environment, Set<string>>()
+// chunk.name is the basename for the asset ignoring the directory structure
+// For the manifest, we need to preserve the original file path and isEntry
+// for CSS assets. We keep a map from referenceId to this information.
+export interface GeneratedAssetMeta {
+  originalFileName: string | undefined
+  isEntry?: boolean
+}
+export const generatedAssetsMap = new WeakMap<
+  Environment,
+  Map<string, GeneratedAssetMeta>
+>()
 
 // add own dictionary entry by directly assigning mrmime
 export function registerCustomMime(): void {
@@ -148,7 +157,7 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
 
     buildStart() {
       assetCache.set(this.environment, new Map())
-      cssEntriesMap.set(this.environment, new Set())
+      generatedAssetsMap.set(this.environment, new Map())
     },
 
     resolveId(id) {
@@ -413,6 +422,8 @@ async function fileToBuiltUrl(
       originalFileName,
       source: content,
     })
+    generatedAssetsMap.get(environment)!.set(referenceId, { originalFileName })
+
     url = `__VITE_ASSET__${referenceId}__${postfix ? `$_${postfix}__` : ``}`
   }
 
