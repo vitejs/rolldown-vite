@@ -321,33 +321,12 @@ function normalizeOxcResolverResult(
   }
 }
 
-function finalizeResult(
-  resolved: string,
-  id: string,
-  options: InternalResolveOptions,
-  depsOptimizer: DepsOptimizer | undefined,
-  skipVersionQuery = false,
-) {
-  resolved = normalizePath(resolved)
-
-  const withVersionQuery = skipVersionQuery
-    ? resolved
-    : ensureVersionQuery(resolved, id, options, depsOptimizer)
-
-  if (options.idOnly) return { id: withVersionQuery }
-
-  const pkg = findNearestMainPackageData(resolved, options.packageCache)
-  return {
-    id: withVersionQuery,
-    moduleSideEffects: pkg?.hasSideEffects(resolved),
-  }
-}
-
 export function oxcResolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
-): [RolldownPlugin, Plugin] {
+): [RolldownPlugin, RolldownPlugin, Plugin] {
   return [
     devOnlyResolvePlugin(resolveOptions),
+    importGlobSubpathImportsResolvePlugin(resolveOptions),
     perEnvironmentPlugin('vite:resolve', (env) => {
       const environment = env as Environment
       // The resolve plugin is used for createIdResolver and the depsOptimizer should be
@@ -356,14 +335,62 @@ export function oxcResolvePlugin(
         resolveOptions.optimizeDeps && environment.mode === 'dev'
           ? environment.depsOptimizer
           : undefined
+      const options: InternalResolveOptions = {
+        ...environment.config.resolve,
+        ...resolveOptions, // plugin options + resolve options overrides
+      }
 
       return oxcResolveBuiltinPlugin({
-        depsOptimizer,
         environmentName: environment.name,
         environmentConsumer: environment.config.consumer,
-        resolveOptions: {
-          ...environment.config.resolve,
-          ...resolveOptions, // plugin options + resolve options overrides
+        resolveOptions: options,
+        finalizeBareSpecifier: !depsOptimizer
+          ? undefined
+          : (resolvedId, rawId, importer) => {
+              // if we reach here, it's a valid dep import that hasn't been optimized.
+              const isJsType = isOptimizable(resolvedId, depsOptimizer.options)
+              const exclude = depsOptimizer?.options.exclude
+
+              // check for deep import, e.g. "my-lib/foo"
+              const deepMatch = deepImportRE.exec(rawId)
+              // package name doesn't include postfixes
+              // trim them to support importing package with queries (e.g. `import css from 'normalize.css?inline'`)
+              const pkgId = deepMatch
+                ? deepMatch[1] || deepMatch[2]
+                : cleanUrl(rawId)
+
+              const skipOptimization =
+                depsOptimizer.options.noDiscovery ||
+                !isJsType ||
+                (importer && isInNodeModules(importer)) ||
+                exclude?.includes(pkgId) ||
+                exclude?.includes(rawId) ||
+                SPECIAL_QUERY_RE.test(resolvedId)
+
+              let newId = resolvedId
+              if (skipOptimization) {
+                // excluded from optimization
+                // Inject a version query to npm deps so that the browser
+                // can cache it without re-validation, but only do so for known js types.
+                // otherwise we may introduce duplicated modules for externalized files
+                // from pre-bundled deps.
+                const versionHash = depsOptimizer!.metadata.browserHash
+                if (versionHash && isJsType) {
+                  newId = injectQuery(newId, `v=${versionHash}`)
+                }
+              } else {
+                // this is a missing import, queue optimize-deps re-run and
+                // get a resolved its optimized info
+                const optimizedInfo = depsOptimizer!.registerMissingImport(
+                  rawId,
+                  newId,
+                )
+                newId = depsOptimizer!.getOptimizedDepId(optimizedInfo)
+              }
+              return newId
+            },
+        finalizeOtherSpecifiers(resolvedId, rawId) {
+          return ensureVersionQuery(resolvedId, rawId, options, depsOptimizer)
         },
       })
     }),
@@ -377,6 +404,11 @@ function devOnlyResolvePlugin(
 
   return {
     name: 'vite:resolve-dev',
+    ...({
+      apply(_, env) {
+        return env.command === 'serve'
+      },
+    } satisfies Partial<Plugin>),
     resolveId: {
       filter: {
         id: {
@@ -405,7 +437,6 @@ function devOnlyResolvePlugin(
           isRequire: resolveOpts.kind === 'require-call',
           ...this.environment.config.resolve,
           ...resolveOptions,
-          // TODO: check if resolveOpts.scan is used
           // @ts-expect-error scan exists
           scan: resolveOpts.scan ?? resolveOptions.scan,
         }
@@ -421,32 +452,7 @@ function devOnlyResolvePlugin(
           return optimizedPath
         }
 
-        // explicit fs paths that starts with /@fs/*
-        if (asSrc && id.startsWith(FS_PREFIX)) {
-          const res = fsPathFromId(id)
-          // We don't need to resolve these paths since they are already resolved
-          // always return here even if res doesn't exist since /@fs/ is explicit
-          // if the file doesn't exist it should be a 404.
-          debug?.(`[@fs] ${colors.cyan(id)} -> ${colors.dim(res)}`)
-          return ensureVersionQuery(res, id, options, depsOptimizer)
-        }
-
-        if (id.startsWith(subpathImportsPrefix)) {
-          if (resolveOpts.custom?.['vite:import-glob']?.isSubImportsPattern) {
-            const resolvedImports = resolveSubpathImports(id, importer, options)
-            if (resolvedImports) {
-              return normalizePath(path.join(root, resolvedImports))
-            }
-          }
-        }
-
-        // file url as path
-        if (id.startsWith('file://')) {
-          const res = normalizePath(fileURLToPath(id))
-          return ensureVersionQuery(res, id, options, depsOptimizer)
-        }
-
-        if (!isDataUrl(id) && !isExternalUrl(id)) {
+        if (depsOptimizer && !isDataUrl(id) && !isExternalUrl(id)) {
           if (
             id[0] === '.' ||
             (options.preferRelative && startsWithWordCharRE.test(id))
@@ -457,7 +463,7 @@ function devOnlyResolvePlugin(
 
             const normalizedFsPath = normalizePath(fsPath)
 
-            if (depsOptimizer?.isOptimizedDepFile(normalizedFsPath)) {
+            if (depsOptimizer.isOptimizedDepFile(normalizedFsPath)) {
               // Optimized files could not yet exist in disk, resolve to the full path
               // Inject the current browserHash version if the path doesn't have one
               if (!options.isBuild && !DEP_VERSION_RE.test(normalizedFsPath)) {
@@ -484,7 +490,6 @@ function devOnlyResolvePlugin(
             if (
               !external &&
               asSrc &&
-              depsOptimizer &&
               !options.scan &&
               (res = tryOptimizedResolve(
                 depsOptimizer,
@@ -503,20 +508,74 @@ function devOnlyResolvePlugin(
   }
 }
 
+function importGlobSubpathImportsResolvePlugin(
+  resolveOptions: ResolvePluginOptionsWithOverrides,
+): RolldownPlugin {
+  const { root } = resolveOptions
+
+  return {
+    name: 'vite:resolve-import-glob-subpath-imports',
+    resolveId: {
+      filter: {
+        id: {
+          include: [/^#/],
+        },
+      },
+      handler(id, importer, resolveOpts) {
+        const options: InternalResolveOptions = {
+          isRequire: resolveOpts.kind === 'require-call',
+          ...this.environment.config.resolve,
+          ...resolveOptions,
+          // @ts-expect-error scan exists
+          scan: resolveOpts.scan ?? resolveOptions.scan,
+        }
+        options.preferRelative ||= importer?.endsWith('html')
+
+        if (id.startsWith(subpathImportsPrefix)) {
+          if (resolveOpts.custom?.['vite:import-glob']?.isSubImportsPattern) {
+            const resolvedImports = resolveSubpathImports(id, importer, options)
+            if (resolvedImports) {
+              return normalizePath(path.join(root, resolvedImports))
+            }
+          }
+        }
+      },
+    },
+  }
+}
+
 type OxcResolveBuiltinPluginOptions = {
-  depsOptimizer: DepsOptimizer | undefined
   environmentName: string
   environmentConsumer: 'server' | 'client'
   resolveOptions: InternalResolveOptions
+  finalizeBareSpecifier?: (
+    resolvedId: string,
+    rawId: string,
+    importer: string | undefined,
+  ) => string
+  finalizeOtherSpecifiers?: (resolvedId: string, rawId: string) => string
 }
 
 function oxcResolveBuiltinPlugin({
-  depsOptimizer,
   environmentName,
   environmentConsumer,
   resolveOptions,
+  finalizeBareSpecifier,
+  finalizeOtherSpecifiers,
 }: OxcResolveBuiltinPluginOptions): Plugin {
   const { root, isProduction, isBuild, asSrc } = resolveOptions
+
+  function normalizeResult(resolved: string, options: InternalResolveOptions) {
+    resolved = normalizePath(resolved)
+
+    if (options.idOnly) return { id: resolved }
+
+    const pkg = findNearestMainPackageData(resolved, options.packageCache)
+    return {
+      id: resolved,
+      moduleSideEffects: pkg?.hasSideEffects(resolved),
+    }
+  }
 
   return {
     name: 'vite:resolve',
@@ -553,6 +612,22 @@ function oxcResolveBuiltinPlugin({
           const moduleLang = this.getModuleInfo(importer)?.meta?.vite?.lang
           options.isFromTsImporter = moduleLang && isTsRequest(`.${moduleLang}`)
         }
+      }
+
+      // explicit fs paths that starts with /@fs/*
+      if (asSrc && id.startsWith(FS_PREFIX)) {
+        const res = fsPathFromId(id)
+        // We don't need to resolve these paths since they are already resolved
+        // always return here even if res doesn't exist since /@fs/ is explicit
+        // if the file doesn't exist it should be a 404.
+        debug?.(`[@fs] ${colors.cyan(id)} -> ${colors.dim(res)}`)
+        return finalizeOtherSpecifiers?.(res, id) ?? res
+      }
+
+      // file url as path
+      if (id.startsWith('file://')) {
+        const res = normalizePath(fileURLToPath(id))
+        return finalizeOtherSpecifiers?.(res, id) ?? res
       }
 
       // data uri: pass through (this only happens during build and will be
@@ -602,10 +677,6 @@ function oxcResolveBuiltinPlugin({
 
           // check for deep import, e.g. "my-lib/foo"
           const deepMatch = deepImportRE.exec(id)
-          // package name doesn't include postfixes
-          // trim them to support importing package with queries (e.g. `import css from 'normalize.css?inline'`)
-          const pkgId = deepMatch ? deepMatch[1] || deepMatch[2] : cleanUrl(id)
-
           const processResult = (resolved: PartialResolvedId) => {
             if (!external) {
               return resolved
@@ -638,63 +709,29 @@ function oxcResolveBuiltinPlugin({
             return { ...resolved, id: resolvedId, external: true }
           }
 
-          const finalized = finalizeResult(
-            result,
-            id,
-            options,
-            depsOptimizer,
-            true,
-          )
+          const normalized = normalizeResult(result, options)
 
           if (!options.idOnly && ((!options.scan && isBuild) || external)) {
             // Resolve package side effects for build so that rollup can better
             // perform tree-shaking
-            return processResult(finalized)
+            return processResult(normalized)
           }
 
           if (
-            !isInNodeModules(finalized.id) || // linked
-            !depsOptimizer || // resolving before listening to the server
+            !isInNodeModules(normalized.id) || // linked
+            !finalizeBareSpecifier ||
             options.scan // initial esbuild scan phase
           ) {
-            return finalized
+            return normalized
           }
 
-          // if we reach here, it's a valid dep import that hasn't been optimized.
-          const isJsType = isOptimizable(finalized.id, depsOptimizer.options)
-          const exclude = depsOptimizer?.options.exclude
+          const finalized =
+            finalizeBareSpecifier(normalized.id, id, importer) ?? id
 
-          const skipOptimization =
-            depsOptimizer.options.noDiscovery ||
-            !isJsType ||
-            (importer && isInNodeModules(importer)) ||
-            exclude?.includes(pkgId) ||
-            exclude?.includes(id) ||
-            SPECIAL_QUERY_RE.test(finalized.id)
-
-          if (skipOptimization) {
-            // excluded from optimization
-            // Inject a version query to npm deps so that the browser
-            // can cache it without re-validation, but only do so for known js types.
-            // otherwise we may introduce duplicated modules for externalized files
-            // from pre-bundled deps.
-            const versionHash = depsOptimizer!.metadata.browserHash
-            if (versionHash && isJsType) {
-              finalized.id = injectQuery(finalized.id, `v=${versionHash}`)
-            }
-          } else {
-            // this is a missing import, queue optimize-deps re-run and
-            // get a resolved its optimized info
-            const optimizedInfo = depsOptimizer!.registerMissingImport(
-              id,
-              finalized.id,
-            )
-            finalized.id = depsOptimizer!.getOptimizedDepId(optimizedInfo)
+          return {
+            ...normalized,
+            id: finalized,
           }
-
-          // Resolve package side effects for build so that rollup can better
-          // perform tree-shaking
-          return finalized
         }
 
         // node built-ins.
@@ -748,7 +785,14 @@ function oxcResolveBuiltinPlugin({
         options.packageCache,
       )
       if (result) {
-        return finalizeResult(result, id, options, depsOptimizer)
+        const finalized = normalizeResult(result, options)
+        if (finalizeOtherSpecifiers) {
+          return {
+            ...finalized,
+            id: finalizeOtherSpecifiers(finalized.id, id),
+          }
+        }
+        return finalized
       }
 
       debug?.(`[fallthrough] ${colors.dim(id)}`)
