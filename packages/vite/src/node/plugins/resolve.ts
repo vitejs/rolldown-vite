@@ -41,7 +41,7 @@ import {
 } from '../utils'
 import { optimizedDepInfoFromFile, optimizedDepInfoFromId } from '../optimizer'
 import type { DepsOptimizer } from '../optimizer'
-import type { Environment, SSROptions } from '..'
+import type { DevEnvironment, Environment, SSROptions } from '..'
 import type { PackageCache, PackageData } from '../packages'
 import { canExternalizeFile, shouldExternalize } from '../external'
 import {
@@ -335,9 +335,9 @@ function normalizeOxcResolverResult(
 
 export function oxcResolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
-): [RolldownPlugin, RolldownPlugin, RolldownPlugin, Plugin] {
+): (RolldownPlugin | Plugin)[] {
   return [
-    devOnlyResolvePlugin(resolveOptions),
+    optimizerResolvePlugin(resolveOptions),
     importGlobSubpathImportsResolvePlugin(resolveOptions),
     perEnvironmentPlugin('vite:resolve-builtin', (env) => {
       const environment = env as Environment
@@ -375,6 +375,8 @@ export function oxcResolvePlugin(
         ...environment.config.resolve,
         ...resolveOptions, // plugin options + resolve options overrides
       }
+
+      if (resolveOptions.isBuild) return false
 
       return oxcResolveBuiltinPlugin({
         environmentName: environment.name,
@@ -433,7 +435,7 @@ export function oxcResolvePlugin(
   ]
 }
 
-function devOnlyResolvePlugin(
+function optimizerResolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
 ): RolldownPlugin {
   const { root, asSrc } = resolveOptions
@@ -441,10 +443,17 @@ function devOnlyResolvePlugin(
   return {
     name: 'vite:resolve-dev',
     ...({
-      apply(_, env) {
-        return env.command === 'serve'
+      applyToEnvironment(env) {
+        const environment = env as Environment
+        // The resolve plugin is used for createIdResolver and the depsOptimizer should be
+        // disabled in that case, so deps optimization is opt-in when creating the plugin.
+        return (
+          !!resolveOptions.optimizeDeps &&
+          environment.mode === 'dev' &&
+          !!environment.depsOptimizer
+        )
       },
-    } satisfies Partial<Plugin>),
+    } satisfies Plugin),
     resolveId: {
       filter: {
         id: {
@@ -462,12 +471,8 @@ function devOnlyResolvePlugin(
           return
         }
 
-        // The resolve plugin is used for createIdResolver and the depsOptimizer should be
-        // disabled in that case, so deps optimization is opt-in when creating the plugin.
-        const depsOptimizer =
-          resolveOptions.optimizeDeps && this.environment.mode === 'dev'
-            ? this.environment.depsOptimizer
-            : undefined
+        const depsOptimizer = (this.environment as DevEnvironment)
+          .depsOptimizer!
 
         const options: InternalResolveOptions = {
           isRequire: resolveOpts.kind === 'require-call',
@@ -481,14 +486,14 @@ function devOnlyResolvePlugin(
         // resolve pre-bundled deps requests, these could be resolved by
         // tryFileResolve or /fs/ resolution but these files may not yet
         // exists if we are in the middle of a deps re-processing
-        if (asSrc && depsOptimizer?.isOptimizedDepUrl(id)) {
+        if (asSrc && depsOptimizer.isOptimizedDepUrl(id)) {
           const optimizedPath = id.startsWith(FS_PREFIX)
             ? fsPathFromId(id)
             : normalizePath(path.resolve(root, id.slice(1)))
           return optimizedPath
         }
 
-        if (depsOptimizer && !isDataUrl(id) && !isExternalUrl(id)) {
+        if (!isDataUrl(id) && !isExternalUrl(id)) {
           if (
             id[0] === '.' ||
             (options.preferRelative && startsWithWordCharRE.test(id))
@@ -502,7 +507,7 @@ function devOnlyResolvePlugin(
             if (depsOptimizer.isOptimizedDepFile(normalizedFsPath)) {
               // Optimized files could not yet exist in disk, resolve to the full path
               // Inject the current browserHash version if the path doesn't have one
-              if (!options.isBuild && !DEP_VERSION_RE.test(normalizedFsPath)) {
+              if (!DEP_VERSION_RE.test(normalizedFsPath)) {
                 const browserHash = optimizedDepInfoFromFile(
                   depsOptimizer.metadata,
                   normalizedFsPath,
@@ -518,13 +523,7 @@ function devOnlyResolvePlugin(
           // bare package imports, perform node resolve
           if (bareImportRE.test(id)) {
             let res: string | PartialResolvedId | undefined
-            const external =
-              options.externalize &&
-              options.isBuild &&
-              this.environment.config.consumer === 'server' &&
-              shouldExternalize(this.environment, id, importer)
             if (
-              !external &&
               asSrc &&
               !options.scan &&
               (res = tryOptimizedResolve(
@@ -604,8 +603,6 @@ function oxcResolveBuiltinPlugin({
   return {
     name: 'vite:resolve',
 
-    apply: 'serve',
-
     resolveId(id, importer, resolveOpts) {
       if (
         id[0] === '\0' ||
@@ -651,7 +648,6 @@ function oxcResolveBuiltinPlugin({
         ...resolveOptions,
         isRequire:
           resolveOptions.isRequire ?? resolveOpts.kind === 'require-call',
-        // TODO: check if resolveOpts.scan is used
         scan: resolveOpts.scan ?? resolveOptions.scan,
         preferRelative:
           resolveOptions.preferRelative || importer?.endsWith('.html'),
