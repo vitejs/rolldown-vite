@@ -5,6 +5,7 @@ import colors from 'picocolors'
 import type { PartialResolvedId, RolldownPlugin } from 'rolldown'
 import { exports, imports } from 'resolve.exports'
 import { hasESMSyntax } from 'mlly'
+import { viteResolvePlugin } from 'rolldown/experimental'
 import {
   type NapiResolveOptions,
   type ResolveResult,
@@ -334,10 +335,34 @@ function normalizeOxcResolverResult(
 
 export function oxcResolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
-): [RolldownPlugin, RolldownPlugin, Plugin] {
+): [RolldownPlugin, RolldownPlugin, RolldownPlugin, Plugin] {
   return [
     devOnlyResolvePlugin(resolveOptions),
     importGlobSubpathImportsResolvePlugin(resolveOptions),
+    perEnvironmentPlugin('vite:resolve-builtin', (env) => {
+      const environment = env as Environment
+      const options: InternalResolveOptions = {
+        ...environment.config.resolve,
+        ...resolveOptions, // plugin options + resolve options overrides
+      }
+
+      return viteResolvePlugin({
+        resolveOptions: {
+          isProduction: options.isProduction,
+          asSrc: options.asSrc ?? false,
+          preferRelative: options.preferRelative ?? false,
+          root: options.root,
+
+          mainFields: options.mainFields,
+          conditions: options.conditions,
+          extensions: options.extensions,
+          tryIndex: options.tryIndex ?? true,
+          tryPrefix: options.tryPrefix,
+          preserveSymlinks: options.preserveSymlinks,
+        },
+        environmentConsumer: environment.config.consumer,
+      }) as unknown as Plugin
+    }),
     perEnvironmentPlugin('vite:resolve', (env) => {
       const environment = env as Environment
       // The resolve plugin is used for createIdResolver and the depsOptimizer should be
