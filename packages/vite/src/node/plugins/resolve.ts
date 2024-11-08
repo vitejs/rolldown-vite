@@ -263,8 +263,11 @@ function normalizeOxcResolverResult(
   id: string,
   importer: string | undefined,
   root: string,
+  idOnly: boolean | undefined,
   packageCache: PackageCache | undefined,
-): string | undefined {
+):
+  | { id: string; moduleSideEffects?: boolean | 'no-treeshake' | null }
+  | undefined {
   if (result.error) {
     if (result.error.startsWith('Cannot find module')) {
       // TODO: need to do the same thing for id mapped from browser field
@@ -299,13 +302,13 @@ function normalizeOxcResolverResult(
               mainPkg.peerDependencies?.[pkgName] &&
               mainPkg.peerDependenciesMeta?.[pkgName]?.optional
             ) {
-              return `${optionalPeerDepId}:${id}:${mainPkg.name}`
+              return { id: `${optionalPeerDepId}:${id}:${mainPkg.name}` }
             }
           }
         }
       }
     } else if (result.error.startsWith('Path is ignored')) {
-      return browserExternalId
+      return { id: browserExternalId }
     } else {
       throw result.error
     }
@@ -317,7 +320,15 @@ function normalizeOxcResolverResult(
       // oxc-resolver returns UNC path when the resolved path is long (e.g. `@vitejs/longfilename-*` test)
       path = path.slice(4)
     }
-    return path
+    path = normalizePath(path)
+
+    if (idOnly) return { id: path }
+
+    const pkg = findNearestMainPackageData(path, packageCache)
+    return {
+      id: path,
+      moduleSideEffects: pkg?.hasSideEffects(path),
+    }
   }
 }
 
@@ -440,7 +451,7 @@ function devOnlyResolvePlugin(
           // @ts-expect-error scan exists
           scan: resolveOpts.scan ?? resolveOptions.scan,
         }
-        options.preferRelative ||= importer?.endsWith('html')
+        options.preferRelative ||= importer?.endsWith('.html')
 
         // resolve pre-bundled deps requests, these could be resolved by
         // tryFileResolve or /fs/ resolution but these files may not yet
@@ -529,7 +540,7 @@ function importGlobSubpathImportsResolvePlugin(
           // @ts-expect-error scan exists
           scan: resolveOpts.scan ?? resolveOptions.scan,
         }
-        options.preferRelative ||= importer?.endsWith('html')
+        options.preferRelative ||= importer?.endsWith('.html')
 
         if (id.startsWith(subpathImportsPrefix)) {
           if (resolveOpts.custom?.['vite:import-glob']?.isSubImportsPattern) {
@@ -565,20 +576,10 @@ function oxcResolveBuiltinPlugin({
 }: OxcResolveBuiltinPluginOptions): Plugin {
   const { root, isProduction, isBuild, asSrc } = resolveOptions
 
-  function normalizeResult(resolved: string, options: InternalResolveOptions) {
-    resolved = normalizePath(resolved)
-
-    if (options.idOnly) return { id: resolved }
-
-    const pkg = findNearestMainPackageData(resolved, options.packageCache)
-    return {
-      id: resolved,
-      moduleSideEffects: pkg?.hasSideEffects(resolved),
-    }
-  }
-
   return {
     name: 'vite:resolve',
+
+    apply: 'serve',
 
     resolveId(id, importer, resolveOpts) {
       if (
@@ -590,28 +591,14 @@ function oxcResolveBuiltinPlugin({
         return
       }
 
+      // data uri: pass through (this only happens during build and will be
+      // handled by dedicated plugin)
+      if (isDataUrl(id)) {
+        return null
+      }
+
       if (id.startsWith(browserExternalId)) {
         return id
-      }
-
-      const options: InternalResolveOptions = {
-        isRequire: resolveOpts.kind === 'require-call',
-        ...resolveOptions,
-        // TODO: check if resolveOpts.scan is used
-        scan: resolveOpts.scan ?? resolveOptions.scan,
-      }
-      options.preferRelative ||= importer?.endsWith('html')
-
-      if (importer) {
-        if (
-          isTsRequest(importer) ||
-          resolveOpts.custom?.depScan?.loader?.startsWith('ts')
-        ) {
-          options.isFromTsImporter = true
-        } else {
-          const moduleLang = this.getModuleInfo(importer)?.meta?.vite?.lang
-          options.isFromTsImporter = moduleLang && isTsRequest(`.${moduleLang}`)
-        }
       }
 
       // explicit fs paths that starts with /@fs/*
@@ -630,15 +617,31 @@ function oxcResolveBuiltinPlugin({
         return finalizeOtherSpecifiers?.(res, id) ?? res
       }
 
-      // data uri: pass through (this only happens during build and will be
-      // handled by dedicated plugin)
-      if (isDataUrl(id)) {
-        return null
-      }
-
       // external
       if (isExternalUrl(id)) {
-        return options.idOnly ? id : { id, external: true }
+        return { id, external: true }
+      }
+
+      const options: InternalResolveOptions = {
+        ...resolveOptions,
+        isRequire:
+          resolveOptions.isRequire ?? resolveOpts.kind === 'require-call',
+        // TODO: check if resolveOpts.scan is used
+        scan: resolveOpts.scan ?? resolveOptions.scan,
+        preferRelative:
+          resolveOptions.preferRelative || importer?.endsWith('.html'),
+      }
+
+      if (importer) {
+        if (
+          isTsRequest(importer) ||
+          resolveOpts.custom?.depScan?.loader?.startsWith('ts')
+        ) {
+          options.isFromTsImporter = true
+        } else {
+          const moduleLang = this.getModuleInfo(importer)?.meta?.vite?.lang
+          options.isFromTsImporter = moduleLang && isTsRequest(`.${moduleLang}`)
+        }
       }
 
       const oxcResolver = getOxcResolver(
@@ -666,6 +669,7 @@ function oxcResolveBuiltinPlugin({
           id,
           importer,
           root,
+          options.idOnly,
           options.packageCache,
         )
         if (result) {
@@ -709,27 +713,24 @@ function oxcResolveBuiltinPlugin({
             return { ...resolved, id: resolvedId, external: true }
           }
 
-          const normalized = normalizeResult(result, options)
-
           if (!options.idOnly && ((!options.scan && isBuild) || external)) {
             // Resolve package side effects for build so that rollup can better
             // perform tree-shaking
-            return processResult(normalized)
+            return processResult(result)
           }
 
           if (
-            !isInNodeModules(normalized.id) || // linked
+            !isInNodeModules(result.id) || // linked
             !finalizeBareSpecifier ||
             options.scan // initial esbuild scan phase
           ) {
-            return normalized
+            return result
           }
 
-          const finalized =
-            finalizeBareSpecifier(normalized.id, id, importer) ?? id
+          const finalized = finalizeBareSpecifier(result.id, id, importer) ?? id
 
           return {
-            ...normalized,
+            ...result,
             id: finalized,
           }
         }
@@ -782,17 +783,17 @@ function oxcResolveBuiltinPlugin({
         id,
         importer,
         root,
+        options.idOnly,
         options.packageCache,
       )
       if (result) {
-        const finalized = normalizeResult(result, options)
         if (finalizeOtherSpecifiers) {
           return {
-            ...finalized,
-            id: finalizeOtherSpecifiers(finalized.id, id),
+            ...result,
+            id: finalizeOtherSpecifiers(result.id, id),
           }
         }
-        return finalized
+        return result
       }
 
       debug?.(`[fallthrough] ${colors.dim(id)}`)
