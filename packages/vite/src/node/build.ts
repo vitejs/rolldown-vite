@@ -316,7 +316,7 @@ export interface LibraryOptions {
   cssFileName?: string
 }
 
-export type LibraryFormats = 'es' | 'cjs' | 'iife' // | 'umd' | 'system'
+export type LibraryFormats = 'es' | 'cjs' | 'iife' | 'umd' // | 'system'
 
 export interface ModulePreloadOptions {
   /**
@@ -767,7 +767,7 @@ async function buildEnvironment(
           ? `[name].[ext]`
           : path.posix.join(options.assetsDir, `[name]-[hash].[ext]`),
         inlineDynamicImports:
-          /* output.format === 'umd' || */
+          output.format === 'umd' ||
           output.format === 'iife' ||
           (isSsrTargetWebworkerEnvironment &&
             (typeof input === 'string' || Object.keys(input).length === 1)),
@@ -928,7 +928,7 @@ function resolveOutputJsExtension(
   type: string = 'commonjs',
 ): JsExt {
   if (type === 'module') {
-    return format === 'cjs' /* || format === 'umd' */ ? 'cjs' : 'js'
+    return format === 'cjs' || format === 'umd' ? 'cjs' : 'js'
   } else {
     return format === 'es' ? 'mjs' : 'js'
   }
@@ -978,10 +978,10 @@ export function resolveBuildOutputs(
       Object.values(libOptions.entry).length > 1
     const libFormats =
       libOptions.formats ||
-      (libHasMultipleEntries ? ['es', 'cjs'] : ['es' /* , 'umd' */])
+      (libHasMultipleEntries ? ['es', 'cjs'] : ['es', 'umd'])
 
     if (!Array.isArray(outputs)) {
-      if (/* libFormats.includes('umd') || */ libFormats.includes('iife')) {
+      if (libFormats.includes('umd') || libFormats.includes('iife')) {
         if (libHasMultipleEntries) {
           throw new Error(
             'Multiple entry points are not supported when output formats include "umd" or "iife".',
@@ -1009,7 +1009,7 @@ export function resolveBuildOutputs(
 
     outputs.forEach((output) => {
       if (
-        /* output.format === 'umd' || */ output.format === 'iife' &&
+        (output.format === 'umd' || output.format === 'iife') &&
         !output.name
       ) {
         throw new Error(
