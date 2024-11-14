@@ -345,6 +345,17 @@ export function oxcResolvePlugin(
         ...environment.config.resolve,
         ...resolveOptions, // plugin options + resolve options overrides
       }
+      const noExternal =
+        Array.isArray(options.noExternal) || options.noExternal === true
+          ? options.noExternal
+          : [options.noExternal]
+      if (
+        Array.isArray(noExternal) &&
+        noExternal.some((e) => typeof e !== 'string')
+      ) {
+        throw new Error('RegExp is not supported for noExternal for now')
+      }
+      const filteredNoExternal = noExternal as true | string[]
 
       return viteResolvePlugin({
         resolveOptions: {
@@ -355,12 +366,15 @@ export function oxcResolvePlugin(
 
           mainFields: options.mainFields,
           conditions: options.conditions,
+          externalConditions: options.externalConditions,
           extensions: options.extensions,
           tryIndex: options.tryIndex ?? true,
           tryPrefix: options.tryPrefix,
           preserveSymlinks: options.preserveSymlinks,
         },
         environmentConsumer: environment.config.consumer,
+        external: options.external,
+        noExternal: filteredNoExternal,
       }) as unknown as Plugin
     }),
     perEnvironmentPlugin('vite:resolve', (env) => {
