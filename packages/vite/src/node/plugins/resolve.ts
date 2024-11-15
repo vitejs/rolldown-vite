@@ -6,11 +6,6 @@ import type { PartialResolvedId, RolldownPlugin } from 'rolldown'
 import { exports, imports } from 'resolve.exports'
 import { hasESMSyntax } from 'mlly'
 import { viteResolvePlugin } from 'rolldown/experimental'
-import {
-  type NapiResolveOptions,
-  type ResolveResult,
-  ResolverFactory,
-} from 'oxc-resolver'
 import { type Plugin, perEnvironmentPlugin } from '../plugin'
 import {
   CLIENT_ENTRY,
@@ -184,155 +179,6 @@ export interface ResolvePluginOptionsWithOverrides
   extends ResolveOptions,
     ResolvePluginOptions {}
 
-const oxcResolverCache = new Map<string, ResolverFactory>()
-
-function getOxcResolver(
-  options: InternalResolveOptions,
-  disableResolveCache: boolean,
-) {
-  const {
-    mainFields,
-    extensions,
-    tryIndex = true,
-    tryPrefix,
-    asSrc,
-    root,
-    preserveSymlinks,
-    preferRelative,
-    isFromTsImporter,
-  } = options
-
-  const resolvedConditions = getConditions(
-    options.conditions,
-    options.isProduction,
-    options.isRequire,
-  )
-
-  const optionsDependencies = [
-    mainFields,
-    resolvedConditions,
-    extensions,
-    isFromTsImporter,
-    tryIndex ? [tryPrefix] : [],
-    preferRelative,
-    asSrc ? [root] : [],
-    preserveSymlinks,
-  ]
-  const key = JSON.stringify(optionsDependencies)
-  const cached = oxcResolverCache.get(key)
-  if (cached) {
-    // TODO: only clear when a file is changed
-    if (disableResolveCache) {
-      cached.clearCache()
-    }
-    return cached
-  }
-
-  const opts: NapiResolveOptions = {
-    aliasFields: mainFields.includes('browser') ? ['browser'] : [],
-    conditionNames: resolvedConditions,
-    extensions: [...extensions, '.node'],
-    // TODO: in future, always use extensionAlias
-    extensionAlias: isFromTsImporter
-      ? {
-          '.js': ['.ts', '.tsx', '.js'],
-          '.jsx': ['.ts', '.tsx', '.jsx'],
-          '.mjs': ['.mts', '.mjs'],
-          '.cjs': ['.cts', '.cjs'],
-        }
-      : undefined,
-    mainFields: [...mainFields, 'main'],
-    mainFiles: !tryIndex
-      ? []
-      : tryPrefix
-        ? [tryPrefix + 'index', 'index']
-        : ['index'],
-    preferRelative: preferRelative,
-    // TODO: maybe oxc-resolver can do the rootInRoot optimization
-    // https://github.com/vitejs/vite/blob/a50ff6000bca46a6fe429f2c3a98c486ea5ebc8e/packages/vite/src/node/plugins/resolve.ts#L304
-    roots: asSrc ? [root] : [],
-    symlinks: !preserveSymlinks,
-  }
-  // TODO: tryPrefix support
-  const resolver = new ResolverFactory(opts)
-  oxcResolverCache.set(key, resolver)
-  return resolver
-}
-
-function normalizeOxcResolverResult(
-  result: ResolveResult,
-  id: string,
-  importer: string | undefined,
-  root: string,
-  idOnly: boolean | undefined,
-  packageCache: PackageCache | undefined,
-):
-  | { id: string; moduleSideEffects?: boolean | 'no-treeshake' | null }
-  | undefined {
-  if (result.error) {
-    if (result.error.startsWith('Cannot find module')) {
-      // TODO: need to do the same thing for id mapped from browser field
-
-      // if import can't be found, check if it's an optional peer dep.
-      // if so, we can resolve to a special id that errors only when imported.
-      if (bareImportRE.test(id) && !isBuiltin(id) && !id.includes('\0')) {
-        let basedir: string
-        // TODO: dedupe support
-        if (
-          importer &&
-          path.isAbsolute(importer) &&
-          // css processing appends `*` for importer
-          (importer[importer.length - 1] === '*' ||
-            fs.existsSync(cleanUrl(importer)))
-        ) {
-          basedir = path.dirname(importer)
-        } else {
-          basedir = root
-        }
-
-        // root has no peer dep
-        if (basedir !== root) {
-          const mainPkg = findNearestMainPackageData(
-            basedir,
-            packageCache,
-          )?.data
-          if (mainPkg) {
-            const pkgName = getNpmPackageName(id)
-            if (
-              pkgName != null &&
-              mainPkg.peerDependencies?.[pkgName] &&
-              mainPkg.peerDependenciesMeta?.[pkgName]?.optional
-            ) {
-              return { id: `${optionalPeerDepId}:${id}:${mainPkg.name}` }
-            }
-          }
-        }
-      }
-    } else if (result.error.startsWith('Path is ignored')) {
-      return { id: browserExternalId }
-    } else {
-      throw result.error
-    }
-  }
-  if (!result.error) {
-    let path = result.path!
-    if (path.startsWith('\\\\?\\')) {
-      // https://github.com/oxc-project/oxc-resolver/issues/295
-      // oxc-resolver returns UNC path when the resolved path is long (e.g. `@vitejs/longfilename-*` test)
-      path = path.slice(4)
-    }
-    path = normalizePath(path)
-
-    if (idOnly) return { id: path }
-
-    const pkg = findNearestMainPackageData(path, packageCache)
-    return {
-      id: path,
-      moduleSideEffects: pkg?.hasSideEffects(path),
-    }
-  }
-}
-
 export function oxcResolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
 ): (RolldownPlugin | Plugin)[] {
@@ -341,6 +187,13 @@ export function oxcResolvePlugin(
     importGlobSubpathImportsResolvePlugin(resolveOptions),
     perEnvironmentPlugin('vite:resolve-builtin', (env) => {
       const environment = env as Environment
+      // The resolve plugin is used for createIdResolver and the depsOptimizer should be
+      // disabled in that case, so deps optimization is opt-in when creating the plugin.
+      const depsOptimizer =
+        resolveOptions.optimizeDeps && environment.mode === 'dev'
+          ? environment.depsOptimizer
+          : undefined
+
       const options: InternalResolveOptions = {
         ...environment.config.resolve,
         ...resolveOptions, // plugin options + resolve options overrides
@@ -359,6 +212,7 @@ export function oxcResolvePlugin(
 
       return viteResolvePlugin({
         resolveOptions: {
+          isBuild: options.isBuild,
           isProduction: options.isProduction,
           asSrc: options.asSrc ?? false,
           preferRelative: options.preferRelative ?? false,
@@ -373,29 +227,9 @@ export function oxcResolvePlugin(
           preserveSymlinks: options.preserveSymlinks,
         },
         environmentConsumer: environment.config.consumer,
+        environmentName: environment.name,
         external: options.external,
         noExternal: filteredNoExternal,
-      }) as unknown as Plugin
-    }),
-    perEnvironmentPlugin('vite:resolve', (env) => {
-      const environment = env as Environment
-      // The resolve plugin is used for createIdResolver and the depsOptimizer should be
-      // disabled in that case, so deps optimization is opt-in when creating the plugin.
-      const depsOptimizer =
-        resolveOptions.optimizeDeps && environment.mode === 'dev'
-          ? environment.depsOptimizer
-          : undefined
-      const options: InternalResolveOptions = {
-        ...environment.config.resolve,
-        ...resolveOptions, // plugin options + resolve options overrides
-      }
-
-      if (resolveOptions.isBuild) return false
-
-      return oxcResolveBuiltinPlugin({
-        environmentName: environment.name,
-        environmentConsumer: environment.config.consumer,
-        resolveOptions: options,
         finalizeBareSpecifier: !depsOptimizer
           ? undefined
           : (resolvedId, rawId, importer) => {
@@ -444,7 +278,7 @@ export function oxcResolvePlugin(
         finalizeOtherSpecifiers(resolvedId, rawId) {
           return ensureVersionQuery(resolvedId, rawId, options, depsOptimizer)
         },
-      })
+      }) as unknown as Plugin
     }),
   ]
 }
@@ -589,297 +423,6 @@ function importGlobSubpathImportsResolvePlugin(
           }
         }
       },
-    },
-  }
-}
-
-type OxcResolveBuiltinPluginOptions = {
-  environmentName: string
-  environmentConsumer: 'server' | 'client'
-  resolveOptions: InternalResolveOptions
-  finalizeBareSpecifier?: (
-    resolvedId: string,
-    rawId: string,
-    importer: string | undefined,
-  ) => string
-  finalizeOtherSpecifiers?: (resolvedId: string, rawId: string) => string
-}
-
-function oxcResolveBuiltinPlugin({
-  environmentName,
-  environmentConsumer,
-  resolveOptions,
-  finalizeBareSpecifier,
-  finalizeOtherSpecifiers,
-}: OxcResolveBuiltinPluginOptions): Plugin {
-  const { root, isProduction, isBuild, asSrc } = resolveOptions
-
-  return {
-    name: 'vite:resolve',
-
-    resolveId(id, importer, resolveOpts) {
-      if (
-        id[0] === '\0' ||
-        id.startsWith('virtual:') ||
-        // When injected directly in html/client code
-        id.startsWith('/virtual:')
-      ) {
-        return
-      }
-
-      // data uri: pass through (this only happens during build and will be
-      // handled by dedicated plugin)
-      if (isDataUrl(id)) {
-        return null
-      }
-
-      if (id.startsWith(browserExternalId)) {
-        return id
-      }
-
-      // explicit fs paths that starts with /@fs/*
-      if (asSrc && id.startsWith(FS_PREFIX)) {
-        const res = fsPathFromId(id)
-        // We don't need to resolve these paths since they are already resolved
-        // always return here even if res doesn't exist since /@fs/ is explicit
-        // if the file doesn't exist it should be a 404.
-        debug?.(`[@fs] ${colors.cyan(id)} -> ${colors.dim(res)}`)
-        return finalizeOtherSpecifiers?.(res, id) ?? res
-      }
-
-      // file url as path
-      if (id.startsWith('file://')) {
-        const res = normalizePath(fileURLToPath(id))
-        return finalizeOtherSpecifiers?.(res, id) ?? res
-      }
-
-      // external
-      if (isExternalUrl(id)) {
-        return { id, external: true }
-      }
-
-      const options: InternalResolveOptions = {
-        ...resolveOptions,
-        isRequire:
-          resolveOptions.isRequire ?? resolveOpts.kind === 'require-call',
-        scan: resolveOpts.scan ?? resolveOptions.scan,
-        preferRelative:
-          resolveOptions.preferRelative || importer?.endsWith('.html'),
-      }
-
-      if (importer) {
-        if (
-          isTsRequest(importer) ||
-          resolveOpts.custom?.depScan?.loader?.startsWith('ts')
-        ) {
-          options.isFromTsImporter = true
-        } else {
-          const moduleLang = this.getModuleInfo(importer)?.meta?.vite?.lang
-          options.isFromTsImporter = moduleLang && isTsRequest(`.${moduleLang}`)
-        }
-      }
-
-      const oxcResolver = getOxcResolver(
-        options,
-        !options.isBuild /* TODO: disable also for watch mode */,
-      )
-
-      if (bareImportRE.test(id)) {
-        let basedir: string
-        // TODO: handle dedupe
-        if (
-          importer &&
-          path.isAbsolute(importer) &&
-          // css processing appends `*` for importer
-          (importer[importer.length - 1] === '*' ||
-            fs.existsSync(cleanUrl(importer)))
-        ) {
-          basedir = path.dirname(importer)
-        } else {
-          basedir = root
-        }
-
-        const result = normalizeOxcResolverResult(
-          oxcResolver.sync(basedir, id),
-          id,
-          importer,
-          root,
-          options.idOnly,
-          options.packageCache,
-        )
-        if (result) {
-          const external =
-            options.externalize &&
-            options.isBuild &&
-            environmentConsumer === 'server' &&
-            shouldExternalize(this.environment, id, importer)
-
-          // check for deep import, e.g. "my-lib/foo"
-          const deepMatch = deepImportRE.exec(id)
-          const processResult = (resolved: PartialResolvedId) => {
-            if (!external) {
-              return resolved
-            }
-            if (!canExternalizeFile(resolved.id)) {
-              return resolved
-            }
-
-            const pkg = findNearestMainPackageData(
-              resolved.id,
-              options.packageCache,
-            )
-
-            let resolvedId = id
-            if (
-              deepMatch &&
-              !pkg?.data.exports &&
-              path.extname(id) !== path.extname(resolved.id)
-            ) {
-              // id date-fns/locale
-              // resolve.id ...date-fns/esm/locale/index.js
-              const index = resolved.id.indexOf(id)
-              if (index > -1) {
-                resolvedId = resolved.id.slice(index)
-                debug?.(
-                  `[processResult] ${colors.cyan(id)} -> ${colors.dim(resolvedId)}`,
-                )
-              }
-            }
-            return { ...resolved, id: resolvedId, external: true }
-          }
-
-          if (!options.idOnly && ((!options.scan && isBuild) || external)) {
-            // Resolve package side effects for build so that rollup can better
-            // perform tree-shaking
-            return processResult(result)
-          }
-
-          if (
-            !isInNodeModules(result.id) || // linked
-            !finalizeBareSpecifier ||
-            options.scan // initial esbuild scan phase
-          ) {
-            return result
-          }
-
-          const finalized = finalizeBareSpecifier(result.id, id, importer) ?? id
-
-          return {
-            ...result,
-            id: finalized,
-          }
-        }
-
-        // node built-ins.
-        // externalize if building for a node compatible environment, otherwise redirect to empty module
-        if (isBuiltin(id)) {
-          if (environmentConsumer === 'server') {
-            if (
-              options.noExternal === true &&
-              // if both noExternal and external are true, noExternal will take the higher priority and bundle it.
-              // only if the id is explicitly listed in external, we will externalize it and skip this error.
-              (options.external === true || !options.external.includes(id))
-            ) {
-              let message = `Cannot bundle Node.js built-in "${id}"`
-              if (importer) {
-                message += ` imported from "${path.relative(
-                  process.cwd(),
-                  importer,
-                )}"`
-              }
-              message += `. Consider disabling environments.${environmentName}.noExternal or remove the built-in dependency.`
-              this.error(message)
-            }
-
-            return options.idOnly
-              ? id
-              : { id, external: true, moduleSideEffects: false }
-          } else {
-            if (!asSrc) {
-              debug?.(
-                `externalized node built-in "${id}" to empty module. ` +
-                  `(imported by: ${colors.white(colors.dim(importer))})`,
-              )
-            } else if (isProduction) {
-              this.warn(
-                `Module "${id}" has been externalized for browser compatibility, imported by "${importer}". ` +
-                  `See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.`,
-              )
-            }
-            return isProduction
-              ? browserExternalId
-              : `${browserExternalId}:${id}`
-          }
-        }
-      }
-
-      const result = normalizeOxcResolverResult(
-        oxcResolver.sync(importer ? path.dirname(importer) : root, id),
-        id,
-        importer,
-        root,
-        options.idOnly,
-        options.packageCache,
-      )
-      if (result) {
-        if (finalizeOtherSpecifiers) {
-          return {
-            ...result,
-            id: finalizeOtherSpecifiers(result.id, id),
-          }
-        }
-        return result
-      }
-
-      debug?.(`[fallthrough] ${colors.dim(id)}`)
-    },
-    load(id) {
-      if (id.startsWith(browserExternalId)) {
-        if (isBuild) {
-          if (isProduction) {
-            // rolldown treats missing export as an error, and will break build.
-            // So use cjs to avoid it.
-            return `module.exports = {}`
-          } else {
-            id = id.slice(browserExternalId.length + 1)
-            // rolldown uses esbuild interop helper, so copy the proxy module from https://github.com/vitejs/vite/blob/main/packages/vite/src/node/optimizer/esbuildDepPlugin.ts#L259
-            return `\
-module.exports = Object.create(new Proxy({}, {
-  get(_, key) {
-    if (
-      key !== '__esModule' &&
-      key !== '__proto__' &&
-      key !== 'constructor' &&
-      key !== 'splice'
-    ) {
-      throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
-    }
-  }
-  }))`
-          }
-        } else {
-          // in dev, needs to return esm
-          if (isProduction) {
-            return `export default {}`
-          } else {
-            id = id.slice(browserExternalId.length + 1)
-            return `\
-export default new Proxy({}, {
-  get(_, key) {
-    throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
-  }
-})`
-          }
-        }
-      }
-      if (id.startsWith(optionalPeerDepId)) {
-        if (isProduction) {
-          return `export default {}`
-        } else {
-          const [, peerDep, parentDep] = id.split(':')
-          return `throw new Error(\`Could not resolve "${peerDep}" imported by "${parentDep}". Is it installed?\`)`
-        }
-      }
     },
   }
 }
