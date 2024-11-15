@@ -63,6 +63,7 @@ export function rolldownDevHandleConfig(
           createEnvironment: RolldownEnvironment.createFactory({
             hmr: config.experimental?.rolldownDev?.hmr,
             reactRefresh: config.experimental?.rolldownDev?.reactRefresh,
+            ssrModuleRunner: false,
           }),
         },
         build: {
@@ -81,6 +82,7 @@ export function rolldownDevHandleConfig(
           createEnvironment: RolldownEnvironment.createFactory({
             hmr: false,
             reactRefresh: false,
+            ssrModuleRunner: config.experimental?.rolldownDev?.ssrModuleRunner,
           }),
         },
       },
@@ -134,6 +136,8 @@ class RolldownEnvironment extends DevEnvironment {
   result!: rolldown.RolldownOutput
   outDir!: string
   buildTimestamp = Date.now()
+  inputOptions!: rolldown.InputOptions
+  outputOptions!: rolldown.OutputOptions
 
   static createFactory(
     rolldownDevOptioins: RolldownDevOptions,
@@ -200,7 +204,7 @@ class RolldownEnvironment extends DevEnvironment {
     plugins = plugins.map((p) => injectEnvironmentToHooks(this as any, p))
 
     console.time(`[rolldown:${this.name}:build]`)
-    const inputOptions: rolldown.InputOptions = {
+    this.inputOptions = {
       dev: this.rolldownDevOptions.hmr,
       input: this.config.build.rollupOptions.input,
       cwd: this.config.root,
@@ -212,7 +216,7 @@ class RolldownEnvironment extends DevEnvironment {
       },
       plugins: [
         ...plugins,
-        patchRuntimePlugin(this.rolldownDevOptions),
+        patchRuntimePlugin(this),
         patchCssPlugin(),
         reactRefreshPlugin(),
       ],
@@ -220,22 +224,26 @@ class RolldownEnvironment extends DevEnvironment {
         '.css': 'js',
       },
     }
-    this.instance = await rolldown.rolldown(inputOptions)
+    this.instance = await rolldown.rolldown(this.inputOptions)
 
-    // `generate` should work but we use `write` so it's easier to see output and debug
-    const outputOptions: rolldown.OutputOptions = {
+    const format: rolldown.ModuleFormat =
+      this.name === 'client' || this.rolldownDevOptions.ssrModuleRunner
+        ? 'app'
+        : 'esm'
+    this.outputOptions = {
       dir: this.outDir,
-      format: this.rolldownDevOptions.hmr ? 'app' : 'esm',
+      format,
       // TODO: hmr_rebuild returns source map file when `sourcemap: true`
       sourcemap: 'inline',
       // TODO: https://github.com/rolldown/rolldown/issues/2041
       // handle `require("stream")` in `react-dom/server`
       banner:
-        this.name === 'ssr'
+        this.name === 'ssr' && format === 'esm'
           ? `import __nodeModule from "node:module"; const require = __nodeModule.createRequire(import.meta.url);`
           : undefined,
     }
-    this.result = await this.instance.write(outputOptions)
+    // `generate` should work but we use `write` so it's easier to see output and debug
+    this.result = await this.instance.write(this.outputOptions)
 
     this.buildTimestamp = Date.now()
     console.timeEnd(`[rolldown:${this.name}:build]`)
@@ -249,12 +257,22 @@ class RolldownEnvironment extends DevEnvironment {
     if (!output.moduleIds.includes(ctx.file)) {
       return
     }
-    if (this.rolldownDevOptions.hmr) {
+    if (
+      this.rolldownDevOptions.hmr ||
+      this.rolldownDevOptions.ssrModuleRunner
+    ) {
       logger.info(`hmr '${ctx.file}'`, { timestamp: true })
       console.time(`[rolldown:${this.name}:hmr]`)
       const result = await this.instance.experimental_hmr_rebuild([ctx.file])
+      if (this.name === 'client') {
+        ctx.server.ws.send('rolldown:hmr', result)
+      } else {
+        this.getRunner().evaluate(
+          result[1].toString(),
+          path.join(this.outDir, result[0]),
+        )
+      }
       console.timeEnd(`[rolldown:${this.name}:hmr]`)
-      ctx.server.ws.send('rolldown:hmr', result)
     } else {
       await this.build()
       if (this.name === 'client') {
@@ -263,40 +281,138 @@ class RolldownEnvironment extends DevEnvironment {
     }
   }
 
+  runner!: RolldownModuleRunner
+
+  getRunner() {
+    if (!this.runner) {
+      const output = this.result.output[0]
+      const filepath = path.join(this.outDir, output.fileName)
+      this.runner = new RolldownModuleRunner()
+      const code = fs.readFileSync(filepath, 'utf-8')
+      this.runner.evaluate(code, filepath)
+    }
+    return this.runner
+  }
+
   async import(input: string): Promise<unknown> {
-    const output = this.result.output.find((o) => o.name === input)
-    assert(output, `invalid import input '${input}'`)
+    if (this.outputOptions.format === 'app') {
+      return this.getRunner().import(input)
+    }
+    // input is no use
+    const output = this.result.output[0]
     const filepath = path.join(this.outDir, output.fileName)
+    // TODO: source map not applied when adding `?t=...`?
+    // return import(`${pathToFileURL(filepath)}`)
     return import(`${pathToFileURL(filepath)}?t=${this.buildTimestamp}`)
   }
 }
 
-function patchRuntimePlugin(
-  rolldownDevOptions: RolldownDevOptions,
-): rolldown.Plugin {
+class RolldownModuleRunner {
+  // intercept globals
+  private context = {
+    rolldown_runtime: {} as any,
+    __rolldown_hot: {
+      send: () => {},
+    },
+    // TODO: external require doesn't work in app format.
+    // TODO: also it should be aware of importer for non static require/import.
+    _require: require,
+  }
+
+  // TODO: support resolution?
+  async import(id: string): Promise<unknown> {
+    const mod = this.context.rolldown_runtime.moduleCache[id]
+    assert(mod, `Module not found '${id}'`)
+    return mod.exports
+  }
+
+  evaluate(code: string, sourceURL: string) {
+    const context = {
+      self: this.context,
+      ...this.context,
+    }
+    // extract sourcemap and move to the bottom
+    const sourcemap = code.match(/^\/\/# sourceMappingURL=.*/m)?.[0] ?? ''
+    if (sourcemap) {
+      code = code.replace(sourcemap, '')
+    }
+    code = `\
+'use strict';(${Object.keys(context).join(',')})=>{{${code}
+// TODO: need to re-expose runtime utilities for now
+self.__toCommonJS = __toCommonJS;
+self.__export = __export;
+self.__toESM = __toESM;
+}}
+//# sourceURL=${sourceURL}
+//# sourceMappingSource=rolldown-module-runner
+${sourcemap}
+`
+    const fn = (0, eval)(code)
+    try {
+      fn(...Object.values(context))
+    } catch (e) {
+      console.error('[RolldownModuleRunner:ERROR]', e)
+      throw e
+    }
+  }
+}
+
+function patchRuntimePlugin(environment: RolldownEnvironment): rolldown.Plugin {
   return {
     name: 'vite:rolldown-patch-runtime',
+    // TODO: external require doesn't work in app format.
+    // rewrite `require -> _require` and provide _require from module runner.
+    // for now just rewrite known ones in "react-dom/server".
+    transform: {
+      filter: {
+        code: {
+          include: [/require\(['"](stream|util)['"]\)/],
+        },
+      },
+      handler(code) {
+        if (!environment.rolldownDevOptions.ssrModuleRunner) {
+          return
+        }
+        return code.replace(
+          /require(\(['"](stream|util)['"]\))/g,
+          '_require($1)',
+        )
+      },
+    },
     renderChunk(code) {
       // patch rolldown_runtime to workaround a few things
       // TODO: is there a robust way to inject code specifically to entry or runtime?
       if (code.includes('//#region rolldown:runtime')) {
-        // TODO: is this magic string heavy?
+        // TODO: this magic string is heavy
         const output = new MagicString(code)
-        // replace hard-coded WebSocket setup with custom client
-        output.replace(/const socket =.*?\n\};/s, getRolldownClientCode())
-        // trigger full rebuild on non-accepting entry invalidation
         output
+          // replace hard-coded WebSocket setup with custom client
+          .replace(
+            /const socket =.*?\n\};/s,
+            environment.name === 'client' ? getRolldownClientCode() : '',
+          )
+          // fix rolldown_runtime.patch
+          .replace(
+            'this.executeModuleStack.length > 1',
+            'this.executeModuleStack.length > 0',
+          )
           .replace('parents: [parent],', 'parents: parent ? [parent] : [],')
+          .replace(
+            'if (module.parents.indexOf(parent) === -1) {',
+            'if (parent && module.parents.indexOf(parent) === -1) {',
+          )
           .replace(
             'for (var i = 0; i < module.parents.length; i++) {',
             `
-            if (module.parents.length === 0) {
+            boundaries.push(moduleId);
+            invalidModuleIds.push(moduleId);
+            if (module.parents.filter(Boolean).length === 0) {
               __rolldown_hot.send("rolldown:hmr-deadend", { moduleId });
               break;
             }
             for (var i = 0; i < module.parents.length; i++) {`,
           )
-        if (rolldownDevOptions.reactRefresh) {
+        if (environment.rolldownDevOptions.reactRefresh) {
           output.prepend(getReactRefreshRuntimeCode())
         }
         return {

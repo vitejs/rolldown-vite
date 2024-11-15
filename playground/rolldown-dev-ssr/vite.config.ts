@@ -30,6 +30,7 @@ export default defineConfig({
     rolldownDev: {
       hmr: true,
       reactRefresh: true,
+      ssrModuleRunner: !process.env['NO_MODULE_RUNNER'],
     },
   },
   plugins: [
@@ -39,7 +40,9 @@ export default defineConfig({
         return () => {
           server.middlewares.use(async (req, res, next) => {
             try {
-              const mod = await (server.environments.ssr as any).import('index')
+              const mod = await (server.environments.ssr as any).import(
+                'src/entry-server.tsx',
+              )
               await mod.default(req, res)
             } catch (e) {
               next(e)

@@ -1,10 +1,14 @@
 import ReactDOMServer from 'react-dom/server'
 import type { Connect } from 'vite'
 import { App } from './app'
+import { throwError } from './error'
 
 const handler: Connect.SimpleHandleFunction = (req, res) => {
   const url = new URL(req.url ?? '/', 'https://vite.dev')
   console.log(`[SSR] ${req.method} ${url.pathname}`)
+  if (url.pathname === '/crash-ssr') {
+    throwError()
+  }
   const ssrHtml = ReactDOMServer.renderToString(<App />)
   res.setHeader('content-type', 'text/html')
   // TODO: transformIndexHtml?
