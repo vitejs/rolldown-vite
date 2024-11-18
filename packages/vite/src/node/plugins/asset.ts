@@ -177,12 +177,9 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
         const file = checkPublicFile(id, config) || cleanUrl(id)
         this.addWatchFile(file)
         // raw query, read file and return as string
-        return {
-          code: `export default ${JSON.stringify(
-            await fsp.readFile(file, 'utf-8'),
-          )}`,
-          moduleType: 'js', // TODO: remove later when not needed
-        }
+        return `export default ${JSON.stringify(
+          await fsp.readFile(file, 'utf-8'),
+        )}`
       }
 
       if (!urlRE.test(id) && !config.assetsInclude(cleanUrl(id))) {
@@ -213,7 +210,6 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
             ? 'no-treeshake'
             : false,
         meta: config.command === 'build' ? { 'vite:asset': true } : undefined,
-        moduleType: 'js', // TODO: remove later when not needed
       }
     },
 
