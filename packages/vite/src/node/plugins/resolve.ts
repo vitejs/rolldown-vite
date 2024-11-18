@@ -217,6 +217,7 @@ export function oxcResolvePlugin(
           asSrc: options.asSrc ?? false,
           preferRelative: options.preferRelative ?? false,
           root: options.root,
+          scan: options.scan ?? false,
 
           mainFields: options.mainFields,
           conditions: options.conditions,
