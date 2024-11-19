@@ -2,7 +2,7 @@ import path from 'node:path'
 import MagicString from 'magic-string'
 import type { OutputChunk, RolldownPlugin, RollupError } from 'rolldown'
 import type { ResolvedConfig } from '../config'
-import { type Plugin, resolveEnvironmentPluginsRaw } from '../plugin'
+import type { Plugin } from '../plugin'
 import { ENV_ENTRY, ENV_PUBLIC_PATH } from '../constants'
 import {
   encodeURIPath,
@@ -79,9 +79,9 @@ async function bundleWorkerEntry(
   const bundle = await rolldown({
     ...rollupOptions,
     input,
-    plugins: (
-      await resolveEnvironmentPluginsRaw(resolvedPlugins, workerEnvironment)
-    ).map((p) => injectEnvironmentToHooks(workerEnvironment, p)),
+    plugins: resolvedPlugins.map((p) =>
+      injectEnvironmentToHooks(workerEnvironment, p),
+    ),
     onwarn(warning, warn) {
       onRollupWarning(warning, warn, workerEnvironment)
     },

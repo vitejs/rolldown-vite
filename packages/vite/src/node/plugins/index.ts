@@ -97,15 +97,18 @@ export async function resolvePlugins(
         : modulePreloadPolyfillPlugin(config)
       : null,
     ...(enableNativePlugin
-      ? oxcResolvePlugin({
-          root: config.root,
-          isProduction: config.isProduction,
-          isBuild,
-          packageCache: config.packageCache,
-          asSrc: true,
-          optimizeDeps: true,
-          externalize: true,
-        })
+      ? oxcResolvePlugin(
+          {
+            root: config.root,
+            isProduction: config.isProduction,
+            isBuild,
+            packageCache: config.packageCache,
+            asSrc: true,
+            optimizeDeps: true,
+            externalize: true,
+          },
+          isWorker,
+        )
       : [
           resolvePlugin({
             root: config.root,

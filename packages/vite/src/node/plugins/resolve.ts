@@ -36,7 +36,7 @@ import {
 } from '../utils'
 import { optimizedDepInfoFromFile, optimizedDepInfoFromId } from '../optimizer'
 import type { DepsOptimizer } from '../optimizer'
-import type { DevEnvironment, Environment, SSROptions } from '..'
+import type { Environment, SSROptions } from '..'
 import type { PackageCache, PackageData } from '../packages'
 import { canExternalizeFile, shouldExternalize } from '../external'
 import {
@@ -52,6 +52,7 @@ import {
   splitFileAndPostfix,
   withTrailingSlash,
 } from '../../shared/utils'
+import type { PartialEnvironment } from '../baseEnvironment'
 
 const normalizedClientEntry = normalizePath(CLIENT_ENTRY)
 const normalizedEnvEntry = normalizePath(ENV_ENTRY)
@@ -179,13 +180,25 @@ export interface ResolvePluginOptionsWithOverrides
   extends ResolveOptions,
     ResolvePluginOptions {}
 
+const perEnvironmentOrWorkerPlugin = (
+  name: string,
+  isWorker: boolean,
+  f: (env: PartialEnvironment | undefined) => Plugin,
+): Plugin => {
+  if (isWorker) {
+    return f(undefined)
+  }
+  return perEnvironmentPlugin(name, f)
+}
+
 export function oxcResolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
+  isWorker: boolean,
 ): (RolldownPlugin | Plugin)[] {
   return [
     optimizerResolvePlugin(resolveOptions),
     importGlobSubpathImportsResolvePlugin(resolveOptions),
-    perEnvironmentPlugin('vite:resolve-builtin', (env) => {
+    perEnvironmentOrWorkerPlugin('vite:resolve-builtin', isWorker, (env) => {
       const environment = env as Environment
       // The resolve plugin is used for createIdResolver and the depsOptimizer should be
       // disabled in that case, so deps optimization is opt-in when creating the plugin.
@@ -292,16 +305,7 @@ function optimizerResolvePlugin(
   return {
     name: 'vite:resolve-dev',
     ...({
-      applyToEnvironment(env) {
-        const environment = env as Environment
-        // The resolve plugin is used for createIdResolver and the depsOptimizer should be
-        // disabled in that case, so deps optimization is opt-in when creating the plugin.
-        return (
-          !!resolveOptions.optimizeDeps &&
-          environment.mode === 'dev' &&
-          !!environment.depsOptimizer
-        )
-      },
+      apply: 'serve',
     } satisfies Plugin),
     resolveId: {
       filter: {
@@ -320,8 +324,15 @@ function optimizerResolvePlugin(
           return
         }
 
-        const depsOptimizer = (this.environment as DevEnvironment)
-          .depsOptimizer!
+        // The resolve plugin is used for createIdResolver and the depsOptimizer should be
+        // disabled in that case, so deps optimization is opt-in when creating the plugin.
+        const depsOptimizer =
+          resolveOptions.optimizeDeps && this.environment.mode === 'dev'
+            ? this.environment.depsOptimizer
+            : undefined
+        if (!depsOptimizer) {
+          return
+        }
 
         const options: InternalResolveOptions = {
           isRequire: resolveOpts.kind === 'require-call',
