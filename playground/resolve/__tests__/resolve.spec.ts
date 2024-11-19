@@ -135,12 +135,12 @@ test('Resolve browser field even if module field exists', async () => {
   expect(await page.textContent('.browser-module1')).toMatch('[success]')
 })
 
-// vite is behaving bad here
+// should not fallback
 test.skip('Resolve module field if browser field is likely UMD or CJS', async () => {
   expect(await page.textContent('.browser-module2')).toMatch('[success]')
 })
 
-// vite is behaving bad here
+// should not fallback
 test.skip('Resolve module field if browser field is likely IIFE', async () => {
   expect(await page.textContent('.browser-module3')).toMatch('[success]')
 })
