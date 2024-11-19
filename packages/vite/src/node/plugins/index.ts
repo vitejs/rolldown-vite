@@ -107,7 +107,7 @@ export async function resolvePlugins(
             optimizeDeps: true,
             externalize: true,
           },
-          isWorker,
+          isWorker ? config : undefined,
         )
       : [
           resolvePlugin({

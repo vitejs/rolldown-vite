@@ -36,7 +36,7 @@ import {
 } from '../utils'
 import { optimizedDepInfoFromFile, optimizedDepInfoFromId } from '../optimizer'
 import type { DepsOptimizer } from '../optimizer'
-import type { Environment, SSROptions } from '..'
+import type { Environment, ResolvedConfig, SSROptions } from '..'
 import type { PackageCache, PackageData } from '../packages'
 import { canExternalizeFile, shouldExternalize } from '../external'
 import {
@@ -52,7 +52,7 @@ import {
   splitFileAndPostfix,
   withTrailingSlash,
 } from '../../shared/utils'
-import type { PartialEnvironment } from '../baseEnvironment'
+import type { ResolvedEnvironmentOptions } from '../config'
 
 const normalizedClientEntry = normalizePath(CLIENT_ENTRY)
 const normalizedEnvEntry = normalizePath(ENV_ENTRY)
@@ -182,118 +182,131 @@ export interface ResolvePluginOptionsWithOverrides
 
 const perEnvironmentOrWorkerPlugin = (
   name: string,
-  isWorker: boolean,
-  f: (env: PartialEnvironment | undefined) => Plugin,
+  configIfWorker: ResolvedConfig | undefined,
+  f: (env: {
+    name: string
+    config: ResolvedConfig & ResolvedEnvironmentOptions
+  }) => Plugin,
 ): Plugin => {
-  if (isWorker) {
-    return f(undefined)
+  if (configIfWorker) {
+    return f({
+      name: 'client',
+      config: { ...configIfWorker, consumer: 'client' },
+    })
   }
   return perEnvironmentPlugin(name, f)
 }
 
 export function oxcResolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
-  isWorker: boolean,
+  configIfWorker: ResolvedConfig | undefined,
 ): (RolldownPlugin | Plugin)[] {
   return [
     optimizerResolvePlugin(resolveOptions),
     importGlobSubpathImportsResolvePlugin(resolveOptions),
-    perEnvironmentOrWorkerPlugin('vite:resolve-builtin', isWorker, (env) => {
-      const environment = env as Environment
-      // The resolve plugin is used for createIdResolver and the depsOptimizer should be
-      // disabled in that case, so deps optimization is opt-in when creating the plugin.
-      const depsOptimizer =
-        resolveOptions.optimizeDeps && environment.mode === 'dev'
-          ? environment.depsOptimizer
-          : undefined
+    perEnvironmentOrWorkerPlugin(
+      'vite:resolve-builtin',
+      configIfWorker,
+      (env) => {
+        const environment = env as Environment
+        // The resolve plugin is used for createIdResolver and the depsOptimizer should be
+        // disabled in that case, so deps optimization is opt-in when creating the plugin.
+        const depsOptimizer =
+          resolveOptions.optimizeDeps && environment?.mode === 'dev'
+            ? environment.depsOptimizer
+            : undefined
 
-      const options: InternalResolveOptions = {
-        ...environment.config.resolve,
-        ...resolveOptions, // plugin options + resolve options overrides
-      }
-      const noExternal =
-        Array.isArray(options.noExternal) || options.noExternal === true
-          ? options.noExternal
-          : [options.noExternal]
-      if (
-        Array.isArray(noExternal) &&
-        noExternal.some((e) => typeof e !== 'string')
-      ) {
-        throw new Error('RegExp is not supported for noExternal for now')
-      }
-      const filteredNoExternal = noExternal as true | string[]
+        const options: InternalResolveOptions = {
+          ...environment.config.resolve,
+          ...resolveOptions, // plugin options + resolve options overrides
+        }
+        const noExternal =
+          Array.isArray(options.noExternal) || options.noExternal === true
+            ? options.noExternal
+            : [options.noExternal]
+        if (
+          Array.isArray(noExternal) &&
+          noExternal.some((e) => typeof e !== 'string')
+        ) {
+          throw new Error('RegExp is not supported for noExternal for now')
+        }
+        const filteredNoExternal = noExternal as true | string[]
 
-      return viteResolvePlugin({
-        resolveOptions: {
-          isBuild: options.isBuild,
-          isProduction: options.isProduction,
-          asSrc: options.asSrc ?? false,
-          preferRelative: options.preferRelative ?? false,
-          root: options.root,
-          scan: options.scan ?? false,
+        return viteResolvePlugin({
+          resolveOptions: {
+            isBuild: options.isBuild,
+            isProduction: options.isProduction,
+            asSrc: options.asSrc ?? false,
+            preferRelative: options.preferRelative ?? false,
+            root: options.root,
+            scan: options.scan ?? false,
 
-          mainFields: options.mainFields,
-          conditions: options.conditions,
-          externalConditions: options.externalConditions,
-          extensions: options.extensions,
-          tryIndex: options.tryIndex ?? true,
-          tryPrefix: options.tryPrefix,
-          preserveSymlinks: options.preserveSymlinks,
-        },
-        environmentConsumer: environment.config.consumer,
-        environmentName: environment.name,
-        external: options.external,
-        noExternal: filteredNoExternal,
-        finalizeBareSpecifier: !depsOptimizer
-          ? undefined
-          : (resolvedId, rawId, importer) => {
-              // if we reach here, it's a valid dep import that hasn't been optimized.
-              const isJsType = isOptimizable(resolvedId, depsOptimizer.options)
-              const exclude = depsOptimizer?.options.exclude
-
-              // check for deep import, e.g. "my-lib/foo"
-              const deepMatch = deepImportRE.exec(rawId)
-              // package name doesn't include postfixes
-              // trim them to support importing package with queries (e.g. `import css from 'normalize.css?inline'`)
-              const pkgId = deepMatch
-                ? deepMatch[1] || deepMatch[2]
-                : cleanUrl(rawId)
-
-              const skipOptimization =
-                depsOptimizer.options.noDiscovery ||
-                !isJsType ||
-                (importer && isInNodeModules(importer)) ||
-                exclude?.includes(pkgId) ||
-                exclude?.includes(rawId) ||
-                SPECIAL_QUERY_RE.test(resolvedId)
-
-              let newId = resolvedId
-              if (skipOptimization) {
-                // excluded from optimization
-                // Inject a version query to npm deps so that the browser
-                // can cache it without re-validation, but only do so for known js types.
-                // otherwise we may introduce duplicated modules for externalized files
-                // from pre-bundled deps.
-                const versionHash = depsOptimizer!.metadata.browserHash
-                if (versionHash && isJsType) {
-                  newId = injectQuery(newId, `v=${versionHash}`)
-                }
-              } else {
-                // this is a missing import, queue optimize-deps re-run and
-                // get a resolved its optimized info
-                const optimizedInfo = depsOptimizer!.registerMissingImport(
-                  rawId,
-                  newId,
+            mainFields: options.mainFields,
+            conditions: options.conditions,
+            externalConditions: options.externalConditions,
+            extensions: options.extensions,
+            tryIndex: options.tryIndex ?? true,
+            tryPrefix: options.tryPrefix,
+            preserveSymlinks: options.preserveSymlinks,
+          },
+          environmentConsumer: environment.config.consumer,
+          environmentName: environment.name,
+          external: options.external,
+          noExternal: filteredNoExternal,
+          finalizeBareSpecifier: !depsOptimizer
+            ? undefined
+            : (resolvedId, rawId, importer) => {
+                // if we reach here, it's a valid dep import that hasn't been optimized.
+                const isJsType = isOptimizable(
+                  resolvedId,
+                  depsOptimizer.options,
                 )
-                newId = depsOptimizer!.getOptimizedDepId(optimizedInfo)
-              }
-              return newId
-            },
-        finalizeOtherSpecifiers(resolvedId, rawId) {
-          return ensureVersionQuery(resolvedId, rawId, options, depsOptimizer)
-        },
-      }) as unknown as Plugin
-    }),
+                const exclude = depsOptimizer?.options.exclude
+
+                // check for deep import, e.g. "my-lib/foo"
+                const deepMatch = deepImportRE.exec(rawId)
+                // package name doesn't include postfixes
+                // trim them to support importing package with queries (e.g. `import css from 'normalize.css?inline'`)
+                const pkgId = deepMatch
+                  ? deepMatch[1] || deepMatch[2]
+                  : cleanUrl(rawId)
+
+                const skipOptimization =
+                  depsOptimizer.options.noDiscovery ||
+                  !isJsType ||
+                  (importer && isInNodeModules(importer)) ||
+                  exclude?.includes(pkgId) ||
+                  exclude?.includes(rawId) ||
+                  SPECIAL_QUERY_RE.test(resolvedId)
+
+                let newId = resolvedId
+                if (skipOptimization) {
+                  // excluded from optimization
+                  // Inject a version query to npm deps so that the browser
+                  // can cache it without re-validation, but only do so for known js types.
+                  // otherwise we may introduce duplicated modules for externalized files
+                  // from pre-bundled deps.
+                  const versionHash = depsOptimizer!.metadata.browserHash
+                  if (versionHash && isJsType) {
+                    newId = injectQuery(newId, `v=${versionHash}`)
+                  }
+                } else {
+                  // this is a missing import, queue optimize-deps re-run and
+                  // get a resolved its optimized info
+                  const optimizedInfo = depsOptimizer!.registerMissingImport(
+                    rawId,
+                    newId,
+                  )
+                  newId = depsOptimizer!.getOptimizedDepId(optimizedInfo)
+                }
+                return newId
+              },
+          finalizeOtherSpecifiers(resolvedId, rawId) {
+            return ensureVersionQuery(resolvedId, rawId, options, depsOptimizer)
+          },
+        }) as unknown as Plugin
+      },
+    ),
   ]
 }
 
