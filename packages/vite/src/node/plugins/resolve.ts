@@ -182,16 +182,16 @@ export interface ResolvePluginOptionsWithOverrides
 
 const perEnvironmentOrWorkerPlugin = (
   name: string,
-  configIfWorker: ResolvedConfig | undefined,
+  overrideEnvConfig: (ResolvedConfig & ResolvedEnvironmentOptions) | undefined,
   f: (env: {
     name: string
     config: ResolvedConfig & ResolvedEnvironmentOptions
   }) => Plugin,
 ): Plugin => {
-  if (configIfWorker) {
+  if (overrideEnvConfig) {
     return f({
       name: 'client',
-      config: { ...configIfWorker, consumer: 'client' },
+      config: overrideEnvConfig,
     })
   }
   return perEnvironmentPlugin(name, f)
@@ -199,14 +199,14 @@ const perEnvironmentOrWorkerPlugin = (
 
 export function oxcResolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
-  configIfWorker: ResolvedConfig | undefined,
+  overrideEnvConfig: (ResolvedConfig & ResolvedEnvironmentOptions) | undefined,
 ): (RolldownPlugin | Plugin)[] {
   return [
     optimizerResolvePlugin(resolveOptions),
     importGlobSubpathImportsResolvePlugin(resolveOptions),
     perEnvironmentOrWorkerPlugin(
       'vite:resolve-builtin',
-      configIfWorker,
+      overrideEnvConfig,
       (env) => {
         const environment = env as Environment
         // The resolve plugin is used for createIdResolver and the depsOptimizer should be
