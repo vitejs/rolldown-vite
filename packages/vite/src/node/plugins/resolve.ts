@@ -129,6 +129,10 @@ interface ResolvePluginOptions {
   isFromTsImporter?: boolean
   // True when resolving during the scan phase to discover dependencies
   scan?: boolean
+  /**
+   * @internal
+   */
+  skipMainField?: boolean
 
   /**
    * Optimize deps during dev, defaults to false // TODO: Review default
@@ -242,7 +246,9 @@ export function oxcResolvePlugin(
             root: options.root,
             scan: options.scan ?? false,
 
-            mainFields: options.mainFields.concat(['main']),
+            mainFields: options.skipMainField
+              ? options.mainFields
+              : options.mainFields.concat(['main']),
             conditions: options.conditions,
             externalConditions: options.externalConditions,
             extensions: options.extensions,
