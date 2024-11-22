@@ -308,9 +308,17 @@ export function oxcResolvePlugin(
                 }
                 return newId
               },
-          finalizeOtherSpecifiers(resolvedId, rawId) {
-            return ensureVersionQuery(resolvedId, rawId, options, depsOptimizer)
-          },
+          finalizeOtherSpecifiers: !depsOptimizer
+            ? undefined
+            : (resolvedId, rawId) => {
+                const newResolvedId = ensureVersionQuery(
+                  resolvedId,
+                  rawId,
+                  options,
+                  depsOptimizer,
+                )
+                return newResolvedId === resolvedId ? undefined : newResolvedId
+              },
         }) as unknown as Plugin
       },
     ),
