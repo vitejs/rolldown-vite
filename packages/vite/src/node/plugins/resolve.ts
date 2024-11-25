@@ -130,6 +130,10 @@ interface ResolvePluginOptions {
   isFromTsImporter?: boolean
   // True when resolving during the scan phase to discover dependencies
   scan?: boolean
+  /**
+   * @internal
+   */
+  skipMainField?: boolean
 
   /**
    * Optimize deps during dev, defaults to false // TODO: Review default
@@ -183,16 +187,16 @@ export interface ResolvePluginOptionsWithOverrides
 
 const perEnvironmentOrWorkerPlugin = (
   name: string,
-  configIfWorker: ResolvedConfig | undefined,
+  overrideEnvConfig: (ResolvedConfig & ResolvedEnvironmentOptions) | undefined,
   f: (env: {
     name: string
     config: ResolvedConfig & ResolvedEnvironmentOptions
   }) => Plugin,
 ): Plugin => {
-  if (configIfWorker) {
+  if (overrideEnvConfig) {
     return f({
       name: 'client',
-      config: { ...configIfWorker, consumer: 'client' },
+      config: overrideEnvConfig,
     })
   }
   return perEnvironmentPlugin(name, f)
@@ -200,14 +204,14 @@ const perEnvironmentOrWorkerPlugin = (
 
 export function oxcResolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
-  configIfWorker: ResolvedConfig | undefined,
+  overrideEnvConfig: (ResolvedConfig & ResolvedEnvironmentOptions) | undefined,
 ): (RolldownPlugin | Plugin)[] {
   return [
     optimizerResolvePlugin(resolveOptions),
     importGlobSubpathImportsResolvePlugin(resolveOptions),
     perEnvironmentOrWorkerPlugin(
       'vite:resolve-builtin',
-      configIfWorker,
+      overrideEnvConfig,
       (env) => {
         const environment = env as Environment
         // The resolve plugin is used for createIdResolver and the depsOptimizer should be
@@ -243,7 +247,9 @@ export function oxcResolvePlugin(
             root: options.root,
             scan: options.scan ?? false,
 
-            mainFields: options.mainFields.concat(['main']),
+            mainFields: options.skipMainField
+              ? options.mainFields
+              : options.mainFields.concat(['main']),
             conditions: options.conditions,
             externalConditions: options.externalConditions,
             extensions: options.extensions,
@@ -303,9 +309,17 @@ export function oxcResolvePlugin(
                 }
                 return newId
               },
-          finalizeOtherSpecifiers(resolvedId, rawId) {
-            return ensureVersionQuery(resolvedId, rawId, options, depsOptimizer)
-          },
+          finalizeOtherSpecifiers: !depsOptimizer
+            ? undefined
+            : (resolvedId, rawId) => {
+                const newResolvedId = ensureVersionQuery(
+                  resolvedId,
+                  rawId,
+                  options,
+                  depsOptimizer,
+                )
+                return newResolvedId === resolvedId ? undefined : newResolvedId
+              },
         }) as unknown as Plugin
       },
     ),
