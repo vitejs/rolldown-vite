@@ -15,6 +15,7 @@ import {
 } from 'rolldown'
 import type { ResolvedConfig } from '../config'
 import {
+  arraify,
   asyncFlatten,
   createDebugger,
   flattenId,
@@ -762,7 +763,7 @@ async function prepareRolldownOptimizerRun(
 
   const external = [...(optimizeDeps?.exclude ?? [])]
 
-  const plugins = await asyncFlatten(pluginsFromConfig)
+  const plugins = await asyncFlatten(arraify(pluginsFromConfig))
   if (external.length) {
     plugins.push(rolldownCjsExternalPlugin(external, platform))
   }
@@ -1070,7 +1071,7 @@ export async function extractExportsData(
     // so only the entry file is being transformed.
     const { plugins: pluginsFromConfig = [], ...remainingRollupOptions } =
       rollupOptions
-    const plugins = await asyncFlatten(pluginsFromConfig)
+    const plugins = await asyncFlatten(arraify(pluginsFromConfig))
     plugins.unshift({
       name: 'externalize',
       resolveId(id, importer) {
