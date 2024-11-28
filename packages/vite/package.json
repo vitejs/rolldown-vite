@@ -88,7 +88,7 @@
     "esbuild": "^0.24.0",
     "postcss": "^8.4.49",
     "react-refresh": "^0.14.2",
-    "rolldown": "0.13.2-snapshot-a292401-20241105072341",
+    "rolldown": "file:../../rolldown-0.14.0.tgz",
     "rollup": "^4.23.0"
   },
   "optionalDependencies": {
