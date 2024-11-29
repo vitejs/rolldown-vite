@@ -766,7 +766,7 @@ async function prepareRolldownOptimizerRun(
   if (external.length) {
     plugins.push(rolldownCjsExternalPlugin(external, platform))
   }
-  plugins.push(rolldownDepPlugin(environment, flatIdDeps, external))
+  plugins.push(...rolldownDepPlugin(environment, flatIdDeps, external))
 
   let canceled = false
   async function build() {
