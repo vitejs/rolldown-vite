@@ -24,7 +24,6 @@ import type Less from 'less'
 import type { Alias } from 'dep-types/alias'
 import type { LightningCSSOptions } from 'types/internal/lightningcssOptions'
 import type { TransformOptions } from 'esbuild'
-import { formatMessages, transform } from 'esbuild'
 import type { RawSourceMap } from '@ampproject/remapping'
 import { WorkerWithFallback } from 'artichokie'
 import { globSync } from 'tinyglobby'
@@ -1932,56 +1931,58 @@ async function minifyCSS(
   // regular CSS assets do end with a linebreak.
   // See https://github.com/vitejs/vite/pull/13893#issuecomment-1678628198
 
-  if (config.build.cssMinify === 'lightningcss') {
-    const { code, warnings } = (await importLightningCSS()).transform({
-      ...config.css?.lightningcss,
-      targets: convertTargets(config.build.cssTarget),
-      cssModules: undefined,
-      // TODO: Pass actual filename here, which can also be passed to esbuild's
-      // `sourcefile` option below to improve error messages
-      filename: defaultCssBundleName,
-      code: Buffer.from(css),
-      minify: true,
-    })
-    if (warnings.length) {
-      config.logger.warn(
-        colors.yellow(
-          `warnings when minifying css:\n${warnings
-            .map((w) => w.message)
-            .join('\n')}`,
-        ),
-      )
+  if (config.build.cssMinify === 'esbuild') {
+    const { transform, formatMessages } = await importEsbuild()
+    try {
+      const { code, warnings } = await transform(css, {
+        loader: 'css',
+        target: config.build.cssTarget || undefined,
+        ...resolveMinifyCssEsbuildOptions(config.esbuild || {}),
+      })
+      if (warnings.length) {
+        const msgs = await formatMessages(warnings, { kind: 'warning' })
+        config.logger.warn(
+          colors.yellow(`warnings when minifying css:\n${msgs.join('\n')}`),
+        )
+      }
+      // esbuild output does return a linebreak at the end
+      return inlined ? code.trimEnd() : code
+    } catch (e) {
+      if (e.errors) {
+        e.message = '[esbuild css minify] ' + e.message
+        const msgs = await formatMessages(e.errors, { kind: 'error' })
+        e.frame = '\n' + msgs.join('\n')
+        e.loc = e.errors[0].location
+      }
+      throw e
     }
+  }
 
-    // NodeJS res.code = Buffer
-    // Deno res.code = Uint8Array
-    // For correct decode compiled css need to use TextDecoder
-    // LightningCSS output does not return a linebreak at the end
-    return decoder.decode(code) + (inlined ? '' : '\n')
+  const { code, warnings } = (await importLightningCSS()).transform({
+    ...config.css?.lightningcss,
+    targets: convertTargets(config.build.cssTarget),
+    cssModules: undefined,
+    // TODO: Pass actual filename here, which can also be passed to esbuild's
+    // `sourcefile` option below to improve error messages
+    filename: defaultCssBundleName,
+    code: Buffer.from(css),
+    minify: true,
+  })
+  if (warnings.length) {
+    config.logger.warn(
+      colors.yellow(
+        `warnings when minifying css:\n${warnings
+          .map((w) => w.message)
+          .join('\n')}`,
+      ),
+    )
   }
-  try {
-    const { code, warnings } = await transform(css, {
-      loader: 'css',
-      target: config.build.cssTarget || undefined,
-      ...resolveMinifyCssEsbuildOptions(config.esbuild || {}),
-    })
-    if (warnings.length) {
-      const msgs = await formatMessages(warnings, { kind: 'warning' })
-      config.logger.warn(
-        colors.yellow(`warnings when minifying css:\n${msgs.join('\n')}`),
-      )
-    }
-    // esbuild output does return a linebreak at the end
-    return inlined ? code.trimEnd() : code
-  } catch (e) {
-    if (e.errors) {
-      e.message = '[esbuild css minify] ' + e.message
-      const msgs = await formatMessages(e.errors, { kind: 'error' })
-      e.frame = '\n' + msgs.join('\n')
-      e.loc = e.errors[0].location
-    }
-    throw e
-  }
+
+  // NodeJS res.code = Buffer
+  // Deno res.code = Uint8Array
+  // For correct decode compiled css need to use TextDecoder
+  // LightningCSS output does not return a linebreak at the end
+  return decoder.decode(code) + (inlined ? '' : '\n')
 }
 
 function resolveMinifyCssEsbuildOptions(
@@ -3148,6 +3149,8 @@ const preprocessorSet = new Set([
 function isPreProcessor(lang: any): lang is PreprocessLang {
   return lang && preprocessorSet.has(lang)
 }
+
+const importEsbuild = createCachedImport(() => import('esbuild'))
 
 const importLightningCSS = createCachedImport(() => import('lightningcss'))
 async function compileLightningCSS(
