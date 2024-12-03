@@ -223,9 +223,6 @@ importers:
 
   packages/vite:
     dependencies:
-      esbuild:
-        specifier: ^0.24.0
-        version: 0.24.0
       lightningcss:
         specifier: ^1.28.1
         version: 1.28.1
@@ -315,6 +312,9 @@ importers:
       es-module-lexer:
         specifier: ^1.5.4
         version: 1.5.4
+      esbuild:
+        specifier: ^0.24.0
+        version: 0.24.0
       escape-html:
         specifier: ^1.0.3
         version: 1.0.3
