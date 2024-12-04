@@ -777,7 +777,7 @@ async function buildEnvironment(
           : path.posix.join(options.assetsDir, `[name]-[hash].[ext]`),
         inlineDynamicImports:
           output.format === 'umd' || output.format === 'iife',
-        minify: options.minify === 'oxc' ? true : false,
+        minify: options.minify === 'oxc',
         ...output,
       }
     }
