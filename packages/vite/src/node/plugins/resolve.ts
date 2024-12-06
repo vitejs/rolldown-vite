@@ -229,13 +229,6 @@ export function oxcResolvePlugin(
           Array.isArray(options.noExternal) || options.noExternal === true
             ? options.noExternal
             : [options.noExternal]
-        if (
-          Array.isArray(noExternal) &&
-          noExternal.some((e) => typeof e !== 'string')
-        ) {
-          throw new Error('RegExp is not supported for noExternal for now')
-        }
-        const filteredNoExternal = noExternal as true | string[]
 
         return viteResolvePlugin({
           resolveOptions: {
@@ -260,7 +253,8 @@ export function oxcResolvePlugin(
           environmentConsumer: environment.config.consumer,
           environmentName: environment.name,
           external: options.external,
-          noExternal: filteredNoExternal,
+          noExternal: noExternal,
+          dedupe: options.dedupe,
           finalizeBareSpecifier: !depsOptimizer
             ? undefined
             : (resolvedId, rawId, importer) => {
