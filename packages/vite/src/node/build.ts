@@ -8,6 +8,7 @@ import type {
   LoggingFunction,
   ModuleFormat,
   OutputBundle,
+  OutputChunk,
   OutputOptions,
   RenderedChunk,
   RolldownPlugin,
@@ -1136,7 +1137,7 @@ function isExternal(id: string, test: string | RegExp) {
 
 export function injectEnvironmentToHooks(
   environment: BuildEnvironment,
-  chunkMetadataMap = new Map<string, ChunkMetadata>(),
+  chunkMetadataMap: Map<string, ChunkMetadata>,
   plugin: Plugin,
 ): Plugin {
   const { resolveId, load, transform } = plugin
@@ -1253,7 +1254,7 @@ function wrapEnvironmentTransform(
 
 function wrapEnvironmentHook<HookName extends keyof Plugin>(
   environment: BuildEnvironment,
-  chunkMetadataMap = new Map<string, ChunkMetadata>(),
+  chunkMetadataMap: Map<string, ChunkMetadata>,
   plugin: Plugin,
   hookName: HookName,
 ): Plugin[HookName] {
@@ -1268,34 +1269,16 @@ function wrapEnvironmentHook<HookName extends keyof Plugin>(
     ...args: any[]
   ) {
     if (hookName === 'renderChunk') {
-      const chunk = args[1] as RenderedChunk
-      let viteMetadata = chunkMetadataMap.get(chunk.fileName)
-      if (!viteMetadata) {
-        viteMetadata = {
-          importedAssets: new Set(),
-          importedCss: new Set(),
-        }
-        chunkMetadataMap.set(chunk.fileName, viteMetadata)
-      }
-      chunk.viteMetadata = viteMetadata
+      injectChunkMetadata(chunkMetadataMap, args[1])
     }
     if (hookName === 'augmentChunkHash') {
-      const chunk = args[0] as RenderedChunk
-      let viteMetadata = chunkMetadataMap.get(chunk.fileName)
-      if (!viteMetadata) {
-        viteMetadata = {
-          importedAssets: new Set(),
-          importedCss: new Set(),
-        }
-        chunkMetadataMap.set(chunk.fileName, viteMetadata)
-      }
-      chunk.viteMetadata = viteMetadata
+      injectChunkMetadata(chunkMetadataMap, args[0])
     }
     if (hookName === 'generateBundle') {
       const bundle = args[1] as OutputBundle
       for (const chunk of Object.values(bundle)) {
         if (chunk.type === 'chunk') {
-          chunk.viteMetadata = chunkMetadataMap.get(chunk.preliminaryFileName)
+          injectChunkMetadata(chunkMetadataMap, chunk)
         }
       }
     }
@@ -1310,6 +1293,21 @@ function wrapEnvironmentHook<HookName extends keyof Plugin>(
   } else {
     return handler
   }
+}
+
+function injectChunkMetadata(
+  chunkMetadataMap: Map<string, ChunkMetadata>,
+  chunk: RenderedChunk | OutputChunk,
+) {
+  const key =
+    'preliminaryFileName' in chunk ? chunk.preliminaryFileName : chunk.fileName
+  if (!chunkMetadataMap.has(key)) {
+    chunkMetadataMap.set(key, {
+      importedAssets: new Set(),
+      importedCss: new Set(),
+    })
+  }
+  chunk.viteMetadata = chunkMetadataMap.get(key)
 }
 
 function injectEnvironmentInContext<Context extends MinimalPluginContext>(
