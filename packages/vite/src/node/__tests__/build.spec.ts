@@ -57,6 +57,17 @@ describe('build', () => {
       buildProject('red'),
       buildProject('blue'),
     ])
+    expect(getOutputHashChanges(result[0], result[1])).toMatchInlineSnapshot(`
+      {
+        "changed": [
+          "_subentry.css",
+        ],
+        "unchanged": [
+          "index",
+          "undefined",
+        ],
+      }
+    `)
     assertOutputHashContentChange(result[0], result[1])
   })
 
@@ -66,7 +77,8 @@ describe('build', () => {
         root: resolve(__dirname, 'packages/build-project'),
         logLevel: 'silent',
         build: {
-          write: false,
+          outDir: `dist/${cssColor}`,
+          // write: false,
         },
         plugins: [
           {
@@ -105,6 +117,25 @@ describe('build', () => {
       buildProject('yellow'),
       buildProject('blue'),
     ])
+    // const result = [
+    //   await buildProject('yellow'),
+    //   await buildProject('blue'),
+    // ]
+    expect(getOutputHashChanges(result[0], result[1])).toMatchInlineSnapshot(`
+      {
+        "changed": [
+          "index",
+          "_bar",
+          "_foo",
+          "_baz.css",
+        ],
+        "unchanged": [
+          "_foo.css",
+          "_bar.css",
+          "undefined",
+        ],
+      }
+    `)
     assertOutputHashContentChange(result[0], result[1])
   })
 
@@ -748,5 +779,19 @@ function assertOutputHashContentChange(
         ).toEqual(chunk2.code)
       }
     }
+  }
+}
+
+function getOutputHashChanges(output1: RollupOutput, output2: RollupOutput) {
+  const map1 = Object.fromEntries(
+    output1.output.map((o) => [o.name, o.fileName]),
+  )
+  const map2 = Object.fromEntries(
+    output2.output.map((o) => [o.name, o.fileName]),
+  )
+  const names = Object.keys(map1).filter(Boolean)
+  return {
+    changed: names.filter((name) => map1[name] !== map2[name]),
+    unchanged: names.filter((name) => map1[name] === map2[name]),
   }
 }

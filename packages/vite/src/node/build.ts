@@ -7,7 +7,9 @@ import type {
   InternalModuleFormat,
   LoggingFunction,
   ModuleFormat,
+  OutputBundle,
   OutputOptions,
+  RenderedChunk,
   RolldownPlugin,
   RollupBuild,
   RollupError,
@@ -24,6 +26,7 @@ import {
 import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
 import type { TransformOptions } from 'esbuild'
+import type { ChunkMetadata } from 'types/metadata'
 import { withTrailingSlash } from '../shared/utils'
 import {
   DEFAULT_ASSETS_INLINE_LIMIT,
@@ -623,8 +626,9 @@ async function buildEnvironment(
   const outDir = resolve(options.outDir)
 
   // inject environment and ssr arg to plugin load/transform hooks
+  const chunkMetadataMap = new Map<string, ChunkMetadata>()
   const plugins = environment.plugins.map((p) =>
-    injectEnvironmentToHooks(environment, p),
+    injectEnvironmentToHooks(environment, chunkMetadataMap, p),
   )
 
   const rollupOptions: RollupOptions = {
@@ -1132,6 +1136,7 @@ function isExternal(id: string, test: string | RegExp) {
 
 export function injectEnvironmentToHooks(
   environment: BuildEnvironment,
+  chunkMetadataMap = new Map<string, ChunkMetadata>(),
   plugin: Plugin,
 ): Plugin {
   const { resolveId, load, transform } = plugin
@@ -1155,7 +1160,12 @@ export function injectEnvironmentToHooks(
         break
       default:
         if (ROLLUP_HOOKS.includes(hook)) {
-          ;(clone as any)[hook] = wrapEnvironmentHook(environment, clone[hook])
+          ;(clone as any)[hook] = wrapEnvironmentHook(
+            environment,
+            chunkMetadataMap,
+            plugin,
+            hook,
+          )
         }
         break
     }
@@ -1243,8 +1253,11 @@ function wrapEnvironmentTransform(
 
 function wrapEnvironmentHook<HookName extends keyof Plugin>(
   environment: BuildEnvironment,
-  hook?: Plugin[HookName],
+  chunkMetadataMap = new Map<string, ChunkMetadata>(),
+  plugin: Plugin,
+  hookName: HookName,
 ): Plugin[HookName] {
+  const hook = plugin[hookName]
   if (!hook) return
 
   const fn = getHookHandler(hook)
@@ -1254,6 +1267,38 @@ function wrapEnvironmentHook<HookName extends keyof Plugin>(
     this: PluginContext,
     ...args: any[]
   ) {
+    if (hookName === 'renderChunk') {
+      const chunk = args[1] as RenderedChunk
+      let viteMetadata = chunkMetadataMap.get(chunk.fileName)
+      if (!viteMetadata) {
+        viteMetadata = {
+          importedAssets: new Set(),
+          importedCss: new Set(),
+        }
+        chunkMetadataMap.set(chunk.fileName, viteMetadata)
+      }
+      chunk.viteMetadata = viteMetadata
+    }
+    if (hookName === 'augmentChunkHash') {
+      const chunk = args[0] as RenderedChunk
+      let viteMetadata = chunkMetadataMap.get(chunk.fileName)
+      if (!viteMetadata) {
+        viteMetadata = {
+          importedAssets: new Set(),
+          importedCss: new Set(),
+        }
+        chunkMetadataMap.set(chunk.fileName, viteMetadata)
+      }
+      chunk.viteMetadata = viteMetadata
+    }
+    if (hookName === 'generateBundle') {
+      const bundle = args[1] as OutputBundle
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type === 'chunk') {
+          chunk.viteMetadata = chunkMetadataMap.get(chunk.preliminaryFileName)
+        }
+      }
+    }
     return fn.call(injectEnvironmentInContext(this, environment), ...args)
   }
 
