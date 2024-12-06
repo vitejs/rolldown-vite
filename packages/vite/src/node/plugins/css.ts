@@ -690,7 +690,7 @@ export function cssPostPlugin(config: ResolvedConfig): RolldownPlugin {
         // replace asset url references with resolved url.
         chunkCSS = chunkCSS.replace(assetUrlRE, (_, fileHash, postfix = '') => {
           const filename = this.getFileName(fileHash) + postfix
-          chunk.viteMetadata?.importedAssets.add(cleanUrl(filename))
+          chunk.viteMetadata!.importedAssets.add(cleanUrl(filename))
           return encodeURIPath(
             toOutputFilePathInCss(
               filename,
@@ -802,7 +802,7 @@ export function cssPostPlugin(config: ResolvedConfig): RolldownPlugin {
           generatedAssets.set(referenceId, { originalFileName })
 
           const filename = this.getFileName(referenceId)
-          chunk.viteMetadata?.importedAssets.add(cleanUrl(filename))
+          chunk.viteMetadata!.importedAssets.add(cleanUrl(filename))
           const replacement = toOutputFilePathInJS(
             this.environment,
             filename,
@@ -858,7 +858,7 @@ export function cssPostPlugin(config: ResolvedConfig): RolldownPlugin {
               source: chunkCSS,
             })
             generatedAssets.set(referenceId, { originalFileName, isEntry })
-            chunk.viteMetadata?.importedCss.add(this.getFileName(referenceId))
+            chunk.viteMetadata!.importedCss.add(this.getFileName(referenceId))
           } else if (this.environment.config.consumer === 'client') {
             // legacy build and inline css
 
@@ -1013,10 +1013,10 @@ export function cssPostPlugin(config: ResolvedConfig): RolldownPlugin {
                   bundle[file] as OutputChunk
                 ).viteMetadata!
                 importedCss.forEach((file) =>
-                  chunk.viteMetadata?.importedCss.add(file),
+                  chunk.viteMetadata!.importedCss.add(file),
                 )
                 importedAssets.forEach((file) =>
-                  chunk.viteMetadata?.importedAssets.add(file),
+                  chunk.viteMetadata!.importedAssets.add(file),
                 )
                 chunkImportsPureCssChunk = true
                 return false
