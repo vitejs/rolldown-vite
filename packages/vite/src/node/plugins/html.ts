@@ -43,7 +43,6 @@ import {
 } from './asset'
 import { cssBundleNameCache, isCSSRequest } from './css'
 import { modulePreloadPolyfillId } from './modulePreloadPolyfill'
-import { getChunkMetadata } from './metadata'
 
 interface ScriptAssetsUrl {
   start: number
@@ -854,7 +853,7 @@ export function buildHtmlPlugin(config: ResolvedConfig): RolldownPlugin {
         })
         analyzedImportedCssFiles.set(chunk, files)
 
-        getChunkMetadata(chunk)!.importedCss.forEach((file) => {
+        chunk.viteMetadata!.importedCss.forEach((file) => {
           if (!seenCss.has(file)) {
             seenCss.add(file)
             files.push(file)
@@ -1011,7 +1010,7 @@ export function buildHtmlPlugin(config: ResolvedConfig): RolldownPlugin {
         result = result.replace(assetUrlRE, (_, fileHash, postfix = '') => {
           const file = this.getFileName(fileHash)
           if (chunk) {
-            getChunkMetadata(chunk)!.importedAssets.add(cleanUrl(file))
+            chunk.viteMetadata!.importedAssets.add(cleanUrl(file))
           }
           return encodeURIPath(toOutputAssetFilePath(file)) + postfix
         })
