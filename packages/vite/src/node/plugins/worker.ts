@@ -24,7 +24,9 @@ import { fileToUrl } from './asset'
 
 type WorkerBundleAsset = {
   fileName: string
+  /** @deprecated */
   originalFileName: string | null
+  originalFileNames: string[]
   source: string | Uint8Array
 }
 
@@ -131,6 +133,7 @@ async function bundleWorkerEntry(
         saveEmitWorkerAsset(config, {
           fileName: outputChunk.fileName,
           originalFileName: null,
+          originalFileNames: [],
           source: outputChunk.code,
         })
       }
@@ -169,6 +172,7 @@ function emitSourcemapForWorkerEntry(
       saveEmitWorkerAsset(config, {
         fileName: mapFileName,
         originalFileName: null,
+        originalFileNames: [],
         source: data,
       })
     }
@@ -203,6 +207,7 @@ export async function workerFileToUrl(
     saveEmitWorkerAsset(config, {
       fileName,
       originalFileName: null,
+      originalFileNames: [],
       source: outputChunk.code,
     })
     workerMap.bundle.set(id, fileName)
@@ -495,8 +500,9 @@ export function webWorkerPlugin(config: ResolvedConfig): RolldownPlugin {
         this.emitFile({
           type: 'asset',
           fileName: asset.fileName,
-          originalFileName: asset.originalFileName,
           source: asset.source,
+          // NOTE: fileName is already generated when bundling the worker
+          //       so no need to pass originalFileNames/names
         })
       })
       workerMap.assets.clear()

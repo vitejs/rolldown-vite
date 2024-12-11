@@ -929,7 +929,8 @@ export function buildHtmlPlugin(config: ResolvedConfig): RolldownPlugin {
           const cssChunk =
             cssBundleName &&
             (Object.values(bundle).find(
-              (chunk) => chunk.type === 'asset' && chunk.name === cssBundleName,
+              (chunk) =>
+                chunk.type === 'asset' && chunk.names.includes(cssBundleName),
             ) as OutputAsset | undefined)
           if (cssChunk) {
             result = injectToHead(result, [

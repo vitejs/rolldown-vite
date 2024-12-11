@@ -93,9 +93,9 @@ import { findNearestPackageData } from '../packages'
 import { addToHTMLProxyTransformResult } from './html'
 import {
   assetUrlRE,
+  cssEntriesMap,
   fileToDevUrl,
   fileToUrl,
-  generatedAssetsMap,
   publicAssetUrlCache,
   publicAssetUrlRE,
   publicFileToBuiltUrl,
@@ -483,7 +483,9 @@ export function cssPostPlugin(config: ResolvedConfig): RolldownPlugin {
         assetFileNames({
           type: 'asset',
           name: cssAssetName,
+          names: [cssAssetName],
           originalFileName: null,
+          originalFileNames: [],
           source: '/* vite internal call, ignore */',
         }),
       )
@@ -639,8 +641,6 @@ export function cssPostPlugin(config: ResolvedConfig): RolldownPlugin {
     },
 
     async renderChunk(code, chunk, opts) {
-      const generatedAssets = generatedAssetsMap.get(this.environment)!
-
       let chunkCSS = ''
       // the chunk is empty if it's a dynamic entry chunk that only contains a CSS import
       const isJsChunkEmpty = code === '' && !chunk.isEntry
@@ -799,7 +799,6 @@ export function cssPostPlugin(config: ResolvedConfig): RolldownPlugin {
             originalFileName,
             source: content,
           })
-          generatedAssets.set(referenceId, { originalFileName })
 
           const filename = this.getFileName(referenceId)
           chunk.viteMetadata!.importedAssets.add(cleanUrl(filename))
@@ -857,7 +856,9 @@ export function cssPostPlugin(config: ResolvedConfig): RolldownPlugin {
               originalFileName,
               source: chunkCSS,
             })
-            generatedAssets.set(referenceId, { originalFileName, isEntry })
+            if (isEntry) {
+              cssEntriesMap.get(this.environment)!.add(referenceId)
+            }
             chunk.viteMetadata!.importedCss.add(this.getFileName(referenceId))
           } else if (this.environment.config.consumer === 'client') {
             // legacy build and inline css
