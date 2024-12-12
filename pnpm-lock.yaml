@@ -223,9 +223,6 @@ importers:
 
   packages/vite:
     dependencies:
-      esbuild:
-        specifier: ^0.25.0
-        version: 0.25.0
       lightningcss:
         specifier: ^1.29.1
         version: 1.29.1
@@ -311,6 +308,9 @@ importers:
       es-module-lexer:
         specifier: ^1.6.0
         version: 1.6.0
+      esbuild:
+        specifier: ^0.24.2
+        version: 0.24.2
       escape-html:
         specifier: ^1.0.3
         version: 1.0.3
@@ -373,7 +373,7 @@ importers:
         version: 6.1.1(rollup@4.34.8)(typescript@5.7.3)
       rollup-plugin-esbuild:
         specifier: ^6.2.1
-        version: 6.2.1(esbuild@0.25.0)(rollup@4.34.8)
+        version: 6.2.1(esbuild@0.24.2)(rollup@4.34.8)
       rollup-plugin-license:
         specifier: ^3.6.0
         version: 3.6.0(picomatch@4.0.2)(rollup@4.34.8)
@@ -12536,6 +12536,17 @@ snapshots:
       typescript: 5.7.3
     optionalDependencies:
       '@babel/code-frame': 7.26.2
+
+  rollup-plugin-esbuild@6.2.1(esbuild@0.24.2)(rollup@4.34.8):
+    dependencies:
+      debug: 4.4.0
+      es-module-lexer: 1.6.0
+      esbuild: 0.24.2
+      get-tsconfig: 4.10.0
+      rollup: 4.34.8
+      unplugin-utils: 0.2.4
+    transitivePeerDependencies:
+      - supports-color
 
   rollup-plugin-esbuild@6.2.1(esbuild@0.25.0)(rollup@4.34.8):
     dependencies:

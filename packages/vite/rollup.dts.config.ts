@@ -52,17 +52,12 @@ const identifierReplacements: Record<string, Record<string, string>> = {
     PluginContext$1: 'rolldown.PluginContext',
     MinimalPluginContext$1: 'rolldown.MinimalPluginContext',
     TransformPluginContext$1: 'rolldown.TransformPluginContext',
-    TransformResult$3: 'rolldown.TransformResult',
+    TransformResult$2: 'rolldown.TransformResult',
     RollupOptions$1: 'rolldown.RollupOptions',
   },
   'rolldown/experimental': {
-    TransformOptions$2: 'rolldown_experimental_TransformOptions',
-    TransformResult$2: 'rolldown_experimental_TransformResult',
-  },
-  esbuild: {
-    TransformResult$2: 'esbuild_TransformResult',
-    TransformOptions$1: 'esbuild_TransformOptions',
-    BuildOptions$1: 'esbuild_BuildOptions',
+    TransformOptions$1: 'rolldown_experimental_TransformOptions',
+    TransformResult$1: 'rolldown_experimental_TransformResult',
   },
   'node:https': {
     Server$1: 'HttpsServer',

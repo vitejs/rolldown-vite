@@ -11,7 +11,6 @@ export {
   DEFAULT_SERVER_MAIN_FIELDS as defaultServerMainFields,
   defaultAllowedOrigins,
 } from './constants'
-export { version as esbuildVersion } from 'esbuild'
 export {
   splitVendorChunkPlugin,
   splitVendorChunk,
