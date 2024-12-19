@@ -87,7 +87,7 @@
   "dependencies": {
     "lightningcss": "^1.28.2",
     "postcss": "^8.5.1",
-    "rolldown": "0.15.0-commit.ddbe0a9",
+    "rolldown": "0.15.1-commit.cc6f557",
     "rollup": "^4.30.1"
   },
   "optionalDependencies": {
