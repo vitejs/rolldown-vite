@@ -601,6 +601,11 @@ class PluginContext
   _resolveSkips?: Set<Plugin>
   _resolveSkipCalls?: readonly SkipInformation[]
 
+  get pluginName() {
+    // TODO(sapphi-red): remove `!` later
+    return this._plugin.name!
+  }
+
   constructor(
     public _plugin: Plugin,
     public _container: EnvironmentPluginContainer,
