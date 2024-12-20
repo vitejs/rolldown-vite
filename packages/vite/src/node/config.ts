@@ -8,7 +8,7 @@ import { createRequire } from 'node:module'
 import colors from 'picocolors'
 import type { Alias, AliasOptions } from 'dep-types/alias'
 import { rolldown } from 'rolldown'
-import type { OutputChunk, RollupOptions } from 'rolldown'
+import type { OutputChunk, RolldownOptions } from 'rolldown'
 import picomatch from 'picomatch'
 import type { AnymatchFn } from '../types/anymatch'
 import { withTrailingSlash } from '../shared/utils'
@@ -435,7 +435,7 @@ export interface UserConfig extends DefaultEnvironmentOptions {
      * Rollup options to build worker bundle
      */
     rollupOptions?: Omit<
-      RollupOptions,
+      RolldownOptions,
       'plugins' | 'input' | 'onwarn' | 'preserveEntrySignatures'
     >
   }
@@ -538,7 +538,7 @@ export interface LegacyOptions {
 export interface ResolvedWorkerOptions {
   format: 'es' | 'iife'
   plugins: (bundleChain: string[]) => Promise<ResolvedConfig>
-  rollupOptions: RollupOptions
+  rollupOptions: RolldownOptions
 }
 
 export interface InlineConfig extends UserConfig {
@@ -972,10 +972,10 @@ function resolveDepOptimizationOptions(
     optimizeDeps.rollupOptions.output ??= {}
 
     const setResolveOptions = <
-      T extends keyof Exclude<RollupOptions['resolve'], undefined>,
+      T extends keyof Exclude<RolldownOptions['resolve'], undefined>,
     >(
       key: T,
-      value: Exclude<RollupOptions['resolve'], undefined>[T],
+      value: Exclude<RolldownOptions['resolve'], undefined>[T],
     ) => {
       if (
         value !== undefined &&
