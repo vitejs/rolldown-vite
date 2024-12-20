@@ -12,12 +12,12 @@ import type {
   OutputChunk,
   OutputOptions,
   RenderedChunk,
+  RolldownBuild,
+  RolldownOptions,
+  RolldownOutput,
   RolldownPlugin,
-  RollupBuild,
   RollupError,
   RollupLog,
-  RollupOptions,
-  RollupOutput,
   // RollupWatcher,
   WarningHandlerWithDefault,
   // WatcherOptions,
@@ -189,7 +189,7 @@ export interface BuildEnvironmentOptions {
    * Will be merged with internal rollup options.
    * https://rollupjs.org/configuration-options/
    */
-  rollupOptions?: RollupOptions
+  rollupOptions?: RolldownOptions
   /**
    * Options to pass on to `@rollup/plugin-commonjs`
    */
@@ -529,7 +529,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
  */
 export async function build(
   inlineConfig: InlineConfig = {},
-): Promise<RollupOutput | RollupOutput[] /* | RollupWatcher */> {
+): Promise<RolldownOutput | RolldownOutput[] /* | RollupWatcher */> {
   const builder = await createBuilder(inlineConfig, true)
   const environment = Object.values(builder.environments)[0]
   if (!environment) throw new Error('No environment found')
@@ -557,7 +557,7 @@ function resolveConfigToBuild(
  **/
 async function buildEnvironment(
   environment: BuildEnvironment,
-): Promise<RollupOutput | RollupOutput[] /* | RollupWatcher */> {
+): Promise<RolldownOutput | RolldownOutput[] /* | RollupWatcher */> {
   const { root, packageCache } = environment.config
   const options = environment.config.build
   const libOptions = options.lib
@@ -617,7 +617,7 @@ async function buildEnvironment(
     injectEnvironmentToHooks(environment, chunkMetadataMap, p),
   )
 
-  const rollupOptions: RollupOptions = {
+  const rollupOptions: RolldownOptions = {
     // preserveEntrySignatures: ssr
     //   ? 'allow-extension'
     //   : libOptions
@@ -708,7 +708,7 @@ async function buildEnvironment(
     environment.name === 'ssr' &&
     environment.getTopLevelConfig().ssr?.target === 'webworker'
 
-  let bundle: RollupBuild | undefined
+  let bundle: RolldownBuild | undefined
   let startTime: number | undefined
   try {
     const buildOutputOptions = (output: OutputOptions = {}): OutputOptions => {
@@ -859,7 +859,7 @@ async function buildEnvironment(
       prepareOutDir(resolvedOutDirs, emptyOutDir, environment)
     }
 
-    const res: RollupOutput[] = []
+    const res: RolldownOutput[] = []
     for (const output of normalizedOutputs) {
       res.push(await bundle[options.write ? 'write' : 'generate'](output))
     }
@@ -1582,7 +1582,7 @@ export interface ViteBuilder {
   buildApp(): Promise<void>
   build(
     environment: BuildEnvironment,
-  ): Promise<RollupOutput | RollupOutput[] /* | RollupWatcher */>
+  ): Promise<RolldownOutput | RolldownOutput[] /* | RollupWatcher */>
 }
 
 export interface BuilderOptions {
