@@ -835,6 +835,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vite
 
+  playground/legacy-simple:
+    devDependencies:
+      '@vitejs/plugin-legacy':
+        specifier: workspace:*
+        version: link:../../packages/plugin-legacy
+      vite:
+        specifier: workspace:*
+        version: link:../../packages/vite
+
   playground/lib:
     devDependencies:
       sirv:

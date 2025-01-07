@@ -487,8 +487,8 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
       //   )
       // }
       const polyfillsDiscovered = {
-        modern: new Set(),
-        legacy: new Set(),
+        modern: new Set<string>(),
+        legacy: new Set<string>(),
       }
 
       if (!isLegacyChunk(chunk, opts)) {
@@ -557,12 +557,23 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
       // transform the legacy chunk with @babel/preset-env
       const sourceMaps = !!config.build.sourcemap
       const babel = await loadBabel()
-      const systemJsPlugins = [
-        // @ts-ignore
-        (await import('@babel/plugin-transform-dynamic-import')).default,
-        // @ts-ignore
-        (await import('@babel/plugin-transform-modules-systemjs')).default,
-      ]
+
+      // need to transform into systemjs separately from other plugins
+      // for preset-env polyfill detection and removal
+      // TODO: use transformFromAst to avoid multiple parse
+      const resultSystem = babel.transform(raw, {
+        babelrc: false,
+        configFile: false,
+        // TODO: source map
+        plugins: [
+          // @ts-ignore
+          (await import('@babel/plugin-transform-dynamic-import')).default,
+          // @ts-ignore
+          (await import('@babel/plugin-transform-modules-systemjs')).default,
+        ],
+      })
+      raw = resultSystem?.code!
+
       const result = babel.transform(raw, {
         babelrc: false,
         configFile: false,
@@ -575,7 +586,6 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
           [
             () => ({
               plugins: [
-                ...systemJsPlugins,
                 recordAndRemovePolyfillBabelPlugin(polyfillsDiscovered.legacy),
                 replaceLegacyEnvBabelPlugin(),
                 wrapIIFEBabelPlugin(),
