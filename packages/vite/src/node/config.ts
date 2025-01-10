@@ -1086,6 +1086,12 @@ function resolveDepOptimizationOptions(
       optimizeDeps.rollupOptions.keepNames =
         optimizeDeps.esbuildOptions.keepNames
     }
+    if (
+      optimizeDeps.esbuildOptions.platform !== undefined &&
+      optimizeDeps.rollupOptions.platform === undefined
+    ) {
+      optimizeDeps.rollupOptions.platform = optimizeDeps.esbuildOptions.platform
+    }
 
     // NOTE: the following options cannot be converted
     // - legalComments
