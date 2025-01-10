@@ -60,6 +60,7 @@ import {
   mergeWithDefaults,
   normalizePath,
   partialEncodeURIPath,
+  unique,
 } from './utils'
 import { perEnvironmentPlugin, resolveEnvironmentPlugins } from './plugin'
 import { manifestPlugin } from './plugins/manifest'
@@ -436,6 +437,11 @@ export function resolveBuildEnvironmentOptions(
   // handle special build targets
   if (merged.target === 'modules') {
     merged.target = ESBUILD_MODULES_TARGET
+  }
+  // dedupe target
+  if (Array.isArray(merged.target)) {
+    // esbuild allowed duplicate targets but oxc does not
+    merged.target = unique(merged.target)
   }
 
   // normalize false string into actual false
