@@ -592,7 +592,7 @@ class MinimalPluginContext implements RollupMinimalPluginContext {
 
 class PluginContext
   extends MinimalPluginContext
-  implements Omit<RollupPluginContext, 'cache'>
+  implements Omit<RollupPluginContext, 'cache' | 'emitChunk'>
 {
   ssr = false
   _scan = false
@@ -910,7 +910,7 @@ class LoadPluginContext extends PluginContext {
 
 class TransformPluginContext
   extends LoadPluginContext
-  implements Omit<RollupTransformPluginContext, 'cache'>
+  implements Omit<RollupTransformPluginContext, 'cache' | 'emitChunk'>
 {
   filename: string
   originalCode: string
