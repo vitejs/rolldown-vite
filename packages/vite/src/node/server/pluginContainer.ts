@@ -121,6 +121,10 @@ export function throwClosedServerError(): never {
   throw err
 }
 
+// NOTE: add a env var to use parseAst from rollup for now
+const useLegacyParseAst = !!process.env.VITE_USE_LEGACY_PARSE_AST
+let legacyParseAst: typeof import('rollup/parseAst').parseAst
+
 export interface PluginContainerOptions {
   cwd?: string
   output?: OutputOptions
@@ -145,6 +149,9 @@ export async function createEnvironmentPluginContainer(
     watcher,
     autoStart,
   )
+  if (useLegacyParseAst) {
+    legacyParseAst = await import('rollup/parseAst').then((mod) => mod.parseAst)
+  }
   await container.resolveRollupOptions()
   return container
 }
@@ -614,6 +621,9 @@ class PluginContext
   }
 
   parse(code: string, opts: any) {
+    if (useLegacyParseAst) {
+      return legacyParseAst(code, opts)
+    }
     return rolldownParseAst(code, opts)
   }
 
