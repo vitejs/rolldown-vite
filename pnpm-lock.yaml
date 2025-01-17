@@ -232,9 +232,6 @@ importers:
       rolldown:
         specifier: 1.0.0-beta.1-commit.298dd8b
         version: 1.0.0-beta.1-commit.298dd8b(@babel/runtime@7.26.9)(typescript@5.7.3)
-      rollup:
-        specifier: ^4.30.1
-        version: 4.34.8
     devDependencies:
       '@ampproject/remapping':
         specifier: ^2.3.0
@@ -368,6 +365,9 @@ importers:
       resolve.exports:
         specifier: ^2.0.3
         version: 2.0.3
+      rollup:
+        specifier: ^4.23.0
+        version: 4.34.8
       rollup-plugin-dts:
         specifier: ^6.1.1
         version: 6.1.1(rollup@4.34.8)(typescript@5.7.3)
