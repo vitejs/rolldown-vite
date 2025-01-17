@@ -16,7 +16,6 @@ const pkg = JSON.parse(
 const external = [
   /^node:*/,
   /^vite\//,
-  'rollup/parseAst',
   'rolldown/parseAst',
   'rolldown/experimental',
   ...Object.keys(pkg.dependencies),
