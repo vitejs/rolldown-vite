@@ -104,6 +104,7 @@ import { createIdResolver } from './idResolver'
 import { runnerImport } from './ssr/runnerImport'
 import { getAdditionalAllowedHosts } from './server/middlewares/hostCheck'
 import { type OxcOptions, convertEsbuildConfigToOxcConfig } from './plugins/oxc'
+import { convertEsbuildPluginToRolldownPlugin } from './optimizer/pluginConverter'
 
 const debug = createDebugger('vite:config', { depth: 10 })
 const promisifiedRealpath = promisify(fs.realpath)
@@ -1113,7 +1114,6 @@ function resolveDepOptimizationOptions(
     // - alias (it probably does not work the same with `resolve.alias`)
     // - inject
     // - banner, footer
-    // - plugins (not sure if it's possible and need to check if it's worth it before)
     // - nodePaths
 
     // NOTE: the following options does not make sense to set / convert it
@@ -1143,6 +1143,21 @@ function resolveDepOptimizationOptions(
     },
     optimizeDeps ?? {},
   )
+}
+
+function applyDepOptimizationOptionCompat(resolvedConfig: ResolvedConfig) {
+  if (
+    resolvedConfig.optimizeDeps.esbuildOptions?.plugins &&
+    resolvedConfig.optimizeDeps.esbuildOptions.plugins.length > 0
+  ) {
+    resolvedConfig.optimizeDeps.rollupOptions ??= {}
+    resolvedConfig.optimizeDeps.rollupOptions.plugins ||= []
+    ;(resolvedConfig.optimizeDeps.rollupOptions.plugins as any[]).push(
+      ...resolvedConfig.optimizeDeps.esbuildOptions.plugins.map((plugin) =>
+        convertEsbuildPluginToRolldownPlugin(plugin),
+      ),
+    )
+  }
 }
 
 export async function resolveConfig(
@@ -1727,6 +1742,8 @@ export async function resolveConfig(
     resolved.environments.ssr.build.emitAssets =
       resolved.build.ssrEmitAssets || resolved.build.emitAssets
   }
+
+  applyDepOptimizationOptionCompat(resolved)
 
   debug?.(`using resolved config: %O`, {
     ...resolved,
