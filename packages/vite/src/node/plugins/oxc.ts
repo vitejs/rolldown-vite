@@ -17,7 +17,7 @@ import {
   generateCodeFrame,
 } from '../utils'
 import type { ResolvedConfig } from '../config'
-import type { Plugin, PluginContext } from '../plugin'
+import type { Plugin } from '../plugin'
 import { cleanUrl } from '../../shared/utils'
 import type { Environment, Logger } from '..'
 import type { ViteDevServer } from '../server'
@@ -46,14 +46,14 @@ export interface OxcOptions
 }
 
 export async function transformWithOxc(
-  ctx: PluginContext | undefined,
   code: string,
   filename: string,
   options?: OxcTransformOptions,
   inMap?: object,
   config?: ResolvedConfig,
   watcher?: FSWatcher,
-): Promise<OxcTransformResult> {
+): Promise<Omit<OxcTransformResult, 'errors'> & { warnings: string[] }> {
+  const warnings: string[] = []
   let lang = options?.lang
 
   if (!lang) {
@@ -164,7 +164,7 @@ export async function transformWithOxc(
           resolvedOptions.typescript ??= {}
           resolvedOptions.typescript.onlyRemoveTypeImports = false
         } else {
-          ctx?.warn(
+          warnings.push(
             `preserveValueImports=${preserveValueImports} + importsNotUsedAsValues=${importsNotUsedAsValues} is not supported by oxc.` +
               'Please migrate to the new verbatimModuleSyntax option.',
           )
@@ -217,7 +217,7 @@ export async function transformWithOxc(
         }
 
         if (set) {
-          ctx?.warn(
+          warnings.push(
             'target was modified to include ES2022' +
               ' because useDefineForClassFields is set to false' +
               ' and oxc does not support transforming useDefineForClassFields=false for ES2022+ yet',
@@ -271,6 +271,7 @@ export async function transformWithOxc(
   return {
     ...result,
     map,
+    warnings,
   }
 }
 
@@ -350,7 +351,6 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
           this.environment,
         )
         const result = await transformWithOxc(
-          this,
           code,
           id,
           modifiedOxcTransformOptions,
@@ -360,6 +360,9 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
         )
         if (jsxInject && jsxExtensionsRE.test(id)) {
           result.code = jsxInject + ';' + result.code
+        }
+        for (const warning of result.warnings) {
+          this.environment.logger.warnOnce(warning)
         }
         return {
           code: result.code,
@@ -391,13 +394,15 @@ export const buildOxcPlugin = (): Plugin => {
       }
 
       const res = await transformWithOxc(
-        this,
         code,
         chunk.fileName,
         options,
         undefined,
         config,
       )
+      for (const warning of res.warnings) {
+        this.environment.logger.warnOnce(warning)
+      }
 
       const runtimeHelpers = Object.entries(res.helpersUsed)
       if (runtimeHelpers.length > 0) {

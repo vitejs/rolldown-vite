@@ -1115,7 +1115,6 @@ export async function extractExportsData(
       throw new Error(`Unable to parse : ${filePath}.`)
     }
     const transformed = await transformWithOxc(
-      undefined,
       entryContent,
       filePath,
       { lang },
