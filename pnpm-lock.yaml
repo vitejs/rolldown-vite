@@ -226,6 +226,9 @@ importers:
 
   packages/vite:
     dependencies:
+      '@babel/runtime':
+        specifier: ^7.26.0
+        version: 7.26.0
       lightningcss:
         specifier: ^1.28.2
         version: 1.29.1
