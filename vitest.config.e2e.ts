@@ -36,7 +36,7 @@ export default defineConfig({
     onConsoleLog(log) {
       if (
         log.match(
-          /experimental|jit engine|emitted file|tailwind|The CJS build of Vite/i,
+          /experimental|jit engine|emitted file|tailwind|The CJS build of Vite|optimizeDeps\.esbuildOptions/i,
         )
       )
         return false
