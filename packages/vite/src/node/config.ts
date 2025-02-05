@@ -1608,7 +1608,7 @@ export async function resolveConfig(
               typeof oxc?.jsx === 'string'
                 ? oxc.jsx
                 : {
-                    development: !isProduction,
+                    development: oxc?.jsx?.development ?? !isProduction,
                     ...oxc?.jsx,
                   },
           },

@@ -592,8 +592,8 @@ export function convertEsbuildConfigToOxcConfig(
         break
     }
 
-    if (esbuildTransformOptions.jsxDev) {
-      jsxOptions.development = true
+    if (esbuildTransformOptions.jsxDev !== undefined) {
+      jsxOptions.development = esbuildTransformOptions.jsxDev
     }
 
     oxcOptions.jsx = jsxOptions
