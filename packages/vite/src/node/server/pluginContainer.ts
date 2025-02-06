@@ -46,7 +46,7 @@ import type {
   ParallelPluginHooks,
   PartialNull,
   PartialResolvedId,
-  PluginContextMeta,
+  // PluginContextMeta,
   ResolvedId,
   RollupError,
   RollupLog,
@@ -89,6 +89,9 @@ import type {
   EnvironmentModuleGraph,
   EnvironmentModuleNode,
 } from './moduleGraph'
+
+// TODO: import from rolldown
+type PluginContextMeta = RollupMinimalPluginContext['meta']
 
 // same default value of "moduleInfo.meta" as in Rollup
 const EMPTY_OBJECT = Object.freeze({})
@@ -562,6 +565,12 @@ class MinimalPluginContext implements RollupMinimalPluginContext {
     public environment: Environment,
   ) {}
 
+  // FIXME: properly support this later
+  // eslint-disable-next-line @typescript-eslint/class-literal-property-style
+  get pluginName() {
+    return ''
+  }
+
   debug(rawLog: string | RollupLog | (() => string | RollupLog)): void {
     const log = this._normalizeRawLog(rawLog)
     const msg = buildErrorMessage(log, [`debug: ${log.message}`], false)
@@ -608,9 +617,8 @@ class PluginContext
   _resolveSkips?: Set<Plugin>
   _resolveSkipCalls?: readonly SkipInformation[]
 
-  get pluginName() {
-    // TODO(sapphi-red): remove `!` later
-    return this._plugin.name!
+  override get pluginName() {
+    return this._plugin.name
   }
 
   constructor(
@@ -1038,7 +1046,12 @@ export type {
 
 // Backward compatibility
 class PluginContainer {
-  constructor(private environments: Record<string, Environment>) {}
+  // TODO: revert this workaround later when https://github.com/oxc-project/oxc/issues/8917 is fixed
+  private environments: Record<string, Environment>
+
+  constructor(environments: Record<string, Environment>) {
+    this.environments = environments
+  }
 
   // Backward compatibility
   // Users should call pluginContainer.resolveId (and load/transform) passing the environment they want to work with
