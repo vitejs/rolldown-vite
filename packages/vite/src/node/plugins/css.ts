@@ -367,7 +367,7 @@ export function cssPlugin(config: ResolvedConfig): RolldownPlugin {
           }
         }
       },
-    }
+    },
   }
   const transformHook: RawRolldownPlugin['transform'] = {
     filter: {
