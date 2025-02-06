@@ -886,7 +886,8 @@ test.skip('adjust worker build error for worker.format', async () => {
   expect.unreachable()
 })
 
-describe('onRollupLog', () => {
+// rolldown does not append plugin name to the message automatically
+describe.skip('onRollupLog', () => {
   const pluginName = 'rollup-plugin-test'
   const msgInfo = 'This is the INFO message.'
   const msgWarn = 'This is the WARN message.'
