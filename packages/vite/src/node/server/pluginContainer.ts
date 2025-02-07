@@ -46,7 +46,7 @@ import type {
   ParallelPluginHooks,
   PartialNull,
   PartialResolvedId,
-  // PluginContextMeta,
+  PluginContextMeta,
   ResolvedId,
   RollupError,
   RollupLog,
@@ -89,9 +89,6 @@ import type {
   EnvironmentModuleGraph,
   EnvironmentModuleNode,
 } from './moduleGraph'
-
-// TODO: import from rolldown
-type PluginContextMeta = RollupMinimalPluginContext['meta']
 
 // same default value of "moduleInfo.meta" as in Rollup
 const EMPTY_OBJECT = Object.freeze({})
