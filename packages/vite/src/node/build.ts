@@ -5,7 +5,7 @@ import type {
   ExternalOption,
   InputOption,
   InternalModuleFormat,
-  // LogLevel,
+  LogLevel,
   // LogOrStringHandler,
   ModuleFormat,
   OutputBundle,
@@ -19,7 +19,7 @@ import type {
   RollupError,
   RollupLog,
   // RollupWatcher,
-  // WarningHandlerWithDefault,
+  WarningHandlerWithDefault,
   // WatcherOptions,
 } from 'rolldown'
 import {
@@ -88,14 +88,9 @@ import type { MinimalPluginContext, Plugin, PluginContext } from './plugin'
 import type { RollupPluginHooks } from './typeUtils'
 
 // TODO: import from rolldown
-type LogLevel = 'info' | 'debug' | 'warn'
 type LogOrStringHandler = (
   level: LogLevel | 'error',
   log: RollupLog | string,
-) => void
-type WarningHandlerWithDefault = (
-  warning: RollupLog,
-  defaultHandler: import('rolldown').LoggingFunction,
 ) => void
 
 export interface BuildEnvironmentOptions {
