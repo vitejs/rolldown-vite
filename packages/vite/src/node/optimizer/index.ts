@@ -663,7 +663,9 @@ export function runOptimizeDeps(
             })
           } else {
             const id = chunk.fileName.replace(jsExtensionRE, '')
-            const file = getOptimizedDepPath(environment, id)
+            const file = normalizePath(
+              path.resolve(getDepsCacheDir(environment), chunk.fileName),
+            )
             if (
               !findOptimizedDepInfoInRecord(
                 metadata.optimized,
