@@ -1,4 +1,5 @@
 import path from 'node:path'
+import url from 'node:url'
 import { createRequire } from 'node:module'
 import type {
   TransformOptions as OxcTransformOptions,
@@ -15,6 +16,7 @@ import {
   createFilter,
   ensureWatchedFile,
   generateCodeFrame,
+  normalizePath,
 } from '../utils'
 import type { ResolvedConfig } from '../config'
 import type { Plugin } from '../plugin'
@@ -87,7 +89,6 @@ export async function transformWithOxc(
         ensureWatchedFile(watcher, tsconfigFile, config.root)
       }
       const loadedCompilerOptions = loadedTsconfig.compilerOptions ?? {}
-      // TODO: experimentalDecorators
 
       // when both the normal options and tsconfig is set,
       // we want to prioritize the normal options
@@ -127,6 +128,14 @@ export async function transformWithOxc(
           }
 
           resolvedOptions.jsx = jsxOptions
+        }
+      }
+      if (resolvedOptions.decorator?.legacy === undefined) {
+        const experimentalDecorators =
+          loadedCompilerOptions.experimentalDecorators
+        if (experimentalDecorators !== undefined) {
+          resolvedOptions.decorator ??= {}
+          resolvedOptions.decorator.legacy = experimentalDecorators
         }
       }
 
@@ -335,6 +344,7 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
 
     return result
   }
+  const _filename = normalizePath(url.fileURLToPath(import.meta.url))
 
   let server: ViteDevServer
 
@@ -342,6 +352,38 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
     name: 'vite:oxc',
     configureServer(_server) {
       server = _server
+    },
+    resolveId: {
+      // @ts-expect-error TODO: fix the types
+      filter: {
+        id: /^@babel\/runtime\//,
+      },
+      async handler(id, _importer, opts) {
+        if (!id.startsWith('@babel/runtime/')) return
+
+        if (id === '@babel/runtime/helpers/decorateParam') {
+          return id
+        }
+
+        // @babel/runtime imports will be injected by OXC transform
+        // since it's injected by the transform, @babel/runtime should be resolved to the one Vite depends on
+        const resolved = await this.resolve(id, _filename, opts)
+        return resolved
+      },
+    },
+    // TODO: applied a workaround for now
+    load: {
+      handler(id) {
+        if (id === '@babel/runtime/helpers/decorateParam') {
+          return `function __decorateParam(paramIndex, decorator) {
+  return function (target, key) {
+    decorator(target, key, paramIndex);
+  };
+}
+
+export { __decorateParam as default };`
+        }
+      },
     },
     async transform(code, id) {
       if (filter(id) || filter(cleanUrl(id))) {
@@ -505,21 +547,23 @@ export function resolveOxcTranspileOptions(
   }
 }
 
-let rolldownDir: string
+let viteDir: string
+function getViteDir() {
+  if (!viteDir) {
+    let dir = createRequire(import.meta.url).resolve('vite')
+    while (dir && path.basename(dir) !== 'vite') {
+      dir = path.dirname(dir)
+    }
+    viteDir = dir
+  }
+  return viteDir
+}
 
 async function generateRuntimeHelpers(
   runtimeHelpers: readonly [string, string][],
 ): Promise<string> {
-  if (!rolldownDir) {
-    let dir = createRequire(import.meta.url).resolve('rolldown')
-    while (dir && path.basename(dir) !== 'rolldown') {
-      dir = path.dirname(dir)
-    }
-    rolldownDir = dir
-  }
-
   const bundle = await rolldown({
-    cwd: rolldownDir,
+    cwd: getViteDir(),
     input: 'entrypoint',
     platform: 'neutral',
     logLevel: 'silent',
