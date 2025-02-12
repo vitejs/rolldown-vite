@@ -18,6 +18,7 @@ const parseAstGeneric = (
   const result = rolldownParseAst(filename ?? 'file.js', code, {
     sourceType: 'module',
     lang: 'js',
+    preserveParens: false,
     ...opts,
   })
   if (result.errors.length > 0) {
@@ -35,6 +36,7 @@ export const parseAstGenericAsync = async (
   const result = await rolldownParseAstAsync(filename ?? 'file.js', code, {
     sourceType: 'module',
     lang: 'js',
+    preserveParens: false,
     ...opts,
   })
   if (result.errors.length > 0) {
