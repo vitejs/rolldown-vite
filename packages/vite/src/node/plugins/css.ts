@@ -1245,7 +1245,7 @@ export function getEmptyChunkReplacer(
   const emptyChunkRE = new RegExp(
     outputFormat === 'es'
       ? `\\bimport\\s*["'][^"']*(?:${emptyChunkFiles})["'];`
-      : `(\\b|,\\s*)require\\(\\s*["'][^"']*(?:${emptyChunkFiles})["']\\)(;|,)`,
+      : `(\\b|,\\s*)require\\(\\s*["'\`][^"'\`]*(?:${emptyChunkFiles})["'\`]\\)(;|,)`,
     'g',
   )
 

@@ -94,8 +94,8 @@ describe.runIf(isBuild)('build', () => {
     expect(workerContent).not.toMatch(`import`)
     expect(workerContent).not.toMatch(/\bexport\b/)
     // chunk
-    expect(content).toMatch(`new Worker("/iife/assets`)
-    expect(content).toMatch(`new SharedWorker("/iife/assets`)
+    expect(content).toMatch('new Worker(`/iife/assets')
+    expect(content).toMatch('new SharedWorker(`/iife/assets')
     // inlined
     expect(content).toMatch(`(self.URL||self.webkitURL).createObjectURL`)
     expect(content).toMatch(`self.Blob`)
