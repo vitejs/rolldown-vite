@@ -361,7 +361,10 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
       async handler(id, _importer, opts) {
         if (!id.startsWith('@babel/runtime/')) return
 
-        if (id === '@babel/runtime/helpers/decorateParam') {
+        if (
+          id === '@babel/runtime/helpers/decorate' ||
+          id === '@babel/runtime/helpers/decorateParam'
+        ) {
           return id
         }
 
@@ -382,6 +385,29 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
 }
 
 export { __decorateParam as default };`
+        }
+        if (id === '@babel/runtime/helpers/decorate') {
+          return `function __decorate(decorators, target, key, desc) {
+  var c = arguments.length,
+    r =
+      c < 3
+        ? target
+        : desc === null
+          ? (desc = Object.getOwnPropertyDescriptor(target, key))
+          : desc,
+    d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+    r = Reflect.decorate(decorators, target, key, desc);
+  else
+    for (var i = decorators.length - 1; i >= 0; i--)
+      if ((d = decorators[i]))
+        r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+(module.exports = __decorate),
+  (module.exports.__esModule = true),
+  (module.exports["default"] = module.exports);`
         }
       },
     },
