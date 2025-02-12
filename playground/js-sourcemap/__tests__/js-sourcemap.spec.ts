@@ -95,7 +95,8 @@ if (!isBuild) {
     `)
   })
 
-  test('multiline import', async () => {
+  // TODO: skip for now https://github.com/oxc-project/oxc/issues/9055
+  test.skip('multiline import', async () => {
     const res = await page.request.get(
       new URL('./with-multiline-import.ts', page.url()).href,
     )
@@ -140,7 +141,7 @@ describe.runIf(isBuild)('build tests', () => {
     expect(formatSourcemapForSnapshot(JSON.parse(map))).toMatchInlineSnapshot(`
       {
         "ignoreList": [],
-        "mappings": ";6mCAEA,kBAFA,OAAO,6BAAuB,wBAE9B,QAAQ,IAAI,wBAAuB",
+        "mappings": ";2mCAEA,kBAFA,OAAO,6BAAuB,wBAE9B,QAAQ,IAAI,wBAAuB",
         "sources": [
           "../../after-preload-dynamic.js",
         ],
