@@ -36,8 +36,7 @@ const buildProject = ({ format = 'es' as ModuleFormat } = {}) =>
     ],
   }) as Promise<RollupOutput>
 
-// TODO: enable this test after DCE is enabled
-describe.skip('load', () => {
+describe('load', () => {
   it('loads modulepreload polyfill', async ({ expect }) => {
     const { output } = await buildProject()
     expect(output).toHaveLength(1)
