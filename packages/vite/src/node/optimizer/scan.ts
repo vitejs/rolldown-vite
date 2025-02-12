@@ -268,7 +268,7 @@ async function prepareRolldownScanner(
   const { plugins: pluginsFromConfig = [], ...rollupOptions } =
     environment.config.optimizeDeps.rollupOptions ?? {}
 
-  // TODO: enableDecorators when needed
+  // TODO: enableDecorators when needed, wait for rolldown option
   // The plugin pipeline automatically loads the closest tsconfig.json.
   // But esbuild doesn't support reading tsconfig.json if the plugin has resolved the path (https://github.com/evanw/esbuild/issues/2265).
   // Due to syntax incompatibilities between the experimental decorators in TypeScript and TC39 decorators,
