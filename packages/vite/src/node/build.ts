@@ -6,7 +6,7 @@ import type {
   InputOption,
   InternalModuleFormat,
   LogLevel,
-  // LogOrStringHandler,
+  LogOrStringHandler,
   ModuleFormat,
   OutputBundle,
   OutputChunk,
@@ -86,12 +86,6 @@ import {
 } from './baseEnvironment'
 import type { MinimalPluginContext, Plugin, PluginContext } from './plugin'
 import type { RollupPluginHooks } from './typeUtils'
-
-// TODO: import from rolldown
-type LogOrStringHandler = (
-  level: LogLevel | 'error',
-  log: RollupLog | string,
-) => void
 
 export interface BuildEnvironmentOptions {
   /**
