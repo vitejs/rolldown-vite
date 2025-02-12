@@ -1005,8 +1005,7 @@ export function transformCjsImport(
     node.type === 'ImportDeclaration' ||
     node.type === 'ExportNamedDeclaration'
   ) {
-    // NOTE: node.specifiers can be null in OXC: https://github.com/oxc-project/oxc/issues/2854#issuecomment-2595115817
-    if (!node.specifiers?.length) {
+    if (!node.specifiers.length) {
       return `import "${url}"`
     }
 
