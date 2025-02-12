@@ -796,7 +796,12 @@ async function buildEnvironment(
           output.format === 'iife' ||
           (isSsrTargetWebworkerEnvironment &&
             (typeof input === 'string' || Object.keys(input).length === 1)),
-        minify: options.minify === 'oxc',
+        minify:
+          options.minify === 'oxc'
+            ? true
+            : options.minify === false
+              ? 'dce-only'
+              : false,
         ...output,
       }
     }
