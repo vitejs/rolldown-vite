@@ -1,4 +1,5 @@
 import path from 'node:path'
+import MagicString from 'magic-string'
 import type { RollupAstNode } from 'rollup'
 import type { SourceMap } from 'rolldown'
 import type {
@@ -17,10 +18,7 @@ import type {
 import { extract_names as extractNames } from 'periscopic'
 import { walk as eswalk } from 'estree-walker'
 import type { RawSourceMap } from '@ampproject/remapping'
-import {
-  MagicStringWrapper,
-  parseAstGenericAsync as rolldownParseAstGenericAsync,
-} from '../parseAst'
+import { parseAstAsync as rolldownParseAstAsync } from '../parseAst'
 import type { TransformResult } from '../server/transformRequest'
 import {
   combineSourcemaps,
@@ -82,12 +80,10 @@ async function ssrTransformScript(
   url: string,
   originalCode: string,
 ): Promise<TransformResult | null> {
+  const s = new MagicString(code)
   let ast: any
-  let s: MagicStringWrapper
   try {
-    const result = await rolldownParseAstGenericAsync(code)
-    ast = result.program
-    s = new MagicStringWrapper(result.magicString)
+    ast = await rolldownParseAstAsync(code)
   } catch (err) {
     // enhance known rollup errors
     // https://github.com/rollup/rollup/blob/42e587e0e37bc0661aa39fe7ad6f1d7fd33f825c/src/utils/bufferToAst.ts#L17-L22
