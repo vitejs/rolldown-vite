@@ -95,8 +95,7 @@ if (!isBuild) {
     `)
   })
 
-  // TODO: skip for now https://github.com/oxc-project/oxc/issues/9055
-  test.skip('multiline import', async () => {
+  test('multiline import', async () => {
     const res = await page.request.get(
       new URL('./with-multiline-import.ts', page.url()).href,
     )
