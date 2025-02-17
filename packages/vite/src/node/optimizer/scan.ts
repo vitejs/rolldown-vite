@@ -268,22 +268,8 @@ async function prepareRolldownScanner(
   const { plugins: pluginsFromConfig = [], ...rollupOptions } =
     environment.config.optimizeDeps.rollupOptions ?? {}
 
-  // TODO: enableDecorators when needed, wait for rolldown option
   // The plugin pipeline automatically loads the closest tsconfig.json.
-  // But esbuild doesn't support reading tsconfig.json if the plugin has resolved the path (https://github.com/evanw/esbuild/issues/2265).
-  // Due to syntax incompatibilities between the experimental decorators in TypeScript and TC39 decorators,
-  // we cannot simply set `"experimentalDecorators": true` or `false`. (https://github.com/vitejs/vite/pull/15206#discussion_r1417414715)
-  // Therefore, we use the closest tsconfig.json from the root to make it work in most cases.
-  // let tsconfigRaw = esbuildOptions.tsconfigRaw
-  // if (!tsconfigRaw && !esbuildOptions.tsconfig) {
-  //   const { tsconfig } = await loadTsconfigJsonForFile(
-  //     path.join(environment.config.root, '_dummy.js'),
-  //   )
-  //   if (tsconfig.compilerOptions?.experimentalDecorators) {
-  //     tsconfigRaw = { compilerOptions: { experimentalDecorators: true } }
-  //   }
-  // }
-
+  // Rolldown reads the tsconfig.json when a ts file is passed to it.
   const plugins = await asyncFlatten(arraify(pluginsFromConfig))
 
   plugins.push(...rolldownScanPlugin(environment, deps, missing, entries))
