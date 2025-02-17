@@ -797,6 +797,7 @@ async function prepareRolldownOptimizerRun(
         aliasFields: [['browser']],
         extensions: ['.js', '.css'],
         conditionNames: ['browser'],
+        ...rollupOptions.resolve,
       },
       // TODO: remove this and enable rolldown's CSS support later
       moduleTypes: {
