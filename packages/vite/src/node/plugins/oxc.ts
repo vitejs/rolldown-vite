@@ -195,12 +195,12 @@ export async function transformWithOxc(
       resolvedOptions.assumptions.setPublicClassFields =
         !useDefineForClassFields
 
-      // set target to es2022 or lower to enable class property transforms
+      // set target to es2021 or lower to enable class property transforms
       // https://github.com/oxc-project/oxc/issues/6735#issuecomment-2513866362
       if (!useDefineForClassFields) {
         let set = false
         if (!resolvedOptions.target) {
-          resolvedOptions.target = 'es2022'
+          resolvedOptions.target = 'es2021'
           set = true
         } else {
           const target = Array.isArray(resolvedOptions.target)
@@ -213,13 +213,13 @@ export async function transformWithOxc(
             const esTargetTrimmed = target[esTargetIndex].toLowerCase().slice(2)
             if (
               esTargetTrimmed === 'next' ||
-              parseInt(esTargetTrimmed, 10) > 2022
+              parseInt(esTargetTrimmed, 10) > 2021
             ) {
-              target[esTargetIndex] = 'es2022'
+              target[esTargetIndex] = 'es2021'
               set = true
             }
           } else {
-            target.push('es2022')
+            target.push('es2021')
             set = true
           }
           resolvedOptions.target = target
@@ -227,7 +227,7 @@ export async function transformWithOxc(
 
         if (set) {
           warnings.push(
-            'target was modified to include ES2022' +
+            'target was modified to include ES2021' +
               ' because useDefineForClassFields is set to false' +
               ' and oxc does not support transforming useDefineForClassFields=false for ES2022+ yet',
           )
