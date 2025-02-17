@@ -183,20 +183,17 @@ test('self reference url worker in dependency', async () => {
   ).toBe('pong: main\npong: nested\n')
 })
 
-// TODO: skip for now https://github.com/oxc-project/oxc/issues/9055
-test
-  .runIf(isServe)
-  .skip('sourcemap is correct after env is injected', async () => {
-    const response = page.waitForResponse(
-      /my-worker\.ts\?worker_file&type=module/,
-    )
-    await page.goto(viteTestUrl)
-    const content = await (await response).text()
-    const { mappings } = decodeSourceMapUrl(content)
-    expect(mappings).toMatchInlineSnapshot(
-      `";;AAAA,SAAS,OAAO,kBAAkB,8BAA8B;AAChE,OAAO,YAAY,6BAA6B;AAChD,SAAS,MAAM,WAAW,2BAA2B;AACrD,SAAS,wBAAwB,uBAAuB;AACxD,OAAO,aAAa,YAAY;AAChC,MAAM,UAAU,OAAO,KAAK;AAE5B,KAAK,YAAY,CAAC,MAAM;AACtB,KAAI,EAAE,SAAS,QAAQ;AACrB,OAAK,YAAY;GACf;GACA;GACA;GACA;GACA;GACA;GACA;EACD,EAAC;CACH;AACD,KAAI,EAAE,SAAS,gBAAgB;AAC7B,OAAK,YAAY;GACf,KAAK;GACL;GACA;GACA;GACA;GACA;GACA;EACD,EAAC;CACH;AACF;AACD,KAAK,YAAY;CACf;CACA;CACA;CACA;CACA;CACA;CACA;CACA;AACD,EAAC;AAGF,QAAQ,IAAI,eAAe"`,
-    )
-  })
+test.runIf(isServe)('sourcemap is correct after env is injected', async () => {
+  const response = page.waitForResponse(
+    /my-worker\.ts\?worker_file&type=module/,
+  )
+  await page.goto(viteTestUrl)
+  const content = await (await response).text()
+  const { mappings } = decodeSourceMapUrl(content)
+  expect(mappings).toMatchInlineSnapshot(
+    `";;AAAA,SAAS,OAAO,kBAAkB,8BAA8B;AAChE,OAAO,YAAY,6BAA6B;AAChD,SAAS,MAAM,WAAW,2BAA2B;AACrD,SAAS,wBAAwB,uBAAuB;AACxD,OAAO,aAAa,YAAY;AAChC,MAAM,UAAU,OAAO,KAAK;AAE5B,KAAK,YAAY,CAAC,MAAM;AACtB,KAAI,EAAE,SAAS,QAAQ;AACrB,OAAK,YAAY;GACf;GACA;GACA;GACA;GACA;GACA;GACA;EACD,EAAC;CACH;AACD,KAAI,EAAE,SAAS,gBAAgB;AAC7B,OAAK,YAAY;GACf,KAAK;GACL;GACA;GACA;GACA;GACA;GACA;EACD,EAAC;CACH;AACF;AACD,KAAK,YAAY;CACf;CACA;CACA;CACA;CACA;CACA;CACA;CACA;AACD,EAAC;AAGF,QAAQ,IAAI,eAAe"`,
+  )
+})
 
 function decodeSourceMapUrl(content: string) {
   return JSON.parse(
