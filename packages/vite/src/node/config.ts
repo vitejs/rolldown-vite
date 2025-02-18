@@ -1010,7 +1010,10 @@ function resolveDepOptimizationOptions(
   consumer: 'client' | 'server' | undefined,
   logger: Logger,
 ): DepOptimizationOptions {
-  if (optimizeDeps?.esbuildOptions) {
+  if (
+    optimizeDeps?.esbuildOptions &&
+    Object.keys(optimizeDeps.esbuildOptions).length > 0
+  ) {
     logger.warn(
       colors.yellow(
         `You have set \`optimizeDeps.esbuildOptions\` but this options is now deprecated. ` +
