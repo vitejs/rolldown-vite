@@ -1350,9 +1350,17 @@ function injectChunkMetadata(
     chunkMetadataMap.set(key, {
       importedAssets: new Set(),
       importedCss: new Set(),
+      // use shared `chunk.modules` object
+      // to allow mutation on js side plugins
+      __modules: chunk.modules,
     })
   }
   chunk.viteMetadata = chunkMetadataMap.get(key)
+  Object.defineProperty(chunk, 'modules', {
+    get() {
+      return chunk.viteMetadata!.__modules
+    },
+  })
 }
 
 function injectEnvironmentInContext<Context extends MinimalPluginContext>(
