@@ -1350,6 +1350,7 @@ function injectChunkMetadata(
     chunkMetadataMap.set(key, {
       importedAssets: new Set(),
       importedCss: new Set(),
+      // NOTE: adding this as a workaround for now ideally we'd want to remove this workaround
       // use shared `chunk.modules` object
       // to allow mutation on js side plugins
       __modules: chunk.modules,
