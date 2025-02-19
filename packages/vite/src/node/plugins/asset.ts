@@ -140,8 +140,6 @@ export function renderAssetUrlInJS(
 export function assetPlugin(config: ResolvedConfig): Plugin {
   registerCustomMime()
 
-  const assetModuleId = new Set<string>()
-
   return {
     name: 'vite:asset',
 
@@ -199,10 +197,6 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
         }
       }
 
-      // Note: rolldown does not support meta, use a Set instead of it for now
-      if (config.command === 'build') {
-        assetModuleId.add(id)
-      }
       return {
         code: `export default ${JSON.stringify(encodeURIPath(url))}`,
         // Force rollup to keep this module from being shared between other entry points if it's an entrypoint.
@@ -240,8 +234,7 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
           chunk.isEntry &&
           chunk.moduleIds.length === 1 &&
           config.assetsInclude(chunk.moduleIds[0]) &&
-          assetModuleId.has(chunk.moduleIds[0])
-          // this.getModuleInfo(chunk.moduleIds[0])?.meta['vite:asset']
+          this.getModuleInfo(chunk.moduleIds[0])?.meta['vite:asset']
         ) {
           delete bundle[file]
         }
