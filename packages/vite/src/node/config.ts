@@ -521,7 +521,7 @@ export interface ExperimentalOptions {
    * Enable builtin plugin that written by rust, which is faster than js plugin.
    *
    * @experimental
-   * @default true
+   * @default false
    */
   enableNativePlugin?: boolean
 }
