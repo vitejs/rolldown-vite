@@ -62,7 +62,8 @@ import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping'
 import MagicString from 'magic-string'
 import type { FSWatcher } from 'dep-types/chokidar'
 import colors from 'picocolors'
-import { parseAst as rolldownParseAst } from '../parseAst'
+import { parseAst as rolldownParseAst } from 'rolldown/parseAst'
+import type { Program } from '@oxc-project/types'
 import type { Plugin } from '../plugin'
 import {
   combineSourcemaps,
@@ -121,10 +122,6 @@ export function throwClosedServerError(): never {
   throw err
 }
 
-// NOTE: add a env var to use parseAst from rollup for now
-const useLegacyParseAst = !!process.env.VITE_USE_LEGACY_PARSE_AST
-let legacyParseAst: typeof import('rollup/parseAst').parseAst
-
 export interface PluginContainerOptions {
   cwd?: string
   output?: OutputOptions
@@ -149,9 +146,6 @@ export async function createEnvironmentPluginContainer(
     watcher,
     autoStart,
   )
-  if (useLegacyParseAst) {
-    legacyParseAst = await import('rollup/parseAst').then((mod) => mod.parseAst)
-  }
   await container.resolveRollupOptions()
   return container
 }
@@ -625,10 +619,7 @@ class PluginContext
     super(_container.minimalContext.meta, _container.environment)
   }
 
-  parse(code: string, opts: any) {
-    if (useLegacyParseAst) {
-      return legacyParseAst(code, opts)
-    }
+  parse(code: string, opts: any): Program {
     return rolldownParseAst(code, opts)
   }
 
