@@ -13,8 +13,8 @@ import type { StaticImport } from 'mlly'
 import { ESM_STATIC_IMPORT_RE, parseStaticImport } from 'mlly'
 import { makeLegalIdentifier } from '@rollup/pluginutils'
 import type { PartialResolvedId, RollupError } from 'rolldown'
-import type { Identifier, Literal } from 'estree'
-import { parseAst } from '../parseAst'
+import type { Identifier, Literal, Program } from 'estree'
+import { parseAst } from 'rolldown/parseAst'
 import {
   CLIENT_DIR,
   CLIENT_PUBLIC_PATH,
@@ -987,7 +987,7 @@ export function transformCjsImport(
   importer: string,
   config: ResolvedConfig,
 ): string | undefined {
-  const node = parseAst(importExp).body[0]
+  const node = (parseAst(importExp) as Program).body[0]
 
   // `export * from '...'` may cause unexpected problem, so give it a warning
   if (
