@@ -253,8 +253,8 @@ importers:
         specifier: ^0.3.25
         version: 0.3.25
       '@oxc-project/types':
-        specifier: ^0.51.0
-        version: 0.51.0
+        specifier: ^0.52.0
+        version: 0.52.0
       '@polka/compression':
         specifier: ^1.0.0-next.25
         version: 1.0.0-next.25
@@ -2809,9 +2809,6 @@ packages:
   '@oxc-project/runtime@0.51.0':
     resolution: {integrity: sha512-s/G0/yOpmcD9QY8O1wc4G7nb7BRV9m206PvfM/t3oPu6z+2vyZlfB2kTA9P6vMXO2fzquDMw3G22kCXx4qzfUQ==}
     engines: {node: '>=6.9.0'}
-
-  '@oxc-project/types@0.51.0':
-    resolution: {integrity: sha512-rDHFQBU2lS0Fh1t1rgvSWK21OfgkzjIWqj+FKKRJueecgvdZ6hO+qqstwBy2v9lFhg2DPuaDdLyCXZNGwsKjMw==}
 
   '@oxc-project/types@0.52.0':
     resolution: {integrity: sha512-vR+SuiprVAlbUSkBnmL/h0DNVhwmecxfLWyssN5wGUsOTz4VL5OWrVtb/Q5D/Jb1V+iqcDYBRWrhtyuCaKBBqg==}
@@ -8641,8 +8638,6 @@ snapshots:
       fastq: 1.17.1
 
   '@oxc-project/runtime@0.51.0': {}
-
-  '@oxc-project/types@0.51.0': {}
 
   '@oxc-project/types@0.52.0': {}
 
