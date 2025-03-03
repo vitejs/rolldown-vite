@@ -86,6 +86,7 @@ import {
 } from './baseEnvironment'
 import type { MinimalPluginContext, Plugin, PluginContext } from './plugin'
 import type { RollupPluginHooks } from './typeUtils'
+import { buildEsbuildPlugin } from './plugins/esbuild'
 
 export interface BuildEnvironmentOptions {
   /**
@@ -501,7 +502,14 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
     ],
     post: [
       ...buildImportAnalysisPlugin(config),
-      ...(!enableNativePlugin ? [buildOxcPlugin()] : []),
+      ...(!enableNativePlugin
+        ? [
+            buildOxcPlugin(),
+            ...(config.build.minify === 'esbuild'
+              ? [buildEsbuildPlugin()]
+              : []),
+          ]
+        : []),
       terserPlugin(config),
       ...(!config.isWorker
         ? [
