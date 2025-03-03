@@ -136,8 +136,8 @@ describe('build', () => {
           "_baz.css",
         ],
         "unchanged": [
-          "_foo.css",
           "_bar.css",
+          "_foo.css",
           "undefined",
         ],
       }
