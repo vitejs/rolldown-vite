@@ -14,6 +14,11 @@ export default defineConfig({
   test: {
     include: ['./playground/**/*.spec.[tj]s'],
     exclude: [
+      // CLI related tests does not work as the package is separated
+      './playground/cli/**/*.spec.[tj]s',
+      './playground/cli-module/**/*.spec.[tj]s',
+      './playground/resolve-config/**/*.spec.[tj]s',
+
       './playground/legacy/**/*.spec.[tj]s', // system format
       ...(isBuild
         ? [

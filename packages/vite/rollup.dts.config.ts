@@ -15,7 +15,7 @@ const pkg = JSON.parse(
 
 const external = [
   /^node:*/,
-  /^vite\//,
+  // /^vite\//,
   'rolldown/parseAst',
   'rolldown/experimental',
   ...Object.keys(pkg.dependencies),
@@ -33,7 +33,21 @@ export default defineConfig({
     format: 'esm',
   },
   external,
-  plugins: [patchTypes(), dts({ respectExternal: true })],
+  plugins: [
+    {
+      name: 'rename-vite',
+      resolveId(id) {
+        if (id.startsWith('vite/')) {
+          return {
+            id: id.replace('vite/', '@vitejs/rolldown-vite-core/'),
+            external: true,
+          }
+        }
+      },
+    },
+    patchTypes(),
+    dts({ respectExternal: true }),
+  ],
 })
 
 // Taken from https://stackoverflow.com/a/36328890
@@ -142,7 +156,8 @@ function validateChunkImports(this: PluginContext, chunk: RenderedChunk) {
       !id.startsWith('../') &&
       !id.startsWith('node:') &&
       !id.startsWith('types.d') &&
-      !id.startsWith('vite/') &&
+      // !id.startsWith('vite/') &&
+      !id.startsWith('@vitejs/rolldown-vite-core/') &&
       // index and moduleRunner have a common chunk "moduleRunnerTransport"
       !id.startsWith('moduleRunnerTransport.d') &&
       !deps.includes(id) &&

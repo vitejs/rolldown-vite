@@ -82,6 +82,17 @@ function createSharedNodePlugins({
   esbuildOptions?: esbuildOptions
 }): Plugin[] {
   return [
+    {
+      name: 'rename-vite',
+      resolveId(id) {
+        if (id.startsWith('vite/')) {
+          return {
+            id: id.replace('vite/', '@vitejs/rolldown-vite-core/'),
+            external: true,
+          }
+        }
+      },
+    },
     nodeResolve({ preferBuiltins: true }),
     esbuild({
       tsconfig: path.resolve(__dirname, 'src/node/tsconfig.json'),
@@ -108,7 +119,7 @@ const nodeConfig = defineConfig({
     constants: path.resolve(__dirname, 'src/node/constants.ts'),
   },
   external: [
-    /^vite\//,
+    // /^vite\//,
     'fsevents',
     'rollup/parseAst',
     'rolldown/parseAst',

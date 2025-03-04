@@ -1,0 +1,46 @@
+{
+  "name": "@vitejs/rolldown-vite",
+  "version": "6.2.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "Evan You",
+  "description": "Vite on Rolldown preview",
+  "bin": {
+    "vite": "bin.js"
+  },
+  "keywords": [
+    "frontend",
+    "framework",
+    "hmr",
+    "dev-server",
+    "build-tool",
+    "vite"
+  ],
+  "main": "./dist/node/index.js",
+  "types": "./dist/node/index.d.ts",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.d.ts",
+    "./module-runner": "./dist/node/module-runner.js",
+    "./types/*": {
+      "types": "./types/*"
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": "^18.0.0 || ^20.0.0 || >=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vitejs/vite.git",
+    "directory": "packages/vite"
+  },
+  "bugs": {
+    "url": "https://github.com/vitejs/vite/issues"
+  },
+  "homepage": "https://vite.dev",
+  "funding": "https://github.com/vitejs/vite?sponsor=1",
+  "dependencies": {
+    "@vitejs/rolldown-vite-core": "workspace:*"
+  }
+}

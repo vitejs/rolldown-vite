@@ -1,13 +1,10 @@
 {
-  "name": "vite",
+  "name": "@vitejs/rolldown-vite-core",
   "version": "6.2.0",
   "type": "module",
   "license": "MIT",
   "author": "Evan You",
   "description": "Vite on Rolldown preview",
-  "bin": {
-    "vite": "bin/vite.js"
-  },
   "keywords": [
     "frontend",
     "framework",
@@ -27,6 +24,7 @@
     "./client": {
       "types": "./client.d.ts"
     },
+    "./bin": "./bin/vite.js",
     "./module-runner": "./dist/node/module-runner.js",
     "./dist/client/*": "./dist/client/*",
     "./types/*": {

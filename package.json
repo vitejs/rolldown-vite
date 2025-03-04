@@ -98,7 +98,7 @@
   "packageManager": "pnpm@10.5.2",
   "pnpm": {
     "overrides": {
-      "vite": "workspace:*"
+      "vite": "workspace:@vitejs/rolldown-vite-core@*"
     },
     "patchedDependencies": {
       "http-proxy@1.18.1": "patches/http-proxy@1.18.1.patch",
