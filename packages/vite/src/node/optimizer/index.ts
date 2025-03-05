@@ -792,11 +792,7 @@ async function prepareRolldownOptimizerRun(
       define,
       platform,
       resolve: {
-        // TODO: set aliasFields, conditionNames depending on `platform`
-        mainFields: ['module', 'main'],
-        aliasFields: [['browser']],
-        extensions: ['.js', '.css'],
-        conditionNames: ['browser'],
+        extensions: ['.tsx', '.ts', '.jsx', '.js', '.css', '.json'],
         ...rollupOptions.resolve,
       },
       // TODO: remove this and enable rolldown's CSS support later

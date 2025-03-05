@@ -1090,6 +1090,7 @@ function resolveDepOptimizationOptions(
       optimizeDeps.rollupOptions.keepNames =
         optimizeDeps.esbuildOptions.keepNames
     }
+
     if (
       optimizeDeps.esbuildOptions.platform !== undefined &&
       optimizeDeps.rollupOptions.platform === undefined
