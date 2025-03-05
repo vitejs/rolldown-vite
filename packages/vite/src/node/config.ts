@@ -2022,9 +2022,6 @@ async function bundleConfigFile(
     },
     // disable treeshake to include files that is not sideeffectful to `moduleIds`
     treeshake: false,
-    // TODO: check if sourcemap works correctly
-    // the last slash is needed to make the path correct
-    // sourceRoot: path.dirname(fileName) + path.sep,
     plugins: [
       (() => {
         const packageCache = new Map()
@@ -2130,6 +2127,9 @@ async function bundleConfigFile(
   const result = await bundle.generate({
     format: isESM ? 'esm' : 'cjs',
     sourcemap: 'inline',
+    sourcemapPathTransform(relative) {
+      return path.resolve(fileName, relative)
+    },
   })
   await bundle.close()
 
