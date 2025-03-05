@@ -478,7 +478,7 @@ export function resolveBuildEnvironmentOptions(
 }
 
 export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
-  pre: Plugin[]
+  pre: RolldownPlugin[]
   post: RolldownPlugin[]
 }> {
   const enableNativePlugin = config.experimental.enableNativePlugin

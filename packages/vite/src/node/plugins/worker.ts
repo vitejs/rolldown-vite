@@ -2,8 +2,8 @@ import path from 'node:path'
 import MagicString from 'magic-string'
 import type { OutputChunk, RolldownPlugin, RollupError } from 'rolldown'
 import type { ChunkMetadata } from 'types/metadata'
+import { type ImportSpecifier, init, parse } from 'es-module-lexer'
 import type { ResolvedConfig } from '../config'
-import type { Plugin } from '../plugin'
 import { ENV_ENTRY, ENV_PUBLIC_PATH } from '../constants'
 import {
   encodeURIPath,
@@ -214,33 +214,46 @@ export async function workerFileToUrl(
   return encodeWorkerAssetFileName(fileName, workerMap)
 }
 
-export function webWorkerPostPlugin(): Plugin {
+export function webWorkerPostPlugin(): RolldownPlugin {
   return {
     name: 'vite:worker-post',
-    // TODO: resolveImportMeta is not supported yet, use transform hook for now
-    // resolveImportMeta(property, { format }) {
-    //   // document is undefined in the worker, so we need to avoid it in iife
-    //   if (format === 'iife') {
-    //     // compiling import.meta
-    //     if (!property) {
-    //       // rollup only supports `url` property. we only support `url` property as well.
-    //       // https://github.com/rollup/rollup/blob/62b648e1cc6a1f00260bb85aa2050097bb4afd2b/src/ast/nodes/MetaProperty.ts#L164-L173
-    //       return `{
-    //         url: self.location.href
-    //       }`
-    //     }
-    //     // compiling import.meta.url
-    //     if (property === 'url') {
-    //       return 'self.location.href'
-    //     }
-    //   }
+    transform: {
+      filter: {
+        code: 'import.meta.url',
+      },
+      async handler(code, id) {
+        // document is undefined in the worker, so we need to avoid import.meta.url in iife
+        if (this.environment.config.worker.format === 'iife') {
+          await init
 
-    //   return null
-    // },
-    transform(code) {
-      if (code.includes('import.meta.url')) {
-        return code.replaceAll('import.meta.url', 'self.location.href')
-      }
+          let imports: readonly ImportSpecifier[]
+          try {
+            imports = parse(code)[0]
+          } catch {
+            // ignore if parse fails
+            return
+          }
+
+          let s: MagicString | undefined
+          for (const { s: start, e: end, d: dynamicIndex } of imports) {
+            // is import.meta
+            if (dynamicIndex === -2) {
+              const prop = code.slice(end, end + 4)
+              if (prop === '.url') {
+                s ||= new MagicString(code)
+                s.overwrite(start, end + 4, 'self.location.href')
+              }
+            }
+          }
+
+          if (!s) return
+
+          return {
+            code: s.toString(),
+            map: s.generateMap({ hires: 'boundary', source: id }),
+          }
+        }
+      },
     },
   }
 }
