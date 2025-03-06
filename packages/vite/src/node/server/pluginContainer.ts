@@ -1034,12 +1034,7 @@ export type {
 
 // Backward compatibility
 class PluginContainer {
-  // TODO: revert this workaround later when https://github.com/oxc-project/oxc/issues/8917 is fixed
-  private environments: Record<string, Environment>
-
-  constructor(environments: Record<string, Environment>) {
-    this.environments = environments
-  }
+  constructor(private environments: Record<string, Environment>) {}
 
   // Backward compatibility
   // Users should call pluginContainer.resolveId (and load/transform) passing the environment they want to work with
