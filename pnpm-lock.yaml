@@ -229,6 +229,9 @@ importers:
       postcss:
         specifier: ^8.5.3
         version: 8.5.3
+      rolldown:
+        specifier: 1.0.0-beta.3-commit.62fba31
+        version: 1.0.0-beta.3-commit.62fba31(typescript@5.7.3)
       rollup:
         specifier: ^4.30.1
         version: 4.34.8
@@ -2346,6 +2349,15 @@ packages:
       search-insights:
         optional: true
 
+  '@emnapi/core@1.3.1':
+    resolution: {integrity: sha512-pVGjBIt1Y6gg3EJN8jTcfpP/+uuRksIo055oE/OBkDNcjZqVbfkWCksG1Jp4yZnj3iKWyWX8fdG/j6UDYPbFog==}
+
+  '@emnapi/runtime@1.3.1':
+    resolution: {integrity: sha512-kEBmG8KyqtxJZv+ygbEim+KCGtIq1fC22Ms3S4ziXmYKm8uyoLX0MHONVKwp+9opg390VaKRNt4a7A9NwmpNhw==}
+
+  '@emnapi/wasi-threads@1.0.1':
+    resolution: {integrity: sha512-iIBu7mwkq4UQGeMEM8bLwNK962nXdhodeScX4slfQnRhEMMzvYivHhutCIk8uojvmASXXPC2WNEjwxFWk72Oqw==}
+
   '@esbuild/aix-ppc64@0.24.2':
     resolution: {integrity: sha512-thpVCb/rhxE/BnMLQ7GReQLLN8q9qbHmI55F4489/ByVg2aQaQ6kbcLb6FHkocZzQhxc4gx0sCk0tJkKBFzDhA==}
     engines: {node: '>=18'}
@@ -2764,6 +2776,9 @@ packages:
     resolution: {integrity: sha512-Yhlar6v9WQgUp/He7BdgzOz8lqMQ8sU+jkCq7Wx8Myc5YFJLbEe7lgui/V7G1qB1DJykHSGwreceSaD60Y0PUQ==}
     hasBin: true
 
+  '@napi-rs/wasm-runtime@0.2.7':
+    resolution: {integrity: sha512-5yximcFK5FNompXfJFoWanu5l8v1hNGqNHh9du1xETp9HWk/B/PzvchX55WYOPaIeNglG8++68AAiauBAtbnzw==}
+
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -2775,6 +2790,9 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@oxc-project/types@0.53.0':
+    resolution: {integrity: sha512-8JXXVoHnRLcl6kDBboSfAmAkKeb6PSvSc5qSJxiOFzFx0ZCLAbUDmuwR2hkBnY7kQS3LmNXaONq1BFAmwTyeZw==}
 
   '@parcel/watcher-android-arm64@2.5.1':
     resolution: {integrity: sha512-KF8+j9nNbUN8vzOFDpRMsaKBHZ/mcjEjMToVMJOhTozkDonQFFrRcfdLWn6yWKCmJKmdVxSgHiYvTCef4/qcBA==}
@@ -2872,6 +2890,66 @@ packages:
   '@publint/pack@0.1.1':
     resolution: {integrity: sha512-TvCl79Y8v18ZhFGd5mjO1kYPovSBq3+4LVCi5Nfl1JI8fS8i8kXbgQFGwBJRXczim8GlW8c2LMBKTtExYXOy/A==}
     engines: {node: '>=18'}
+
+  '@rolldown/binding-darwin-arm64@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-6gQv9wb2sZlYGNdSmGRCfb3MoqdHYCZMhZGydLztGpDxnLd46TJmoX8yM5/PXbQg3PtAq/Mehv0WXhcMrrPe8A==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@rolldown/binding-darwin-x64@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-BywVC+5mQKBdoQqWDVUUUj7xQMGBJYfUTJ+utNcrg4CawF6WJuLNO7o5O9RnjwIOXmbOQReD7tX/bSL1bFvZVg==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@rolldown/binding-freebsd-x64@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-Wm7BoNbuyvBsj/KrSEMGtGPLtAIKt0ArO94Cgi2Dwye/AYF9krBg49MAyy5FUE2FAA3hu1beJQwdKfRPivJJmA==}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@rolldown/binding-linux-arm-gnueabihf@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-pnUWq/f5Rmr6IsAYjm/JfNu5g3Z7k1HenR4P5ApVnsllrcd0NopfSOsL9NBH2xuTAKQ5xNx0syugywjYvtSXDQ==}
+    cpu: [arm]
+    os: [linux]
+
+  '@rolldown/binding-linux-arm64-gnu@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-dJT9EnMiLNKeGALEzvM04yBwRPjFT+UB23qG/XIpm0v2yxbXyttCEnjAY8qGrjh9P6LtlO/9muzOq2nfJF3h2Q==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@rolldown/binding-linux-arm64-musl@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-KSONRVQO3gEIq9HDH7uDC8eYwjhIn7HOcGeA7bq3memP/xxLDPJBCygvY8L/F4ojP5yrjseq9SQfgsPZfLxLcQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@rolldown/binding-linux-x64-gnu@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-skvZRdyPdd9IIQf43eMCCxW9av+WKCnRZ+KXP23b4iY5kN0VqsED0SSNprfQJO58SnlB+9F0g58WbAXT4UY8fA==}
+    cpu: [x64]
+    os: [linux]
+
+  '@rolldown/binding-linux-x64-musl@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-pwCtm6BtZ0y507figQ0wSZFgVP8a6wB+USz6Ht5i7k5fnH8zm9x7xLfXhk3eAp3ZpGOzkRk0kiQUicEMitBF9Q==}
+    cpu: [x64]
+    os: [linux]
+
+  '@rolldown/binding-wasm32-wasi@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-idPTXJzhej0E2GQ01chSsISuGSA/fXhF7fI8kxHTq6IcYM+AOR4rjeKfCI0P9Ia56owKbLx2QypT8lIcjevPIw==}
+    engines: {node: '>=14.21.3'}
+    cpu: [wasm32]
+
+  '@rolldown/binding-win32-arm64-msvc@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-WDFunJCD9RYGRodmqlc+zpqlaDzVoQBWmPdVolTpqHc1KPcQgKCCqbOYq8ISKIw6w8JvwsifkqWB1oZINnM+kQ==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@rolldown/binding-win32-ia32-msvc@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-nx/u5tu3Py0CBVwMopJKUNDKCnutEzghw1z/BuXufIzHK8Ik97r8NcRGm89HgUInly+vTVClmz/tOMhHeTtwGQ==}
+    cpu: [ia32]
+    os: [win32]
+
+  '@rolldown/binding-win32-x64-msvc@1.0.0-beta.3-commit.62fba31':
+    resolution: {integrity: sha512-G+Seww/f7MKr7A7oNbNjn3q1Lz/OybPchVwx+m9jLoMgQH8UZBEDtvVL2M8ZVE8lccYIGfSW6xqSYo7pDz4omg==}
+    cpu: [x64]
+    os: [win32]
 
   '@rollup/plugin-alias@5.1.1':
     resolution: {integrity: sha512-PR9zDb+rOzkRb2VD+EuKB7UC41vU5DIwZ5qqCpk0KJudcWAyi8rvYOhS7+L5aZCspw1stTViLgN5v6FF1p5cgQ==}
@@ -3159,6 +3237,9 @@ packages:
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
     engines: {node: '>=10.13.0'}
 
+  '@tybys/wasm-util@0.9.0':
+    resolution: {integrity: sha512-6+7nlbMVX/PVDCwaIQ8nTOPveOcFLSt8GcXdx8hD0bt39uWxYT88uXzqTd4fTvqta7oeUJqudepapKNt2DYJFw==}
+
   '@type-challenges/utils@0.1.1':
     resolution: {integrity: sha512-A7ljYfBM+FLw+NDyuYvGBJiCEV9c0lPWEAdzfOAkb3JFqfLl0Iv/WhWMMARHiRKlmmiD1g8gz/507yVvHdQUYA==}
 
@@ -3372,6 +3453,11 @@ packages:
 
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
+
+  '@valibot/to-json-schema@1.0.0-rc.0':
+    resolution: {integrity: sha512-F3WDgnPzcDs9Y8qZwU9qfPnEJBQ6lCMCFjI7VsMjAza6yAixGr4cZ50gOy6zniSCk49GkFvq2a6cBKfZjTpyOw==}
+    peerDependencies:
+      valibot: ^1.0.0 || ^1.0.0-beta.5 || ^1.0.0-rc
 
   '@vitejs/longfilename-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@file:playground/optimize-deps/longfilename':
     resolution: {directory: playground/optimize-deps/longfilename, type: directory}
@@ -6422,6 +6508,15 @@ packages:
     deprecated: Rimraf versions prior to v4 are no longer supported
     hasBin: true
 
+  rolldown@1.0.0-beta.3-commit.62fba31:
+    resolution: {integrity: sha512-p7wDEDL4xw72C/bQ/ChB4pPgMAB/Sp+I2H1pHrj0rDBEERukXAcVnPyC2HEXLfiy+sKbJ2dTl2feLkDdHu5Frg==}
+    hasBin: true
+    peerDependencies:
+      '@oxc-project/runtime': 0.53.0
+    peerDependenciesMeta:
+      '@oxc-project/runtime':
+        optional: true
+
   rollup-plugin-dts@6.1.1:
     resolution: {integrity: sha512-aSHRcJ6KG2IHIioYlvAOcEq6U99sVtqDDKVhnwt70rW6tsz3tv5OSjEiWcgzfsHdLyGXZ/3b/7b/+Za3Y6r1XA==}
     engines: {node: '>=16'}
@@ -7151,6 +7246,14 @@ packages:
   utils-merge@1.0.1:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
+
+  valibot@1.0.0-rc.3:
+    resolution: {integrity: sha512-LT0REa7Iqx4QGcaHLiTiTkcmJqJ9QdpOy89HALFFBJgejTS64GQFRIbDF7e4f6pauQbo/myfKGmWXCLhMeM6+g==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
@@ -8182,6 +8285,22 @@ snapshots:
     transitivePeerDependencies:
       - '@algolia/client-search'
 
+  '@emnapi/core@1.3.1':
+    dependencies:
+      '@emnapi/wasi-threads': 1.0.1
+      tslib: 2.8.1
+    optional: true
+
+  '@emnapi/runtime@1.3.1':
+    dependencies:
+      tslib: 2.8.1
+    optional: true
+
+  '@emnapi/wasi-threads@1.0.1':
+    dependencies:
+      tslib: 2.8.1
+    optional: true
+
   '@esbuild/aix-ppc64@0.24.2':
     optional: true
 
@@ -8479,6 +8598,13 @@ snapshots:
       - encoding
       - supports-color
 
+  '@napi-rs/wasm-runtime@0.2.7':
+    dependencies:
+      '@emnapi/core': 1.3.1
+      '@emnapi/runtime': 1.3.1
+      '@tybys/wasm-util': 0.9.0
+    optional: true
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -8490,6 +8616,8 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.0
+
+  '@oxc-project/types@0.53.0': {}
 
   '@parcel/watcher-android-arm64@2.5.1':
     optional: true
@@ -8560,6 +8688,44 @@ snapshots:
   '@polka/url@1.0.0-next.28': {}
 
   '@publint/pack@0.1.1': {}
+
+  '@rolldown/binding-darwin-arm64@1.0.0-beta.3-commit.62fba31':
+    optional: true
+
+  '@rolldown/binding-darwin-x64@1.0.0-beta.3-commit.62fba31':
+    optional: true
+
+  '@rolldown/binding-freebsd-x64@1.0.0-beta.3-commit.62fba31':
+    optional: true
+
+  '@rolldown/binding-linux-arm-gnueabihf@1.0.0-beta.3-commit.62fba31':
+    optional: true
+
+  '@rolldown/binding-linux-arm64-gnu@1.0.0-beta.3-commit.62fba31':
+    optional: true
+
+  '@rolldown/binding-linux-arm64-musl@1.0.0-beta.3-commit.62fba31':
+    optional: true
+
+  '@rolldown/binding-linux-x64-gnu@1.0.0-beta.3-commit.62fba31':
+    optional: true
+
+  '@rolldown/binding-linux-x64-musl@1.0.0-beta.3-commit.62fba31':
+    optional: true
+
+  '@rolldown/binding-wasm32-wasi@1.0.0-beta.3-commit.62fba31':
+    dependencies:
+      '@napi-rs/wasm-runtime': 0.2.7
+    optional: true
+
+  '@rolldown/binding-win32-arm64-msvc@1.0.0-beta.3-commit.62fba31':
+    optional: true
+
+  '@rolldown/binding-win32-ia32-msvc@1.0.0-beta.3-commit.62fba31':
+    optional: true
+
+  '@rolldown/binding-win32-x64-msvc@1.0.0-beta.3-commit.62fba31':
+    optional: true
 
   '@rollup/plugin-alias@5.1.1(rollup@4.34.8)':
     optionalDependencies:
@@ -8827,6 +8993,11 @@ snapshots:
       vite: link:packages/vite
 
   '@trysound/sax@0.2.0': {}
+
+  '@tybys/wasm-util@0.9.0':
+    dependencies:
+      tslib: 2.8.1
+    optional: true
 
   '@type-challenges/utils@0.1.1': {}
 
@@ -9096,6 +9267,10 @@ snapshots:
       - supports-color
 
   '@ungap/structured-clone@1.3.0': {}
+
+  '@valibot/to-json-schema@1.0.0-rc.0(valibot@1.0.0-rc.3(typescript@5.7.3))':
+    dependencies:
+      valibot: 1.0.0-rc.3(typescript@5.7.3)
 
   '@vitejs/longfilename-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@file:playground/optimize-deps/longfilename': {}
 
@@ -12353,6 +12528,27 @@ snapshots:
     dependencies:
       glob: 7.2.3
 
+  rolldown@1.0.0-beta.3-commit.62fba31(typescript@5.7.3):
+    dependencies:
+      '@oxc-project/types': 0.53.0
+      '@valibot/to-json-schema': 1.0.0-rc.0(valibot@1.0.0-rc.3(typescript@5.7.3))
+      valibot: 1.0.0-rc.3(typescript@5.7.3)
+    optionalDependencies:
+      '@rolldown/binding-darwin-arm64': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-darwin-x64': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-freebsd-x64': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-linux-arm-gnueabihf': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-linux-arm64-gnu': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-linux-arm64-musl': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-linux-x64-gnu': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-linux-x64-musl': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-wasm32-wasi': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-win32-arm64-msvc': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-win32-ia32-msvc': 1.0.0-beta.3-commit.62fba31
+      '@rolldown/binding-win32-x64-msvc': 1.0.0-beta.3-commit.62fba31
+    transitivePeerDependencies:
+      - typescript
+
   rollup-plugin-dts@6.1.1(rollup@4.34.8)(typescript@5.7.3):
     dependencies:
       magic-string: 0.30.17
@@ -13123,6 +13319,10 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   utils-merge@1.0.1: {}
+
+  valibot@1.0.0-rc.3(typescript@5.7.3):
+    optionalDependencies:
+      typescript: 5.7.3
 
   validate-npm-package-license@3.0.4:
     dependencies:
