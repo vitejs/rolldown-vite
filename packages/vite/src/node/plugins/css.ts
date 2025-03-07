@@ -6,13 +6,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import postcssrc from 'postcss-load-config'
 import type {
   ExistingRawSourceMap,
-  ModuleFormat,
+  InternalModuleFormat,
   OutputAsset,
   OutputChunk,
   RenderedChunk,
   RollupError,
   SourceMapInput,
-} from 'rollup'
+} from 'rolldown'
 import { dataToEsm } from '@rollup/pluginutils'
 import colors from 'picocolors'
 import MagicString from 'magic-string'
@@ -541,9 +541,7 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
       return path.dirname(
         assetFileNames({
           type: 'asset',
-          name: cssAssetName,
           names: [cssAssetName],
-          originalFileName: null,
           originalFileNames: [],
           source: '/* vite internal call, ignore */',
         }),
@@ -1208,7 +1206,7 @@ export function cssAnalysisPlugin(config: ResolvedConfig): Plugin {
  */
 export function getEmptyChunkReplacer(
   pureCssChunkNames: string[],
-  outputFormat: ModuleFormat,
+  outputFormat: InternalModuleFormat,
 ): (code: string) => string {
   const emptyChunkFiles = pureCssChunkNames
     .map((file) => path.basename(file))
@@ -1221,7 +1219,7 @@ export function getEmptyChunkReplacer(
   const emptyChunkRE = new RegExp(
     outputFormat === 'es'
       ? `\\bimport\\s*["'][^"']*(?:${emptyChunkFiles})["'];`
-      : `(\\b|,\\s*)require\\(\\s*["'][^"']*(?:${emptyChunkFiles})["']\\)(;|,)`,
+      : `(\\b|,\\s*)require\\(\\s*["'\`][^"'\`]*(?:${emptyChunkFiles})["'\`]\\)(;|,)`,
     'g',
   )
 
@@ -1726,8 +1724,9 @@ export async function formatPostcssSourceMap(
 ): Promise<ExistingRawSourceMap> {
   const inputFileDir = path.dirname(file)
 
-  const sources = rawMap.sources.map((source) => {
-    const cleanSource = cleanUrl(decodeURIComponent(source))
+  // Note: the real `Sourcemap#sources` maybe `null`, but rollup typing is not handle it.
+  const sources = rawMap.sources!.map((source) => {
+    const cleanSource = cleanUrl(decodeURIComponent(source!))
 
     // postcss virtual files
     if (cleanSource[0] === '<' && cleanSource.endsWith('>')) {
@@ -2771,8 +2770,11 @@ const scssProcessor = (
           : undefined
 
         if (map) {
-          map.sources = map.sources.map((url) =>
-            url.startsWith('file://') ? normalizePath(fileURLToPath(url)) : url,
+          // Note: the real `Sourcemap#sources` maybe `null`, but rollup typing is not handle it.
+          map.sources = map.sources!.map((url) =>
+            url!.startsWith('file://')
+              ? normalizePath(fileURLToPath(url!))
+              : url,
           )
         }
 
@@ -3214,12 +3216,14 @@ function formatStylusSourceMap(
   if (!mapBefore) return undefined
   const map = { ...mapBefore }
 
-  const resolveFromRoot = (p: string) => normalizePath(path.resolve(root, p))
+  const resolveFromRoot = (p: string | null) =>
+    normalizePath(path.resolve(root, p!))
 
   if (map.file) {
     map.file = resolveFromRoot(map.file)
   }
-  map.sources = map.sources.map(resolveFromRoot)
+  // Note: the real `Sourcemap#sources` maybe `null`, but rollup typing is not handle it.
+  map.sources = map.sources!.map(resolveFromRoot)
 
   return map
 }
