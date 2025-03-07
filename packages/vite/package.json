@@ -85,6 +85,7 @@
   },
   "//": "READ CONTRIBUTING.md to understand what to put under deps vs. devDeps!",
   "dependencies": {
+    "@oxc-project/runtime": "^0.53.0",
     "esbuild": "^0.25.0",
     "postcss": "^8.5.3",
     "rolldown": "1.0.0-beta.3-commit.62fba31"

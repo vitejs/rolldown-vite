@@ -223,6 +223,9 @@ importers:
 
   packages/vite:
     dependencies:
+      '@oxc-project/runtime':
+        specifier: ^0.53.0
+        version: 0.53.0
       esbuild:
         specifier: ^0.25.0
         version: 0.25.0
@@ -231,7 +234,7 @@ importers:
         version: 8.5.3
       rolldown:
         specifier: 1.0.0-beta.3-commit.62fba31
-        version: 1.0.0-beta.3-commit.62fba31(typescript@5.7.3)
+        version: 1.0.0-beta.3-commit.62fba31(@oxc-project/runtime@0.53.0)(typescript@5.7.3)
     devDependencies:
       '@ampproject/remapping':
         specifier: ^2.3.0
@@ -2793,6 +2796,10 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@oxc-project/runtime@0.53.0':
+    resolution: {integrity: sha512-iyZ//fKb3glRZyV6kWo04QjNkXKSj9B61M74Y0Gpqfi+vWAv2nBHdUa5ZiN8fDIobzmPtOu8F4bTj/CdK3w5bg==}
+    engines: {node: '>=6.9.0'}
 
   '@oxc-project/types@0.53.0':
     resolution: {integrity: sha512-8JXXVoHnRLcl6kDBboSfAmAkKeb6PSvSc5qSJxiOFzFx0ZCLAbUDmuwR2hkBnY7kQS3LmNXaONq1BFAmwTyeZw==}
@@ -8620,6 +8627,8 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.0
 
+  '@oxc-project/runtime@0.53.0': {}
+
   '@oxc-project/types@0.53.0': {}
 
   '@parcel/watcher-android-arm64@2.5.1':
@@ -12531,12 +12540,13 @@ snapshots:
     dependencies:
       glob: 7.2.3
 
-  rolldown@1.0.0-beta.3-commit.62fba31(typescript@5.7.3):
+  rolldown@1.0.0-beta.3-commit.62fba31(@oxc-project/runtime@0.53.0)(typescript@5.7.3):
     dependencies:
       '@oxc-project/types': 0.53.0
       '@valibot/to-json-schema': 1.0.0-rc.0(valibot@1.0.0-rc.3(typescript@5.7.3))
       valibot: 1.0.0-rc.3(typescript@5.7.3)
     optionalDependencies:
+      '@oxc-project/runtime': 0.53.0
       '@rolldown/binding-darwin-arm64': 1.0.0-beta.3-commit.62fba31
       '@rolldown/binding-darwin-x64': 1.0.0-beta.3-commit.62fba31
       '@rolldown/binding-freebsd-x64': 1.0.0-beta.3-commit.62fba31
