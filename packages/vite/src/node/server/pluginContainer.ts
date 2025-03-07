@@ -32,7 +32,8 @@ SOFTWARE.
 import fs from 'node:fs'
 import { join } from 'node:path'
 import { performance } from 'node:perf_hooks'
-import { parseAst as rollupParseAst } from 'rollup/parseAst'
+import { parseAst as rolldownParseAst } from 'rolldown/parseAst'
+import type { Program } from '@oxc-project/types'
 import type {
   AsyncPluginHooks,
   CustomPluginOptions,
@@ -57,7 +58,7 @@ import type {
   SourceDescription,
   SourceMap,
   TransformResult,
-} from 'rollup'
+} from 'rolldown'
 import type { RawSourceMap } from '@ampproject/remapping'
 import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping'
 import MagicString from 'magic-string'
@@ -74,11 +75,16 @@ import {
   normalizePath,
   numberToPos,
   prettifyUrl,
+  rolldownVersion,
   rollupVersion,
   timeFrom,
 } from '../utils'
 import { FS_PREFIX } from '../constants'
-import { createPluginHookUtils, getHookHandler } from '../plugins'
+import {
+  createPluginHookUtils,
+  getCachedFilterForPlugin,
+  getHookHandler,
+} from '../plugins'
 import { cleanUrl, unwrapId } from '../../shared/utils'
 import type { PluginHookUtils } from '../config'
 import type { Environment } from '../environment'
@@ -189,7 +195,7 @@ class EnvironmentPluginContainer {
   ) {
     this._started = !autoStart
     this.minimalContext = new MinimalPluginContext(
-      { rollupVersion, watchMode: true },
+      { rollupVersion, rolldownVersion, watchMode: true },
       environment,
     )
     const utils = createPluginHookUtils(plugins)
@@ -339,6 +345,7 @@ class EnvironmentPluginContainer {
       'index.html',
     ),
     options?: {
+      kind?: 'import' | 'dynamic-import' | 'require-call'
       attributes?: Record<string, string>
       custom?: CustomPluginOptions
       /** @deprecated use `skipCalls` instead */
@@ -376,12 +383,16 @@ class EnvironmentPluginContainer {
         throwClosedServerError()
       if (mergedSkip?.has(plugin)) continue
 
+      const filter = getCachedFilterForPlugin(plugin, 'resolveId')
+      if (filter && !filter(rawId)) continue
+
       ctx._plugin = plugin
 
       const pluginResolveStart = debugPluginResolve ? performance.now() : 0
       const handler = getHookHandler(plugin.resolveId)
       const result = await this.handleHookPromise(
         handler.call(ctx as any, rawId, importer, {
+          kind: options?.kind,
           attributes: options?.attributes ?? {},
           custom: options?.custom,
           isEntry: !!options?.isEntry,
@@ -436,6 +447,10 @@ class EnvironmentPluginContainer {
     for (const plugin of this.getSortedPlugins('load')) {
       if (this._closed && this.environment.config.dev.recoverable)
         throwClosedServerError()
+
+      const filter = getCachedFilterForPlugin(plugin, 'load')
+      if (filter && !filter(id)) continue
+
       ctx._plugin = plugin
       const handler = getHookHandler(plugin.load)
       const result = await this.handleHookPromise(
@@ -461,7 +476,9 @@ class EnvironmentPluginContainer {
     },
   ): Promise<{ code: string; map: SourceMap | { mappings: '' } | null }> {
     const ssr = this.environment.config.consumer === 'server'
-    const optionsWithSSR = options ? { ...options, ssr } : { ssr }
+    const optionsWithSSR = options
+      ? { ...options, ssr, moduleType: 'js' }
+      : { ssr, moduleType: 'js' }
     const inMap = options?.inMap
 
     const ctx = new TransformPluginContext(this, id, code, inMap as SourceMap)
@@ -470,6 +487,9 @@ class EnvironmentPluginContainer {
     for (const plugin of this.getSortedPlugins('transform')) {
       if (this._closed && this.environment.config.dev.recoverable)
         throwClosedServerError()
+
+      const filter = getCachedFilterForPlugin(plugin, 'transform')
+      if (filter && !filter(id, code)) continue
 
       ctx._updateActiveInfo(plugin, id, code)
       const start = debugPluginTransform ? performance.now() : 0
@@ -549,6 +569,12 @@ class MinimalPluginContext implements RollupMinimalPluginContext {
     public environment: Environment,
   ) {}
 
+  // FIXME: properly support this later
+  // eslint-disable-next-line @typescript-eslint/class-literal-property-style
+  get pluginName() {
+    return ''
+  }
+
   debug(rawLog: string | RollupLog | (() => string | RollupLog)): void {
     const log = this._normalizeRawLog(rawLog)
     const msg = buildErrorMessage(log, [`debug: ${log.message}`], false)
@@ -595,6 +621,10 @@ class PluginContext
   _resolveSkips?: Set<Plugin>
   _resolveSkipCalls?: readonly SkipInformation[]
 
+  override get pluginName() {
+    return this._plugin.name
+  }
+
   constructor(
     public _plugin: Plugin,
     public _container: EnvironmentPluginContainer,
@@ -602,8 +632,8 @@ class PluginContext
     super(_container.minimalContext.meta, _container.environment)
   }
 
-  parse(code: string, opts: any) {
-    return rollupParseAst(code, opts)
+  parse(code: string, opts: any): Program {
+    return rolldownParseAst(code, opts)
   }
 
   async resolve(
@@ -997,7 +1027,7 @@ class TransformPluginContext
         includeContent: true,
         hires: 'boundary',
         source: cleanUrl(this.filename),
-      })
+      }) as SourceMap
     }
     return map
   }

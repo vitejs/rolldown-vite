@@ -1,7 +1,7 @@
 import path from 'node:path'
 import MagicString from 'magic-string'
-import type { RollupAstNode, RollupError } from 'rollup'
-import { parseAstAsync } from 'rollup/parseAst'
+import type { RollupError } from 'rolldown'
+import { parseAstAsync } from 'rolldown/parseAst'
 import { stripLiteral } from 'strip-literal'
 import type { Expression, ExpressionStatement } from 'estree'
 import type { ResolvedConfig } from '../config'
@@ -102,8 +102,7 @@ async function parseWorkerOptions(
     opts = evalValue<WorkerOptions>(rawOpts)
   } catch {
     const optsNode = (
-      (await parseAstAsync(`(${rawOpts})`))
-        .body[0] as RollupAstNode<ExpressionStatement>
+      (await parseAstAsync(`(${rawOpts})`)).body[0] as ExpressionStatement
     ).expression
 
     const type = extractWorkerTypeFromAst(optsNode, optsStartIndex)
@@ -181,17 +180,6 @@ async function getWorkerType(
   return 'classic'
 }
 
-function isIncludeWorkerImportMetaUrl(code: string): boolean {
-  if (
-    (code.includes('new Worker') || code.includes('new SharedWorker')) &&
-    code.includes('new URL') &&
-    code.includes(`import.meta.url`)
-  ) {
-    return true
-  }
-  return false
-}
-
 export function workerImportMetaUrlPlugin(config: ResolvedConfig): Plugin {
   const isBuild = config.command === 'build'
   let workerResolver: ResolveIdFn
@@ -212,14 +200,17 @@ export function workerImportMetaUrlPlugin(config: ResolvedConfig): Plugin {
       return environment.config.consumer === 'client'
     },
 
-    shouldTransformCachedModule({ code }) {
-      if (isBuild && config.build.watch && isIncludeWorkerImportMetaUrl(code)) {
-        return true
-      }
-    },
+    // shouldTransformCachedModule({ code }) {
+    //   if (isBuild && config.build.watch && isIncludeWorkerImportMetaUrl(code)) {
+    //     return true
+    //   }
+    // },
 
-    async transform(code, id) {
-      if (isIncludeWorkerImportMetaUrl(code)) {
+    transform: {
+      filter: {
+        code: /new\s+(?:Worker|SharedWorker).+new\s+URL.+import\.meta\.url/s,
+      },
+      async handler(code, id) {
         let s: MagicString | undefined
         const cleanString = stripLiteral(code)
         const workerImportMetaUrlRE =
@@ -280,7 +271,8 @@ export function workerImportMetaUrlPlugin(config: ResolvedConfig): Plugin {
             s.update(
               expStart,
               expEnd,
-              `new URL(/* @vite-ignore */ ${JSON.stringify(builtUrl)}, import.meta.url)`,
+              // NOTE: add `'' +` to opt-out rolldown's transform: https://github.com/rolldown/rolldown/issues/2745
+              `new URL(/* @vite-ignore */ ${JSON.stringify(builtUrl)}, '' + import.meta.url)`,
             )
           }
         }
@@ -290,7 +282,7 @@ export function workerImportMetaUrlPlugin(config: ResolvedConfig): Plugin {
         }
 
         return null
-      }
+      },
     },
   }
 }

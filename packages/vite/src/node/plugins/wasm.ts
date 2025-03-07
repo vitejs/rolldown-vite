@@ -50,27 +50,27 @@ export const wasmHelperPlugin = (): Plugin => {
   return {
     name: 'vite:wasm-helper',
 
-    resolveId(id) {
-      if (id === wasmHelperId) {
+    resolveId: {
+      filter: { id: wasmHelperId },
+      handler(id) {
         return id
-      }
+      },
     },
 
-    async load(id) {
-      if (id === wasmHelperId) {
-        return `export default ${wasmHelperCode}`
-      }
+    load: {
+      filter: { id: [wasmHelperId, /\.wasm\?init$/] },
+      async handler(id) {
+        if (id === wasmHelperId) {
+          return `export default ${wasmHelperCode}`
+        }
 
-      if (!id.endsWith('.wasm?init')) {
-        return
-      }
+        const url = await fileToUrl(this, id)
 
-      const url = await fileToUrl(this, id)
-
-      return `
-import initWasm from "${wasmHelperId}"
-export default opts => initWasm(opts, ${JSON.stringify(url)})
-`
+        return `
+  import initWasm from "${wasmHelperId}"
+  export default opts => initWasm(opts, ${JSON.stringify(url)})
+  `
+      },
     },
   }
 }
@@ -79,17 +79,16 @@ export const wasmFallbackPlugin = (): Plugin => {
   return {
     name: 'vite:wasm-fallback',
 
-    async load(id) {
-      if (!id.endsWith('.wasm')) {
-        return
-      }
-
-      throw new Error(
-        '"ESM integration proposal for Wasm" is not supported currently. ' +
-          'Use vite-plugin-wasm or other community plugins to handle this. ' +
-          'Alternatively, you can use `.wasm?init` or `.wasm?url`. ' +
-          'See https://vite.dev/guide/features.html#webassembly for more details.',
-      )
+    load: {
+      filter: { id: /\.wasm$/ },
+      handler(_id) {
+        throw new Error(
+          '"ESM integration proposal for Wasm" is not supported currently. ' +
+            'Use vite-plugin-wasm or other community plugins to handle this. ' +
+            'Alternatively, you can use `.wasm?init` or `.wasm?url`. ' +
+            'See https://vite.dev/guide/features.html#webassembly for more details.',
+        )
+      },
     },
   }
 }

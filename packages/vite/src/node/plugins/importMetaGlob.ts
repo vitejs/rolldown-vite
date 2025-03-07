@@ -10,11 +10,11 @@ import type {
   SpreadElement,
   TemplateLiteral,
 } from 'estree'
-import type { CustomPluginOptions, RollupAstNode, RollupError } from 'rollup'
+import type { CustomPluginOptions, RollupError } from 'rolldown'
 import MagicString from 'magic-string'
 import { stringifyQuery } from 'ufo'
 import type { GeneralImportGlobOptions } from 'types/importGlob'
-import { parseAstAsync } from 'rollup/parseAst'
+import { parseAstAsync } from 'rolldown/parseAst'
 import { escapePath, glob } from 'tinyglobby'
 import type { Plugin } from '../plugin'
 import type { EnvironmentModuleNode } from '../server/moduleGraph'
@@ -51,44 +51,48 @@ export function importGlobPlugin(config: ResolvedConfig): Plugin {
     buildStart() {
       importGlobMaps.clear()
     },
-    async transform(code, id) {
-      if (!code.includes('import.meta.glob')) return
-      const result = await transformGlobImport(
-        code,
-        id,
-        config.root,
-        (im, _, options) =>
-          this.resolve(im, id, options).then((i) => i?.id || im),
-        config.experimental.importGlobRestoreExtension,
-        config.logger,
-      )
-      if (result) {
-        const allGlobs = result.matches.map((i) => i.globsResolved)
-        if (!importGlobMaps.has(this.environment)) {
-          importGlobMaps.set(this.environment, new Map())
+    transform: {
+      filter: {
+        code: 'import.meta.glob',
+      },
+      async handler(code, id) {
+        const result = await transformGlobImport(
+          code,
+          id,
+          config.root,
+          (im, _, options) =>
+            this.resolve(im, id, options).then((i) => i?.id || im),
+          config.experimental.importGlobRestoreExtension,
+          config.logger,
+        )
+        if (result) {
+          const allGlobs = result.matches.map((i) => i.globsResolved)
+          if (!importGlobMaps.has(this.environment)) {
+            importGlobMaps.set(this.environment, new Map())
+          }
+
+          const globMatchers = allGlobs.map((globs) => {
+            const affirmed: string[] = []
+            const negated: string[] = []
+            for (const glob of globs) {
+              ;(glob[0] === '!' ? negated : affirmed).push(glob)
+            }
+            const affirmedMatcher = picomatch(affirmed)
+            const negatedMatcher = picomatch(negated)
+
+            return (file: string) => {
+              // (glob1 || glob2) && !(glob3 || glob4)...
+              return (
+                (affirmed.length === 0 || affirmedMatcher(file)) &&
+                !(negated.length > 0 && negatedMatcher(file))
+              )
+            }
+          })
+          importGlobMaps.get(this.environment)!.set(id, globMatchers)
+
+          return transformStableResult(result.s, id, config)
         }
-
-        const globMatchers = allGlobs.map((globs) => {
-          const affirmed: string[] = []
-          const negated: string[] = []
-          for (const glob of globs) {
-            ;(glob[0] === '!' ? negated : affirmed).push(glob)
-          }
-          const affirmedMatcher = picomatch(affirmed)
-          const negatedMatcher = picomatch(negated)
-
-          return (file: string) => {
-            // (glob1 || glob2) && !(glob3 || glob4)...
-            return (
-              (affirmed.length === 0 || affirmedMatcher(file)) &&
-              !(negated.length > 0 && negatedMatcher(file))
-            )
-          }
-        })
-        importGlobMaps.get(this.environment)!.set(id, globMatchers)
-
-        return transformStableResult(result.s, id, config)
-      }
+      },
     },
     hotUpdate({ type, file, modules: oldModules }) {
       if (type === 'update') return
@@ -259,7 +263,9 @@ export async function parseImportGlob(
       throw err(`Expected 1-2 arguments, but got ${ast.arguments.length}`)
 
     const arg1 = ast.arguments[0] as ArrayExpression | Literal | TemplateLiteral
-    const arg2 = ast.arguments[1] as RollupAstNode<Node> | undefined
+    const arg2 = ast.arguments[1] as
+      | (Node & { start: number; end: number })
+      | undefined
 
     const globs: string[] = []
 
