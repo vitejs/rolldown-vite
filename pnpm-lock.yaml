@@ -229,6 +229,9 @@ importers:
       esbuild:
         specifier: ^0.25.0
         version: 0.25.0
+      lightningcss:
+        specifier: ^1.29.1
+        version: 1.29.1
       postcss:
         specifier: ^8.5.3
         version: 8.5.3
@@ -326,9 +329,6 @@ importers:
       launch-editor-middleware:
         specifier: ^2.10.0
         version: 2.10.0
-      lightningcss:
-        specifier: ^1.29.1
-        version: 1.29.1
       magic-string:
         specifier: ^0.30.17
         version: 0.30.17
