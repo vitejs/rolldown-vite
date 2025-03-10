@@ -18,6 +18,7 @@ import { extract_names as extractNames } from 'periscopic'
 import { walk as eswalk } from 'estree-walker'
 import type { RawSourceMap } from '@ampproject/remapping'
 import { parseAstAsync as rolldownParseAstAsync } from 'rolldown/parseAst'
+import { moduleRunnerTransform } from 'oxc-transform'
 import type { TransformResult } from '../server/transformRequest'
 import {
   combineSourcemaps,
@@ -84,6 +85,44 @@ async function ssrTransformScript(
   url: string,
   originalCode: string,
 ): Promise<TransformResult | null> {
+  if (!process.env['DISABLE_OXC_MODULE_TRANSFORM']) {
+    const result = moduleRunnerTransform('test.js', code, { sourcemap: true })
+    if (result.errors.length) {
+      // eslint-disable-next-line no-console
+      console.log(JSON.stringify(result.errors, null, 2), '\n', code)
+      throw new AggregateError(result.errors)
+    }
+    let map: TransformResult['map'] = inMap
+    if (inMap?.mappings === '') {
+      map = inMap
+    } else if (result.map) {
+      map = result.map as SourceMap
+      map.sources = [path.basename(url)]
+      // needs to use originalCode instead of code
+      // because code might be already transformed even if map is null
+      map.sourcesContent = [originalCode]
+      if (
+        inMap &&
+        inMap.mappings &&
+        'sources' in inMap &&
+        inMap.sources.length > 0
+      ) {
+        map = combineSourcemaps(url, [
+          map as RawSourceMap,
+          inMap as RawSourceMap,
+        ]) as SourceMap
+      }
+    }
+
+    return {
+      code: result.code,
+      map,
+      ssr: true,
+      deps: [...result.deps],
+      dynamicDeps: [...result.dynamicDeps],
+    }
+  }
+
   const s = new MagicString(code)
 
   let ast: any

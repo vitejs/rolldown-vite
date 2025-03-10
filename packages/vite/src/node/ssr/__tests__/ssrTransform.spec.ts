@@ -1523,3 +1523,29 @@ test('combine mappings', async () => {
     `)
   }
 })
+
+test.skip('deps', async () => {
+  const result = await ssrTransformSimple(`\
+import a from "a";
+export { b } from "b";
+export * from "c";
+export * as d from "d";
+import("e");
+`)
+  expect({
+    deps: result?.deps,
+    dynamicDeps: result?.dynamicDeps,
+  }).toMatchInlineSnapshot(`
+    {
+      "deps": [
+        "a",
+        "b",
+        "c",
+        "d",
+      ],
+      "dynamicDeps": [
+        "e",
+      ],
+    }
+  `)
+})
