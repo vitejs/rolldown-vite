@@ -5,7 +5,7 @@ import type {
   OutputChunk,
   RollupError,
   SourceMapInput,
-} from 'rollup'
+} from 'rolldown'
 import MagicString from 'magic-string'
 import colors from 'picocolors'
 import type { DefaultTreeAdapterMap, ParserError, Token } from 'parse5'
@@ -95,26 +95,34 @@ export function htmlInlineProxyPlugin(config: ResolvedConfig): Plugin {
   return {
     name: 'vite:html-inline-proxy',
 
-    resolveId(id) {
-      if (isHTMLProxy(id)) {
+    resolveId: {
+      filter: {
+        id: isHtmlProxyRE,
+      },
+      handler(id) {
         return id
-      }
+      },
     },
 
-    load(id) {
-      const proxyMatch = htmlProxyRE.exec(id)
-      if (proxyMatch) {
-        const index = Number(proxyMatch[1])
-        const file = cleanUrl(id)
-        const url = file.replace(normalizePath(config.root), '')
-        const result = htmlProxyMap.get(config)!.get(url)?.[index]
-        if (result) {
-          // set moduleSideEffects to keep the module even if `treeshake.moduleSideEffects=false` is set
-          return { ...result, moduleSideEffects: true }
-        } else {
-          throw new Error(`No matching HTML proxy module found from ${id}`)
+    load: {
+      filter: {
+        id: isHtmlProxyRE,
+      },
+      handler(id) {
+        const proxyMatch = htmlProxyRE.exec(id)
+        if (proxyMatch) {
+          const index = Number(proxyMatch[1])
+          const file = cleanUrl(id)
+          const url = file.replace(normalizePath(config.root), '')
+          const result = htmlProxyMap.get(config)!.get(url)?.[index]
+          if (result) {
+            // set moduleSideEffects to keep the module even if `treeshake.moduleSideEffects=false` is set
+            return { ...result, moduleSideEffects: true }
+          } else {
+            throw new Error(`No matching HTML proxy module found from ${id}`)
+          }
         }
-      }
+      },
     },
   }
 }
@@ -345,8 +353,11 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
   return {
     name: 'vite:build-html',
 
-    async transform(html, id) {
-      if (id.endsWith('.html')) {
+    transform: {
+      filter: {
+        id: /\.html$/,
+      },
+      async handler(html, id) {
         id = normalizePath(id)
         const relativeUrlPath = normalizePath(path.relative(config.root, id))
         const publicPath = `/${relativeUrlPath}`
@@ -479,9 +490,10 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
                       if (moduleInfo) {
                         moduleInfo.moduleSideEffects = true
                       } else if (!resolved.external) {
-                        return this.load(resolved).then((mod) => {
-                          mod.moduleSideEffects = true
-                        })
+                        return this.load({
+                          ...resolved,
+                          moduleSideEffects: true,
+                        }).then(() => {})
                       }
                     }),
                   )
@@ -718,7 +730,7 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
         // Force rollup to keep this module from being shared between other entry points.
         // If the resulting chunk is empty, it will be removed in generateBundle.
         return { code: js, moduleSideEffects: 'no-treeshake' }
-      }
+      },
     },
 
     async generateBundle(options, bundle) {

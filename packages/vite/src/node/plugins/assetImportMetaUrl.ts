@@ -49,13 +49,14 @@ export function assetImportMetaUrlPlugin(config: ResolvedConfig): Plugin {
       return environment.config.consumer === 'client'
     },
 
-    async transform(code, id) {
-      if (
-        id !== preloadHelperId &&
-        id !== CLIENT_ENTRY &&
-        code.includes('new URL') &&
-        code.includes(`import.meta.url`)
-      ) {
+    transform: {
+      filter: {
+        id: {
+          exclude: [preloadHelperId, CLIENT_ENTRY],
+        },
+        code: /new\s+URL.+import\.meta\.url/,
+      },
+      async handler(code, id) {
         let s: MagicString | undefined
         const assetImportMetaUrlRE =
           /\bnew\s+URL\s*\(\s*('[^']+'|"[^"]+"|`[^`]+`)\s*,\s*import\.meta\.url\s*(?:,\s*)?\)/dg
@@ -157,14 +158,14 @@ export function assetImportMetaUrlPlugin(config: ResolvedConfig): Plugin {
           s.update(
             startIndex,
             endIndex,
-            `new URL(${JSON.stringify(builtUrl)}, import.meta.url)`,
+            // NOTE: add `'' +` to opt-out rolldown's transform: https://github.com/rolldown/rolldown/issues/2745
+            `new URL(${JSON.stringify(builtUrl)}, '' + import.meta.url)`,
           )
         }
         if (s) {
           return transformStableResult(s, id, config)
         }
-      }
-      return null
+      },
     },
   }
 }
