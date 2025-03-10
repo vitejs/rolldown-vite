@@ -87,6 +87,7 @@
   "dependencies": {
     "@oxc-project/runtime": "^0.53.0",
     "lightningcss": "^1.29.1",
+    "oxc-transform": "^0.56.5",
     "postcss": "^8.5.3",
     "rolldown": "1.0.0-beta.3-commit.62fba31"
   },
