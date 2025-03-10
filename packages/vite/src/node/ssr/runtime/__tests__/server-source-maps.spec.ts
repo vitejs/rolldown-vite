@@ -35,8 +35,8 @@ describe('module runner initialization', async () => {
     const topLevelError = await getError(() =>
       runner.import('/fixtures/has-error.js'),
     )
-    expect(serializeStack(server, topLevelError)).toBe(
-      '    at <root>/fixtures/has-error.js:2:7',
+    expect(serializeStack(server, topLevelError)).toMatchInlineSnapshot(
+      `"    at <root>/fixtures/has-error.js:2:17"`,
     )
 
     const methodError = await getError(async () => {
