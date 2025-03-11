@@ -328,15 +328,9 @@ test('export as from arbitrary module namespace identifier', async () => {
 test('export default', async () => {
   expect(await ssrTransformSimpleCode(`export default {}`))
     .toMatchInlineSnapshot(`
-    "Object.defineProperty(__vite_ssr_exports__, "default", {
-    	enumerable: true,
-    	configurable: true,
-    	get() {
-    		return {};
-    	}
-    });
-    "
-  `)
+      "__vite_ssr_exports__.default = {};
+      "
+    `)
 })
 
 test('export then import minified', async () => {
@@ -1260,29 +1254,17 @@ export default (function getRandom() {
 `.trim()
 
   expect(await ssrTransformSimpleCode(code)).toMatchInlineSnapshot(`
-    "Object.defineProperty(__vite_ssr_exports__, "default", {
-    	enumerable: true,
-    	configurable: true,
-    	get() {
-    		return function getRandom() {
-    			return Math.random();
-    		};
-    	}
-    });
+    "__vite_ssr_exports__.default = function getRandom() {
+    	return Math.random();
+    };
     "
   `)
 
   expect(await ssrTransformSimpleCode(`export default (class A {});`))
     .toMatchInlineSnapshot(`
-    "Object.defineProperty(__vite_ssr_exports__, "default", {
-    	enumerable: true,
-    	configurable: true,
-    	get() {
-    		return class A {};
-    	}
-    });
-    "
-  `)
+      "__vite_ssr_exports__.default = class A {};
+      "
+    `)
 })
 
 // #8002
@@ -1560,13 +1542,7 @@ console.log(bar)
   `),
   ).toMatchInlineSnapshot(`
     "const __vite_ssr_import_0__ = await __vite_ssr_import__("./foo", { importedNames: ["foo"] });
-    Object.defineProperty(__vite_ssr_exports__, "default", {
-    	enumerable: true,
-    	configurable: true,
-    	get() {
-    		return (0, __vite_ssr_import_0__.foo)();
-    	}
-    });
+    __vite_ssr_exports__.default = (0, __vite_ssr_import_0__.foo)();
     const __vite_ssr_import_1__ = await __vite_ssr_import__("./bar");
     Object.defineProperty(__vite_ssr_exports__, "bar", {
     	enumerable: true,
@@ -1782,7 +1758,7 @@ test('combine mappings', async () => {
     )
     expect(result?.map).toMatchInlineSnapshot(`
       {
-        "mappings": "AAAA;;;;SAAe",
+        "mappings": "AAAA,+BAAe",
         "names": [],
         "sources": [
           "virtual:test-mappings:null",
