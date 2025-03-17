@@ -5,9 +5,9 @@ import extendCommitHash from './extendCommitHash'
 
 release({
   repo: 'vite',
-  packages: ['vite', 'create-vite', 'plugin-legacy'],
+  packages: ['rolldown-vite', 'create-vite', 'plugin-legacy'],
   toTag: (pkg, version) =>
-    pkg === 'vite' ? `v${version}` : `${pkg}@${version}`,
+    pkg === 'rolldown-vite' ? `v${version}` : `${pkg}@${version}`,
   logChangelog: (pkg) => logRecentCommits(pkg),
   generateChangelog: async (pkgName) => {
     if (pkgName === 'create-vite') await updateTemplateVersions()
@@ -23,7 +23,8 @@ release({
       '--commit-path',
       '.',
     ]
-    if (pkgName !== 'vite') changelogArgs.push('--lerna-package', pkgName)
+    if (pkgName !== 'rolldown-vite')
+      changelogArgs.push('--lerna-package', pkgName)
     await run('npx', changelogArgs, { cwd: `packages/${pkgName}` })
     // conventional-changelog generates links with short commit hashes, extend them to full hashes
     extendCommitHash(`packages/${pkgName}/CHANGELOG.md`)

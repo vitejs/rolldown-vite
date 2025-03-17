@@ -84,7 +84,7 @@ if (!isBuild) {
     const map = extractSourcemap(js)
     expect(formatSourcemapForSnapshot(map)).toMatchInlineSnapshot(`
       {
-        "mappings": "AAAO,aAAM,MAAM;",
+        "mappings": "AAAA,OAAO,MAAM,MAAM",
         "sources": [
           "bar.ts",
         ],
@@ -105,7 +105,7 @@ if (!isBuild) {
     const map = extractSourcemap(multi)
     expect(formatSourcemapForSnapshot(map)).toMatchInlineSnapshot(`
       {
-        "mappings": "AACA;AAAA,EACE;AAAA,OACK;AAEP,QAAQ,IAAI,yBAAyB,GAAG;",
+        "mappings": "AACA,SACE,WACK,2BAA2B;AAElC,QAAQ,IAAI,yBAAyB,IAAI",
         "sources": [
           "with-multiline-import.ts",
         ],
@@ -143,7 +143,7 @@ describe.runIf(isBuild)('build tests', () => {
       {
         "debugId": "00000000-0000-0000-0000-000000000000",
         "ignoreList": [],
-        "mappings": ";+8BAAA,OAAO,2BAAuB,0BAE9B,QAAQ,IAAI,uBAAuB",
+        "mappings": ";sjCAEA,MAFA,OAAO,6BAAuB,wBAE9B,QAAQ,IAAI,wBAAuB",
         "sources": [
           "../../after-preload-dynamic.js",
         ],
@@ -159,7 +159,7 @@ describe.runIf(isBuild)('build tests', () => {
     // verify sourcemap comment is preserved at the last line
     const js = findAssetFile(/after-preload-dynamic-[-\w]{8}\.js$/)
     expect(js).toMatch(
-      /\n\/\/# sourceMappingURL=after-preload-dynamic-[-\w]{8}\.js\.map\n$/,
+      /\n\/\/# sourceMappingURL=after-preload-dynamic-[-\w]{8}\.js\.map\n?$/,
     )
   })
 
@@ -181,7 +181,7 @@ describe.runIf(isBuild)('build tests', () => {
     expect(formatSourcemapForSnapshot(JSON.parse(map))).toMatchInlineSnapshot(`
       {
         "debugId": "00000000-0000-0000-0000-000000000000",
-        "mappings": "qBAEA,SAASA,GAAO,CACJC,EAAA,CACZ,CAEA,SAASA,GAAY,CAEX,QAAA,MAAM,qBAAsBC,CAAkB,CACxD,CAEAF,EAAK",
+        "mappings": "AAEA,SAAS,GAAO,CACd,GAAW,AACZ,CAED,SAAS,GAAY,CAEnB,QAAQ,MAAM,qBAAA,CAAA,MAAA,MAAA,EAAyC,AACxD,CAED,GAAM",
         "sources": [
           "../../with-define-object.ts",
         ],

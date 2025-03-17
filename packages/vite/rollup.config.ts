@@ -110,7 +110,8 @@ const nodeConfig = defineConfig({
   external: [
     /^vite\//,
     'fsevents',
-    'rollup/parseAst',
+    'rolldown/parseAst',
+    'rolldown/experimental',
     /^tsx\//,
     /^#/,
     ...Object.keys(pkg.dependencies),
@@ -190,7 +191,7 @@ const moduleRunnerConfig = defineConfig({
   external: [
     'fsevents',
     'lightningcss',
-    'rollup/parseAst',
+    'rolldown/parseAst',
     ...Object.keys(pkg.dependencies),
   ],
   plugins: [

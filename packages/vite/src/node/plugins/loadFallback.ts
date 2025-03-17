@@ -8,17 +8,25 @@ import type { Plugin } from '../plugin'
 export function buildLoadFallbackPlugin(): Plugin {
   return {
     name: 'vite:load-fallback',
-    async load(id) {
-      try {
-        const cleanedId = cleanUrl(id)
-        const content = await fsp.readFile(cleanedId, 'utf-8')
-        this.addWatchFile(cleanedId)
-        return content
-      } catch {
-        const content = await fsp.readFile(id, 'utf-8')
-        this.addWatchFile(id)
-        return content
-      }
+    load: {
+      filter: {
+        id: {
+          include: /\?|#/,
+          exclude: /^data:/,
+        },
+      },
+      async handler(id) {
+        try {
+          const cleanedId = cleanUrl(id)
+          const content = await fsp.readFile(cleanedId, 'utf-8')
+          this.addWatchFile(cleanedId)
+          return content
+        } catch {
+          const content = await fsp.readFile(id, 'utf-8')
+          this.addWatchFile(id)
+          return content
+        }
+      },
     },
   }
 }

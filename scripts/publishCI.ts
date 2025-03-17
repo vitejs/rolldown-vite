@@ -5,4 +5,4 @@ import { publish } from '@vitejs/release-scripts'
 const tag = process.argv.slice(2)[0] ?? ''
 const provenance = !tag.includes('@')
 
-publish({ defaultPackage: 'vite', provenance, packageManager: 'pnpm' })
+publish({ defaultPackage: 'rolldown-vite', provenance, packageManager: 'pnpm' })

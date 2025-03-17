@@ -1,5 +1,4 @@
-import { transform } from 'esbuild'
-import { TraceMap, decodedMap, encodedMap } from '@jridgewell/trace-mapping'
+import { transform } from 'rolldown/experimental'
 import type { ResolvedConfig } from '../config'
 import type { Plugin } from '../plugin'
 import { escapeRegex } from '../utils'
@@ -111,72 +110,86 @@ export function definePlugin(config: ResolvedConfig): Plugin {
     return pattern
   }
 
+  if (config.experimental.enableNativePlugin === true) {
+    return {
+      name: 'vite:define',
+      options(option) {
+        const [define, _pattern, importMetaEnvVal] = getPattern(
+          this.environment,
+        )
+        define['import.meta.env'] = importMetaEnvVal
+        option.define = define
+      },
+    }
+  }
+
   return {
     name: 'vite:define',
 
-    async transform(code, id) {
-      if (this.environment.config.consumer === 'client' && !isBuild) {
-        // for dev we inject actual global defines in the vite client to
-        // avoid the transform cost. see the `clientInjection` and
-        // `importAnalysis` plugin.
-        return
-      }
-
-      if (
-        // exclude html, css and static assets for performance
-        isHTMLRequest(id) ||
-        isCSSRequest(id) ||
-        isNonJsRequest(id) ||
-        config.assetsInclude(id)
-      ) {
-        return
-      }
-
-      let [define, pattern, importMetaEnvVal] = getPattern(this.environment)
-      if (!pattern) return
-
-      // Check if our code needs any replacements before running esbuild
-      pattern.lastIndex = 0
-      if (!pattern.test(code)) return
-
-      const hasDefineImportMetaEnv = 'import.meta.env' in define
-      let marker = importMetaEnvMarker
-
-      if (hasDefineImportMetaEnv && code.includes(marker)) {
-        // append a number to the marker until it's unique, to avoid if there is a
-        // marker already in the code
-        let i = 1
-        do {
-          marker = importMetaEnvMarker + i++
-        } while (code.includes(marker))
-
-        if (marker !== importMetaEnvMarker) {
-          define = { ...define, 'import.meta.env': marker }
+    transform: {
+      async handler(code, id) {
+        if (this.environment.config.consumer === 'client' && !isBuild) {
+          // for dev we inject actual global defines in the vite client to
+          // avoid the transform cost. see the `clientInjection` and
+          // `importAnalysis` plugin.
+          return
         }
-      }
 
-      const result = await replaceDefine(this.environment, code, id, define)
+        if (
+          // exclude html, css and static assets for performance
+          isHTMLRequest(id) ||
+          isCSSRequest(id) ||
+          isNonJsRequest(id) ||
+          config.assetsInclude(id)
+        ) {
+          return
+        }
 
-      if (hasDefineImportMetaEnv) {
-        // Replace `import.meta.env.*` with undefined
-        result.code = result.code.replaceAll(
-          getImportMetaEnvKeyRe(marker),
-          (m) => 'undefined'.padEnd(m.length),
-        )
+        let [define, pattern, importMetaEnvVal] = getPattern(this.environment)
+        if (!pattern) return
 
-        // If there's bare `import.meta.env` references, prepend the banner
-        if (result.code.includes(marker)) {
-          result.code = `const ${marker} = ${importMetaEnvVal};\n` + result.code
+        // Check if our code needs any replacements before running esbuild
+        pattern.lastIndex = 0
+        if (!pattern.test(code)) return
 
-          if (result.map) {
-            const map = JSON.parse(result.map)
-            map.mappings = ';' + map.mappings
-            result.map = map
+        const hasDefineImportMetaEnv = 'import.meta.env' in define
+        let marker = importMetaEnvMarker
+
+        if (hasDefineImportMetaEnv && code.includes(marker)) {
+          // append a number to the marker until it's unique, to avoid if there is a
+          // marker already in the code
+          let i = 1
+          do {
+            marker = importMetaEnvMarker + i++
+          } while (code.includes(marker))
+
+          if (marker !== importMetaEnvMarker) {
+            define = { ...define, 'import.meta.env': marker }
           }
         }
-      }
 
-      return result
+        const result = await replaceDefine(this.environment, code, id, define)
+
+        if (hasDefineImportMetaEnv) {
+          // Replace `import.meta.env.*` with undefined
+          result.code = result.code.replaceAll(
+            getImportMetaEnvKeyRe(marker),
+            (m) => 'undefined'.padEnd(m.length),
+          )
+
+          // If there's bare `import.meta.env` references, prepend the banner
+          if (result.code.includes(marker)) {
+            result.code =
+              `const ${marker} = ${importMetaEnvVal};\n` + result.code
+
+            if (result.map) {
+              result.map.mappings = ';' + result.map.mappings
+            }
+          }
+        }
+
+        return result
+      },
     },
   }
 }
@@ -186,39 +199,19 @@ export async function replaceDefine(
   code: string,
   id: string,
   define: Record<string, string>,
-): Promise<{ code: string; map: string | null }> {
-  const esbuildOptions = environment.config.esbuild || {}
-
-  const result = await transform(code, {
-    loader: 'js',
-    charset: esbuildOptions.charset ?? 'utf8',
-    platform: 'neutral',
+): Promise<{ code: string; map: ReturnType<typeof transform>['map'] | null }> {
+  const result = transform(id, code, {
+    lang: 'js',
+    sourceType: 'module',
     define,
-    sourcefile: id,
     sourcemap:
       environment.config.command === 'build'
         ? !!environment.config.build.sourcemap
         : true,
   })
 
-  // remove esbuild's <define:...> source entries
-  // since they would confuse source map remapping/collapsing which expects a single source
-  if (result.map.includes('<define:')) {
-    const originalMap = new TraceMap(result.map)
-    if (originalMap.sources.length >= 2) {
-      const sourceIndex = originalMap.sources.indexOf(id)
-      const decoded = decodedMap(originalMap)
-      decoded.sources = [id]
-      decoded.mappings = decoded.mappings.map((segments) =>
-        segments.filter((segment) => {
-          // modify and filter
-          const index = segment[1]
-          segment[1] = 0
-          return index === sourceIndex
-        }),
-      )
-      result.map = JSON.stringify(encodedMap(new TraceMap(decoded as any)))
-    }
+  if (result.errors.length > 0) {
+    throw new AggregateError(result.errors, 'oxc transform error')
   }
 
   return {
