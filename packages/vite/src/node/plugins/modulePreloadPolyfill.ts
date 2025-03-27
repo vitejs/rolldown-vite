@@ -1,5 +1,6 @@
 import type { ResolvedConfig } from '..'
 import type { Plugin } from '../plugin'
+import { exactRegex } from '../utils'
 import { isModernFlag } from './importAnalysisBuild'
 
 export const modulePreloadPolyfillId = 'vite/modulepreload-polyfill'
@@ -11,13 +12,15 @@ export function modulePreloadPolyfillPlugin(config: ResolvedConfig): Plugin {
   return {
     name: 'vite:modulepreload-polyfill',
     resolveId: {
-      filter: { id: modulePreloadPolyfillId },
+      // TODO: string filter breaks on wasi, so use exact regex for now
+      // https://github.com/rolldown/rolldown/issues/3964
+      filter: { id: exactRegex(modulePreloadPolyfillId) },
       handler(_id) {
         return resolvedModulePreloadPolyfillId
       },
     },
     load: {
-      filter: { id: resolvedModulePreloadPolyfillId },
+      filter: { id: exactRegex(resolvedModulePreloadPolyfillId) },
       handler(_id) {
         // `isModernFlag` is only available during build since it is resolved by `vite:build-import-analysis`
         if (
