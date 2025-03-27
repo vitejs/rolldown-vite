@@ -2,7 +2,7 @@ import { posix } from 'node:path'
 import MagicString from 'magic-string'
 import { init, parse as parseImports } from 'es-module-lexer'
 import type { ImportSpecifier } from 'es-module-lexer'
-import { parseAst } from 'rollup/parseAst'
+import { parseAst } from 'rolldown/parseAst'
 import { dynamicImportToGlob } from '@rollup/plugin-dynamic-import-vars'
 import type { Plugin } from '../plugin'
 import type { ResolvedConfig } from '../config'
@@ -181,29 +181,31 @@ export function dynamicImportVarsPlugin(config: ResolvedConfig): Plugin {
     name: 'vite:dynamic-import-vars',
 
     resolveId: {
+      filter: {
+        id: dynamicImportHelperId,
+      },
       handler(id) {
-        if (id === dynamicImportHelperId) {
-          return id
-        }
+        return id
       },
     },
 
     load: {
-      handler(id) {
-        if (id === dynamicImportHelperId) {
-          return `export default ${dynamicImportHelper.toString()}`
-        }
+      filter: {
+        id: dynamicImportHelperId,
+      },
+      handler(_id) {
+        return `export default ${dynamicImportHelper.toString()}`
       },
     },
 
     transform: {
+      filter: {
+        id: { exclude: CLIENT_ENTRY },
+        code: hasDynamicImportRE,
+      },
       async handler(source, importer) {
         const { environment } = this
-        if (
-          !getFilter(this)(importer) ||
-          importer === CLIENT_ENTRY ||
-          !hasDynamicImportRE.test(source)
-        ) {
+        if (!getFilter(this)(importer)) {
           return
         }
 
