@@ -12,8 +12,6 @@ export function modulePreloadPolyfillPlugin(config: ResolvedConfig): Plugin {
   return {
     name: 'vite:modulepreload-polyfill',
     resolveId: {
-      // TODO: string filter breaks on wasi, so use exact regex for now
-      // https://github.com/rolldown/rolldown/issues/3964
       filter: { id: exactRegex(modulePreloadPolyfillId) },
       handler(_id) {
         return resolvedModulePreloadPolyfillId
