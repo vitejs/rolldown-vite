@@ -91,7 +91,11 @@ export async function transformWithOxc(
 
       // when both the normal options and tsconfig is set,
       // we want to prioritize the normal options
-      if (resolvedOptions.jsx === undefined) {
+      if (
+        resolvedOptions.jsx === undefined ||
+        (typeof resolvedOptions.jsx === 'object' &&
+          resolvedOptions.jsx.runtime === undefined)
+      ) {
         if (loadedCompilerOptions.jsx === 'preserve') {
           resolvedOptions.jsx = 'preserve'
         } else {
