@@ -10,7 +10,7 @@ import type {
   OutputAsset,
   OutputChunk,
   RenderedChunk,
-  RenderedModule,
+  // RenderedModule,
   RollupError,
   SourceMapInput,
 } from 'rolldown'
@@ -36,7 +36,7 @@ import type {
   TransformAttributeResult as LightningCssTransformAttributeResult,
   TransformResult as LightningCssTransformResult,
 } from 'lightningcss'
-import type { CustomPluginOptionsVite } from 'types/metadata'
+// import type { CustomPluginOptionsVite } from 'types/metadata'
 import type { EsbuildTransformOptions } from 'types/internal/esbuildOptions'
 import { getCodeWithSourcemap, injectSourcesContent } from '../server/sourcemap'
 import type { EnvironmentModuleNode } from '../server/moduleGraph'
@@ -650,13 +650,13 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
       },
     },
 
-    async renderChunk(code, chunk, opts, meta) {
+    async renderChunk(code, chunk, opts, _meta) {
       let chunkCSS = ''
-      const renderedModules = Object.fromEntries(
-        Object.values(meta.chunks).flatMap((chunk) =>
-          Object.entries(chunk.modules),
-        ),
-      )
+      // const renderedModules = Object.fromEntries(
+      //   Object.values(meta.chunks).flatMap((chunk) =>
+      //     Object.entries(chunk.modules),
+      //   ),
+      // )
       // the chunk is empty if it's a dynamic entry chunk that only contains a CSS import
       const isJsChunkEmpty = code === '' && !chunk.isEntry
       let isPureCssChunk = chunk.exports.length === 0
@@ -670,13 +670,13 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
 
           // If this CSS is scoped to its importers exports, check if those importers exports
           // are rendered in the chunks. If they are not, we can skip bundling this CSS.
-          const cssScopeTo = this.getModuleInfo(id)?.meta?.vite?.cssScopeTo
-          if (
-            cssScopeTo &&
-            !isCssScopeToRendered(cssScopeTo, renderedModules)
-          ) {
-            continue
-          }
+          // const cssScopeTo = this.getModuleInfo(id)?.meta?.vite?.cssScopeTo
+          // if (
+          //   cssScopeTo &&
+          //   !isCssScopeToRendered(cssScopeTo, renderedModules)
+          // ) {
+          //   continue
+          // }
 
           // a css module contains JS, so it makes this not a pure css chunk
           if (cssModuleRE.test(id)) {
@@ -1151,16 +1151,16 @@ export function cssAnalysisPlugin(config: ResolvedConfig): Plugin {
   }
 }
 
-function isCssScopeToRendered(
-  cssScopeTo: Exclude<CustomPluginOptionsVite['cssScopeTo'], undefined>,
-  renderedModules: Record<string, RenderedModule | undefined>,
-) {
-  const [importerId, exp] = cssScopeTo
-  const importer = renderedModules[importerId]
-  return (
-    importer && (exp === undefined || importer.renderedExports.includes(exp))
-  )
-}
+// function isCssScopeToRendered(
+//   cssScopeTo: Exclude<CustomPluginOptionsVite['cssScopeTo'], undefined>,
+//   renderedModules: Record<string, RenderedModule | undefined>,
+// ) {
+//   const [importerId, exp] = cssScopeTo
+//   const importer = renderedModules[importerId]
+//   return (
+//     importer && (exp === undefined || importer.renderedExports.includes(exp))
+//   )
+// }
 
 /**
  * Create a replacer function that takes code and replaces given pure CSS chunk imports
