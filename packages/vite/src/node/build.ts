@@ -1350,14 +1350,28 @@ function injectChunkMetadata(
   const key =
     'preliminaryFileName' in chunk ? chunk.preliminaryFileName : chunk.fileName
   if (!chunkMetadataMap.has(key)) {
-    chunkMetadataMap.set(key, {
-      importedAssets: new Set(),
-      importedCss: new Set(),
+    const chunkModulesDescriptor = Object.getOwnPropertyDescriptor(
+      chunk,
+      'modules',
+    )
+    const chunkModulesGetter: () => typeof chunk.modules =
+      chunkModulesDescriptor?.get ?? (() => chunkModulesDescriptor?.value)
+
+    const chunkMetadataValue = {
+      importedAssets: new Set<string>(),
+      importedCss: new Set<string>(),
       // NOTE: adding this as a workaround for now ideally we'd want to remove this workaround
       // use shared `chunk.modules` object
       // to allow mutation on js side plugins
-      __modules: chunk.modules,
-    })
+      get __modules() {
+        const value = chunkModulesGetter?.()
+        Object.defineProperty(chunkMetadataValue, '__modules', {
+          value,
+        })
+        return value
+      },
+    }
+    chunkMetadataMap.set(key, chunkMetadataValue)
   }
   chunk.viteMetadata = chunkMetadataMap.get(key)
   Object.defineProperty(chunk, 'modules', {
