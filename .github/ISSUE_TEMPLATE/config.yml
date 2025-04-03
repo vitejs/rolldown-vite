@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Vite Discord
+    url: https://chat.vite.dev/
+    about: Do you have questions around Vite? Then join the Discord to discuss them with other Vite users.
   - name: Rolldown Discord
     url: https://chat.rolldown.rs/
     about: Ask questions and discuss with other Rolldown users in real time.
