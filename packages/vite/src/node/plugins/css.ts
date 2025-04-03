@@ -6,14 +6,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import postcssrc from 'postcss-load-config'
 import type {
   ExistingRawSourceMap,
-  ModuleFormat,
+  InternalModuleFormat,
   OutputAsset,
   OutputChunk,
   RenderedChunk,
   RenderedModule,
   RollupError,
   SourceMapInput,
-} from 'rollup'
+} from 'rolldown'
 import { dataToEsm } from '@rollup/pluginutils'
 import colors from 'picocolors'
 import MagicString from 'magic-string'
@@ -23,8 +23,6 @@ import type Stylus from 'stylus'
 import type Less from 'less'
 import type { Alias } from 'dep-types/alias'
 import type { LightningCSSOptions } from 'types/internal/lightningcssOptions'
-import type { TransformOptions } from 'esbuild'
-import { formatMessages, transform } from 'esbuild'
 import type { RawSourceMap } from '@ampproject/remapping'
 import { WorkerWithFallback } from 'artichokie'
 import { globSync } from 'tinyglobby'
@@ -39,6 +37,7 @@ import type {
   TransformResult as LightningCssTransformResult,
 } from 'lightningcss'
 import type { CustomPluginOptionsVite } from 'types/metadata'
+import type { EsbuildTransformOptions } from 'types/internal/esbuildOptions'
 import { getCodeWithSourcemap, injectSourcesContent } from '../server/sourcemap'
 import type { EnvironmentModuleNode } from '../server/moduleGraph'
 import {
@@ -339,9 +338,10 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
     },
 
     load: {
+      filter: {
+        id: CSS_LANGS_RE,
+      },
       async handler(id) {
-        if (!isCSSRequest(id)) return
-
         if (urlRE.test(id)) {
           if (isModuleCSSRequest(id)) {
             throw new Error(
@@ -368,7 +368,14 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
   }
 
   const transformHook: Plugin['transform'] = {
+    filter: {
+      id: {
+        include: CSS_LANGS_RE,
+        exclude: [commonjsProxyRE, SPECIAL_QUERY_RE],
+      },
+    },
     async handler(raw, id) {
+      // for backward compat this if statement is needed
       if (
         !isCSSRequest(id) ||
         commonjsProxyRE.test(id) ||
@@ -446,9 +453,10 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
   }
 
   // for backward compat, make `plugin.transform` a function
-  // but still keep the `handler` property
-  // so that we can use `filter` property in the future
+  // but still keep the `filter` and `handler` properties
+  // so that rolldown can use `filter`
   plugin.transform = transformHook.handler
+  ;(plugin.transform as any).filter = transformHook.filter
   ;(plugin.transform as any).handler = transformHook.handler
 
   return plugin
@@ -486,9 +494,7 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
       return path.dirname(
         assetFileNames({
           type: 'asset',
-          name: cssAssetName,
           names: [cssAssetName],
-          originalFileName: null,
           originalFileNames: [],
           source: '/* vite internal call, ignore */',
         }),
@@ -523,7 +529,14 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
     },
 
     transform: {
+      filter: {
+        id: {
+          include: CSS_LANGS_RE,
+          exclude: [commonjsProxyRE, SPECIAL_QUERY_RE],
+        },
+      },
       async handler(css, id) {
+        // for backward compat this if statement is needed
         if (
           !isCSSRequest(id) ||
           commonjsProxyRE.test(id) ||
@@ -1078,15 +1091,13 @@ export function cssAnalysisPlugin(config: ResolvedConfig): Plugin {
     name: 'vite:css-analysis',
 
     transform: {
+      filter: {
+        id: {
+          include: CSS_LANGS_RE,
+          exclude: [commonjsProxyRE, SPECIAL_QUERY_RE],
+        },
+      },
       async handler(_, id) {
-        if (
-          !isCSSRequest(id) ||
-          commonjsProxyRE.test(id) ||
-          SPECIAL_QUERY_RE.test(id)
-        ) {
-          return
-        }
-
         const { moduleGraph } = this.environment as DevEnvironment
         const thisModule = moduleGraph.getModuleById(id)
 
@@ -1158,7 +1169,7 @@ function isCssScopeToRendered(
  */
 export function getEmptyChunkReplacer(
   pureCssChunkNames: string[],
-  outputFormat: ModuleFormat,
+  outputFormat: InternalModuleFormat,
 ): (code: string) => string {
   const emptyChunkFiles = pureCssChunkNames
     .map((file) => path.basename(file))
@@ -1171,7 +1182,7 @@ export function getEmptyChunkReplacer(
   const emptyChunkRE = new RegExp(
     outputFormat === 'es'
       ? `\\bimport\\s*["'][^"']*(?:${emptyChunkFiles})["'];`
-      : `(\\b|,\\s*)require\\(\\s*["'][^"']*(?:${emptyChunkFiles})["']\\)(;|,)`,
+      : `(\\b|,\\s*)require\\(\\s*["'\`][^"'\`]*(?:${emptyChunkFiles})["'\`]\\)(;|,)`,
     'g',
   )
 
@@ -1223,6 +1234,7 @@ function createCSSResolvers(config: ResolvedConfig): CSSAtImportResolvers {
           tryIndex: true,
           tryPrefix: '_',
           preferRelative: true,
+          skipMainField: true,
         })
         sassResolve = async (...args) => {
           // the modern API calls `canonicalize` with resolved file URLs
@@ -1770,8 +1782,9 @@ export async function formatPostcssSourceMap(
 ): Promise<ExistingRawSourceMap> {
   const inputFileDir = path.dirname(file)
 
-  const sources = rawMap.sources.map((source) => {
-    const cleanSource = cleanUrl(decodeURIComponent(source))
+  // Note: the real `Sourcemap#sources` maybe `null`, but rollup typing is not handle it.
+  const sources = rawMap.sources!.map((source) => {
+    const cleanSource = cleanUrl(decodeURIComponent(source!))
 
     // postcss virtual files
     if (cleanSource[0] === '<' && cleanSource.endsWith('>')) {
@@ -2103,69 +2116,71 @@ async function minifyCSS(
   // regular CSS assets do end with a linebreak.
   // See https://github.com/vitejs/vite/pull/13893#issuecomment-1678628198
 
-  if (config.build.cssMinify === 'lightningcss') {
+  if (config.build.cssMinify === 'esbuild') {
+    const { transform, formatMessages } = await importEsbuild()
     try {
-      const { code, warnings } = (await importLightningCSS()).transform({
-        ...config.css.lightningcss,
-        targets: convertTargets(config.build.cssTarget),
-        cssModules: undefined,
-        // TODO: Pass actual filename here, which can also be passed to esbuild's
-        // `sourcefile` option below to improve error messages
-        filename: defaultCssBundleName,
-        code: Buffer.from(css),
-        minify: true,
+      const { code, warnings } = await transform(css, {
+        loader: 'css',
+        target: config.build.cssTarget || undefined,
+        ...resolveMinifyCssEsbuildOptions(config.esbuild || {}),
       })
       if (warnings.length) {
-        const messages = warnings.map(
-          (warning) =>
-            `${warning.message}\n` +
-            generateCodeFrame(css, {
-              line: warning.loc.line,
-              column: warning.loc.column - 1, // 1-based
-            }),
-        )
+        const msgs = await formatMessages(warnings, { kind: 'warning' })
         config.logger.warn(
-          colors.yellow(`warnings when minifying css:\n${messages.join('\n')}`),
+          colors.yellow(`warnings when minifying css:\n${msgs.join('\n')}`),
         )
       }
-
-      // NodeJS res.code = Buffer
-      // Deno res.code = Uint8Array
-      // For correct decode compiled css need to use TextDecoder
-      // LightningCSS output does not return a linebreak at the end
-      return decoder.decode(code) + (inlined ? '' : '\n')
+      // esbuild output does return a linebreak at the end
+      return inlined ? code.trimEnd() : code
     } catch (e) {
-      e.message = `[lightningcss minify] ${e.message}`
-      if (e.loc) {
-        e.loc = {
-          line: e.loc.line,
-          column: e.loc.column - 1, // 1-based
-        }
-        e.frame = generateCodeFrame(css, e.loc)
+      if (e.errors) {
+        e.message = '[esbuild css minify] ' + e.message
+        const msgs = await formatMessages(e.errors, { kind: 'error' })
+        e.frame = '\n' + msgs.join('\n')
+        e.loc = e.errors[0].location
       }
       throw e
     }
   }
+
   try {
-    const { code, warnings } = await transform(css, {
-      loader: 'css',
-      target: config.build.cssTarget || undefined,
-      ...resolveMinifyCssEsbuildOptions(config.esbuild || {}),
+    const { code, warnings } = (await importLightningCSS()).transform({
+      ...config.css.lightningcss,
+      targets: convertTargets(config.build.cssTarget),
+      cssModules: undefined,
+      // TODO: Pass actual filename here, which can also be passed to esbuild's
+      // `sourcefile` option below to improve error messages
+      filename: defaultCssBundleName,
+      code: Buffer.from(css),
+      minify: true,
     })
     if (warnings.length) {
-      const msgs = await formatMessages(warnings, { kind: 'warning' })
+      const messages = warnings.map(
+        (warning) =>
+          `${warning.message}\n` +
+          generateCodeFrame(css, {
+            line: warning.loc.line,
+            column: warning.loc.column - 1, // 1-based
+          }),
+      )
       config.logger.warn(
-        colors.yellow(`warnings when minifying css:\n${msgs.join('\n')}`),
+        colors.yellow(`warnings when minifying css:\n${messages.join('\n')}`),
       )
     }
-    // esbuild output does return a linebreak at the end
-    return inlined ? code.trimEnd() : code
+
+    // NodeJS res.code = Buffer
+    // Deno res.code = Uint8Array
+    // For correct decode compiled css need to use TextDecoder
+    // LightningCSS output does not return a linebreak at the end
+    return decoder.decode(code) + (inlined ? '' : '\n')
   } catch (e) {
-    if (e.errors) {
-      e.message = '[esbuild css minify] ' + e.message
-      const msgs = await formatMessages(e.errors, { kind: 'error' })
-      e.frame = '\n' + msgs.join('\n')
-      e.loc = e.errors[0].location
+    e.message = `[lightningcss minify] ${e.message}`
+    if (e.loc) {
+      e.loc = {
+        line: e.loc.line,
+        column: e.loc.column - 1, // 1-based
+      }
+      e.frame = generateCodeFrame(css, e.loc)
     }
     throw e
   }
@@ -2173,8 +2188,8 @@ async function minifyCSS(
 
 function resolveMinifyCssEsbuildOptions(
   options: ESBuildOptions,
-): TransformOptions {
-  const base: TransformOptions = {
+): EsbuildTransformOptions {
+  const base: EsbuildTransformOptions = {
     charset: options.charset ?? 'utf8',
     logLevel: options.logLevel,
     logLimit: options.logLimit,
@@ -2819,8 +2834,11 @@ const scssProcessor = (
           : undefined
 
         if (map) {
-          map.sources = map.sources.map((url) =>
-            url.startsWith('file://') ? normalizePath(fileURLToPath(url)) : url,
+          // Note: the real `Sourcemap#sources` maybe `null`, but rollup typing is not handle it.
+          map.sources = map.sources!.map((url) =>
+            url!.startsWith('file://')
+              ? normalizePath(fileURLToPath(url!))
+              : url,
           )
         }
 
@@ -3262,12 +3280,14 @@ function formatStylusSourceMap(
   if (!mapBefore) return undefined
   const map = { ...mapBefore }
 
-  const resolveFromRoot = (p: string) => normalizePath(path.resolve(root, p))
+  const resolveFromRoot = (p: string | null) =>
+    normalizePath(path.resolve(root, p!))
 
   if (map.file) {
     map.file = resolveFromRoot(map.file)
   }
-  map.sources = map.sources.map(resolveFromRoot)
+  // Note: the real `Sourcemap#sources` maybe `null`, but rollup typing is not handle it.
+  map.sources = map.sources!.map(resolveFromRoot)
 
   return map
 }
@@ -3361,6 +3381,8 @@ const preprocessorSet = new Set([
 function isPreProcessor(lang: any): lang is PreprocessLang {
   return lang && preprocessorSet.has(lang)
 }
+
+const importEsbuild = createCachedImport(() => import('esbuild'))
 
 const importLightningCSS = createCachedImport(() => import('lightningcss'))
 async function compileLightningCSS(

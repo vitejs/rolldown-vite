@@ -8,9 +8,8 @@ import { createRequire } from 'node:module'
 import crypto from 'node:crypto'
 import colors from 'picocolors'
 import type { Alias, AliasOptions } from 'dep-types/alias'
-import type { RollupOptions } from 'rollup'
 import picomatch from 'picomatch'
-import { build } from 'esbuild'
+import { type OutputChunk, type RolldownOptions, rolldown } from 'rolldown'
 import type { AnymatchFn } from '../types/anymatch'
 import { withTrailingSlash } from '../shared/utils'
 import {
@@ -103,6 +102,8 @@ import { PartialEnvironment } from './baseEnvironment'
 import { createIdResolver } from './idResolver'
 import { runnerImport } from './ssr/runnerImport'
 import { getAdditionalAllowedHosts } from './server/middlewares/hostCheck'
+import { convertEsbuildPluginToRolldownPlugin } from './optimizer/pluginConverter'
+import { type OxcOptions, convertEsbuildConfigToOxcConfig } from './plugins/oxc'
 
 const debug = createDebugger('vite:config', { depth: 10 })
 const promisifiedRealpath = promisify(fs.realpath)
@@ -355,6 +356,11 @@ export interface UserConfig extends DefaultEnvironmentOptions {
    */
   esbuild?: ESBuildOptions | false
   /**
+   * Transform options to pass to esbuild.
+   * Or set to `false` to disable OXC.
+   */
+  oxc?: OxcOptions | false
+  /**
    * Specify additional picomatch patterns to be treated as static assets.
    */
   assetsInclude?: string | RegExp | (string | RegExp)[]
@@ -433,7 +439,7 @@ export interface UserConfig extends DefaultEnvironmentOptions {
      * Rollup options to build worker bundle
      */
     rollupOptions?: Omit<
-      RollupOptions,
+      RolldownOptions,
       'plugins' | 'input' | 'onwarn' | 'preserveEntrySignatures'
     >
   }
@@ -509,6 +515,13 @@ export interface ExperimentalOptions {
    * @default false
    */
   skipSsrTransform?: boolean
+  /**
+   * Enable builtin plugin that written by rust, which is faster than js plugin.
+   *
+   * @experimental
+   * @default false
+   */
+  enableNativePlugin?: boolean | 'resolver'
 }
 
 export interface LegacyOptions {
@@ -540,7 +553,7 @@ export interface LegacyOptions {
 export interface ResolvedWorkerOptions {
   format: 'es' | 'iife'
   plugins: (bundleChain: string[]) => Promise<ResolvedConfig>
-  rollupOptions: RollupOptions
+  rollupOptions: RolldownOptions
 }
 
 export interface InlineConfig extends UserConfig {
@@ -597,6 +610,7 @@ export interface ResolvedConfig
       css: ResolvedCSSOptions
       json: Required<JsonOptions>
       esbuild: ESBuildOptions | false
+      oxc: OxcOptions | false
       server: ResolvedServerOptions
       dev: ResolvedDevEnvironmentOptions
       /** @experimental */
@@ -696,6 +710,7 @@ export const configDefaults = Object.freeze({
     renderBuiltUrl: undefined,
     hmrPartialAccept: false,
     skipSsrTransform: false,
+    enableNativePlugin: false,
   },
   future: {
     removePluginHookHandleHotUpdate: undefined,
@@ -724,6 +739,7 @@ export const configDefaults = Object.freeze({
     exclude: [],
     needsInterop: [],
     // esbuildOptions
+    rollupOptions: {},
     /** @experimental */
     extensions: [],
     /** @deprecated @experimental */
@@ -832,6 +848,7 @@ function resolveEnvironmentOptions(
       resolve.preserveSymlinks,
       forceOptimizeDeps,
       consumer,
+      logger,
     ),
     dev: resolveDevEnvironmentOptions(
       options.dev,
@@ -1019,7 +1036,139 @@ function resolveDepOptimizationOptions(
   preserveSymlinks: boolean,
   forceOptimizeDeps: boolean | undefined,
   consumer: 'client' | 'server' | undefined,
+  logger: Logger,
 ): DepOptimizationOptions {
+  if (
+    optimizeDeps?.esbuildOptions &&
+    Object.keys(optimizeDeps.esbuildOptions).length > 0
+  ) {
+    logger.warn(
+      colors.yellow(
+        `You have set \`optimizeDeps.esbuildOptions\` but this options is now deprecated. ` +
+          `Vite now uses Rolldown to optimize the dependencies. ` +
+          `Please use \`optimizeDeps.rollupOptions\` instead.`,
+      ),
+    )
+
+    optimizeDeps.rollupOptions ??= {}
+    optimizeDeps.rollupOptions.resolve ??= {}
+    optimizeDeps.rollupOptions.output ??= {}
+
+    const setResolveOptions = <
+      T extends keyof Exclude<RolldownOptions['resolve'], undefined>,
+    >(
+      key: T,
+      value: Exclude<RolldownOptions['resolve'], undefined>[T],
+    ) => {
+      if (
+        value !== undefined &&
+        optimizeDeps.rollupOptions!.resolve![key] === undefined
+      ) {
+        optimizeDeps.rollupOptions!.resolve![key] = value
+      }
+    }
+
+    if (
+      optimizeDeps.esbuildOptions.minify !== undefined &&
+      optimizeDeps.rollupOptions.output.minify === undefined
+    ) {
+      optimizeDeps.rollupOptions.output.minify =
+        optimizeDeps.esbuildOptions.minify
+    }
+    if (
+      optimizeDeps.esbuildOptions.treeShaking !== undefined &&
+      optimizeDeps.rollupOptions.treeshake === undefined
+    ) {
+      optimizeDeps.rollupOptions.treeshake =
+        optimizeDeps.esbuildOptions.treeShaking
+    }
+    if (
+      optimizeDeps.esbuildOptions.define !== undefined &&
+      optimizeDeps.rollupOptions.define === undefined
+    ) {
+      optimizeDeps.rollupOptions.define = optimizeDeps.esbuildOptions.define
+    }
+    if (optimizeDeps.esbuildOptions.loader !== undefined) {
+      const loader = optimizeDeps.esbuildOptions.loader
+      optimizeDeps.rollupOptions.moduleTypes ??= {}
+      for (const [key, value] of Object.entries(loader)) {
+        if (
+          optimizeDeps.rollupOptions.moduleTypes[key] === undefined &&
+          value !== 'copy' &&
+          value !== 'css' &&
+          value !== 'default' &&
+          value !== 'file' &&
+          value !== 'local-css'
+        ) {
+          optimizeDeps.rollupOptions.moduleTypes[key] = value
+        }
+      }
+    }
+    if (
+      optimizeDeps.esbuildOptions.preserveSymlinks !== undefined &&
+      optimizeDeps.rollupOptions.resolve.symlinks === undefined
+    ) {
+      optimizeDeps.rollupOptions.resolve.symlinks =
+        !optimizeDeps.esbuildOptions.preserveSymlinks
+    }
+    setResolveOptions(
+      'extensions',
+      optimizeDeps.esbuildOptions.resolveExtensions,
+    )
+    setResolveOptions('mainFields', optimizeDeps.esbuildOptions.mainFields)
+    setResolveOptions('conditionNames', optimizeDeps.esbuildOptions.conditions)
+    if (
+      optimizeDeps.esbuildOptions.keepNames !== undefined &&
+      optimizeDeps.rollupOptions.keepNames === undefined
+    ) {
+      optimizeDeps.rollupOptions.keepNames =
+        optimizeDeps.esbuildOptions.keepNames
+    }
+
+    if (
+      optimizeDeps.esbuildOptions.platform !== undefined &&
+      optimizeDeps.rollupOptions.platform === undefined
+    ) {
+      optimizeDeps.rollupOptions.platform = optimizeDeps.esbuildOptions.platform
+    }
+
+    // NOTE: the following options cannot be converted
+    // - legalComments
+    // - target, supported (Vite used to transpile down to `ESBUILD_MODULES_TARGET`)
+    // - ignoreAnnotations
+    // - jsx, jsxFactory, jsxFragment, jsxImportSource, jsxDev, jsxSideEffects
+    // - tsconfigRaw, tsconfig
+
+    // NOTE: the following options can be converted but probably not worth it
+    // - sourceRoot
+    // - sourcesContent (`output.sourcemapExcludeSources` is not supported by rolldown)
+    // - drop
+    // - dropLabels
+    // - mangleProps, reserveProps, mangleQuoted, mangleCache
+    // - minifyWhitespace, minifyIdentifiers, minifySyntax
+    // - lineLimit
+    // - charset
+    // - pure (`treeshake.manualPureFunctions` is not supported by rolldown)
+    // - alias (it probably does not work the same with `resolve.alias`)
+    // - inject
+    // - banner, footer
+    // - nodePaths
+
+    // NOTE: the following options does not make sense to set / convert it
+    // - globalName (we only use ESM format)
+    // - color
+    // - logLimit
+    // - logOverride
+    // - splitting
+    // - outbase
+    // - packages (this should not be set)
+    // - allowOverwrite
+    // - publicPath (`file` loader is not supported by rolldown)
+    // - entryNames, chunkNames, assetNames (Vite does not support changing these options)
+    // - stdin
+    // - absWorkingDir
+  }
+
   return mergeWithDefaults(
     {
       ...configDefaults.optimizeDeps,
@@ -1028,10 +1177,30 @@ function resolveDepOptimizationOptions(
       esbuildOptions: {
         preserveSymlinks,
       },
+      rollupOptions: {
+        resolve: {
+          symlinks: !preserveSymlinks,
+        },
+      },
       force: forceOptimizeDeps ?? configDefaults.optimizeDeps.force,
     },
     optimizeDeps ?? {},
   )
+}
+
+function applyDepOptimizationOptionCompat(resolvedConfig: ResolvedConfig) {
+  if (
+    resolvedConfig.optimizeDeps.esbuildOptions?.plugins &&
+    resolvedConfig.optimizeDeps.esbuildOptions.plugins.length > 0
+  ) {
+    resolvedConfig.optimizeDeps.rollupOptions ??= {}
+    resolvedConfig.optimizeDeps.rollupOptions.plugins ||= []
+    ;(resolvedConfig.optimizeDeps.rollupOptions.plugins as any[]).push(
+      ...resolvedConfig.optimizeDeps.esbuildOptions.plugins.map((plugin) =>
+        convertEsbuildPluginToRolldownPlugin(plugin),
+      ),
+    )
+  }
 }
 
 export async function resolveConfig(
@@ -1442,6 +1611,17 @@ export async function resolveConfig(
 
   const preview = resolvePreviewOptions(config.preview, server)
 
+  let oxc: OxcOptions | false | undefined = config.oxc
+  if (config.esbuild) {
+    if (config.oxc) {
+      logger.warn(
+        `Found esbuild and oxc options, will use oxc and ignore esbuild at transformer.`,
+      )
+    } else {
+      oxc = convertEsbuildConfigToOxcConfig(config.esbuild, logger)
+    }
+  }
+
   resolved = {
     configFile: configFile ? normalizePath(configFile) : undefined,
     configFileDependencies: configFileDependencies.map((name) =>
@@ -1463,12 +1643,26 @@ export async function resolveConfig(
     plugins: userPlugins, // placeholder to be replaced
     css: resolveCSSOptions(config.css),
     json: mergeWithDefaults(configDefaults.json, config.json ?? {}),
+    // preserve esbuild for buildEsbuildPlugin
     esbuild:
       config.esbuild === false
         ? false
         : {
             jsxDev: !isProduction,
             ...config.esbuild,
+          },
+    oxc:
+      oxc === false
+        ? false
+        : {
+            ...oxc,
+            jsx:
+              typeof oxc?.jsx === 'string'
+                ? oxc.jsx
+                : {
+                    development: oxc?.jsx?.development ?? !isProduction,
+                    ...oxc?.jsx,
+                  },
           },
     server,
     builder,
@@ -1491,6 +1685,7 @@ export async function resolveConfig(
     experimental: {
       importGlobRestoreExtension: false,
       hmrPartialAccept: false,
+      enableNativePlugin: false,
       ...config.experimental,
     },
     future: config.future,
@@ -1599,6 +1794,8 @@ export async function resolveConfig(
     resolved.environments.ssr.build.emitAssets =
       resolved.build.ssrEmitAssets || resolved.build.emitAssets
   }
+
+  applyDepOptimizationOptionCompat(resolved)
 
   debug?.(`using resolved config: %O`, {
     ...resolved,
@@ -1864,19 +2061,14 @@ async function bundleConfigFile(
   const dirnameVarName = '__vite_injected_original_dirname'
   const filenameVarName = '__vite_injected_original_filename'
   const importMetaUrlVarName = '__vite_injected_original_import_meta_url'
-  const result = await build({
-    absWorkingDir: process.cwd(),
-    entryPoints: [fileName],
-    write: false,
-    target: [`node${process.versions.node}`],
+
+  const bundle = await rolldown({
+    input: fileName,
+    // target: [`node${process.versions.node}`],
     platform: 'node',
-    bundle: true,
-    format: isESM ? 'esm' : 'cjs',
-    mainFields: ['main'],
-    sourcemap: 'inline',
-    // the last slash is needed to make the path correct
-    sourceRoot: path.dirname(fileName) + path.sep,
-    metafile: true,
+    resolve: {
+      mainFields: ['main'],
+    },
     define: {
       __dirname: dirnameVarName,
       __filename: filenameVarName,
@@ -1884,48 +2076,45 @@ async function bundleConfigFile(
       'import.meta.dirname': dirnameVarName,
       'import.meta.filename': filenameVarName,
     },
+    // disable treeshake to include files that is not sideeffectful to `moduleIds`
+    treeshake: false,
     plugins: [
-      {
-        name: 'externalize-deps',
-        setup(build) {
-          const packageCache = new Map()
-          const resolveByViteResolver = (
-            id: string,
-            importer: string,
-            isRequire: boolean,
-          ) => {
-            return tryNodeResolve(id, importer, {
-              root: path.dirname(fileName),
-              isBuild: true,
-              isProduction: true,
-              preferRelative: false,
-              tryIndex: true,
-              mainFields: [],
-              conditions: [
-                'node',
-                ...(isModuleSyncConditionEnabled ? ['module-sync'] : []),
-              ],
-              externalConditions: [],
-              external: [],
-              noExternal: [],
-              dedupe: [],
-              extensions: configDefaults.resolve.extensions,
-              preserveSymlinks: false,
-              packageCache,
-              isRequire,
-              builtins: nodeLikeBuiltins,
-            })?.id
-          }
+      (() => {
+        const packageCache = new Map()
+        const resolveByViteResolver = (
+          id: string,
+          importer: string,
+          isRequire: boolean,
+        ) => {
+          return tryNodeResolve(id, importer, {
+            root: path.dirname(fileName),
+            isBuild: true,
+            isProduction: true,
+            preferRelative: false,
+            tryIndex: true,
+            mainFields: [],
+            conditions: [
+              'node',
+              ...(isModuleSyncConditionEnabled ? ['module-sync'] : []),
+            ],
+            externalConditions: [],
+            external: [],
+            noExternal: [],
+            dedupe: [],
+            extensions: configDefaults.resolve.extensions,
+            preserveSymlinks: false,
+            packageCache,
+            isRequire,
+            builtins: nodeLikeBuiltins,
+          })?.id
+        }
 
-          // externalize bare imports
-          build.onResolve(
-            { filter: /^[^.#].*/ },
-            async ({ path: id, importer, kind }) => {
-              if (
-                kind === 'entry-point' ||
-                path.isAbsolute(id) ||
-                isNodeBuiltin(id)
-              ) {
+        return {
+          name: 'externalize-deps',
+          resolveId: {
+            filter: { id: /^[^.#].*/ },
+            async handler(id, importer, { kind }) {
+              if (!importer || path.isAbsolute(id) || isNodeBuiltin(id)) {
                 return
               }
 
@@ -1933,7 +2122,7 @@ async function bundleConfigFile(
               // non-node built-in, which esbuild doesn't know how to handle. In that case, we
               // externalize it so the non-node runtime handles it instead.
               if (isNodeLikeBuiltin(id)) {
-                return { external: true }
+                return { id, external: true }
               }
 
               const isImport = isESM || kind === 'dynamic-import'
@@ -1960,44 +2149,83 @@ async function bundleConfigFile(
                 }
                 throw e
               }
+              if (!idFsPath) return
+              // always no-externalize json files as rolldown does not support import attributes
+              if (idFsPath.endsWith('.json')) {
+                return idFsPath
+              }
+
               if (idFsPath && isImport) {
                 idFsPath = pathToFileURL(idFsPath).href
               }
-              return {
-                path: idFsPath,
-                external: true,
-              }
+              return { id: idFsPath, external: true }
             },
-          )
-        },
-      },
+          },
+        }
+      })(),
       {
         name: 'inject-file-scope-variables',
-        setup(build) {
-          build.onLoad({ filter: /\.[cm]?[jt]s$/ }, async (args) => {
-            const contents = await fsp.readFile(args.path, 'utf-8')
+        transform: {
+          filter: { id: /\.[cm]?[jt]s$/ },
+          async handler(code, id) {
             const injectValues =
-              `const ${dirnameVarName} = ${JSON.stringify(
-                path.dirname(args.path),
-              )};` +
-              `const ${filenameVarName} = ${JSON.stringify(args.path)};` +
+              `const ${dirnameVarName} = ${JSON.stringify(path.dirname(id))};` +
+              `const ${filenameVarName} = ${JSON.stringify(id)};` +
               `const ${importMetaUrlVarName} = ${JSON.stringify(
-                pathToFileURL(args.path).href,
+                pathToFileURL(id).href,
               )};`
-
-            return {
-              loader: args.path.endsWith('ts') ? 'ts' : 'js',
-              contents: injectValues + contents,
-            }
-          })
+            return { code: injectValues + code, map: null }
+          },
         },
       },
     ],
   })
-  const { text } = result.outputFiles[0]
+  const result = await bundle.generate({
+    format: isESM ? 'esm' : 'cjs',
+    sourcemap: 'inline',
+    sourcemapPathTransform(relative) {
+      return path.resolve(fileName, relative)
+    },
+  })
+  await bundle.close()
+
+  const entryChunk = result.output.find(
+    (chunk): chunk is OutputChunk => chunk.type === 'chunk' && chunk.isEntry,
+  )!
+  const bundleChunks = Object.fromEntries(
+    result.output.flatMap((c) => (c.type === 'chunk' ? [[c.fileName, c]] : [])),
+  )
+
+  const allModules = new Set<string>()
+  collectAllModules(bundleChunks, entryChunk.fileName, allModules)
+  allModules.delete(fileName)
+
   return {
-    code: text,
-    dependencies: Object.keys(result.metafile.inputs),
+    code: entryChunk.code,
+    dependencies: [...allModules],
+  }
+}
+
+function collectAllModules(
+  bundle: Record<string, OutputChunk>,
+  fileName: string,
+  allModules: Set<string>,
+  analyzedModules = new Set<string>(),
+) {
+  if (analyzedModules.has(fileName)) return
+  analyzedModules.add(fileName)
+
+  const chunk = bundle[fileName]!
+  for (const mod of chunk.moduleIds) {
+    allModules.add(mod)
+  }
+  for (const i of chunk.imports) {
+    analyzedModules.add(i)
+    collectAllModules(bundle, i, allModules, analyzedModules)
+  }
+  for (const i of chunk.dynamicImports) {
+    analyzedModules.add(i)
+    collectAllModules(bundle, i, allModules, analyzedModules)
   }
 }
 
