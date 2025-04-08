@@ -55,7 +55,7 @@ export async function resolvePlugins(
   normalPlugins: Plugin[],
   postPlugins: Plugin[],
 ): Promise<Plugin[]> {
-  const isBuild = true
+  const isBuild = config.command === 'build'
   const isWorker = config.isWorker
   const buildPlugins = isBuild
     ? await (await import('../build')).resolveBuildPlugins(config)
