@@ -54,7 +54,6 @@ import {
 import { initPublicFiles } from '../publicDir'
 import { getEnvFilesForMode } from '../env'
 import type { RequiredExceptFor } from '../typeUtils'
-import { cleanUrl } from '../../shared/utils'
 import type { WebSocketServer } from './ws'
 import { createWebSocketServer } from './ws'
 import { baseMiddleware } from './middlewares/base'
@@ -81,6 +80,7 @@ import { openBrowser as _openBrowser } from './openBrowser'
 import { searchForPackageRoot, searchForWorkspaceRoot } from './searchRoot'
 import type { DevEnvironment } from './environment'
 import { hostCheckMiddleware } from './middlewares/hostCheck'
+import { memoryFilesMiddleware } from './middlewares/memoryFiles'
 
 export interface ServerOptions extends CommonServerOptions {
   /**
@@ -913,19 +913,10 @@ export async function _createServer(
 
   // serve static files
   // middlewares.use(serveRawFsMiddleware(server))
-  // middlewares.use(serveStaticMiddleware(server))
+  // middlewares.use(c(server))
 
   // serve memory output dist files
-  middlewares.use((req, res, next) => {
-    const cleanedUrl = cleanUrl(req.url!)
-    const file = server.memoryFiles[cleanedUrl]
-    if (
-      file
-    ) {
-      return res.end(file)
-    }
-    next()
-  });
+  middlewares.use(memoryFilesMiddleware(server, false));
 
   // html fallback
   if (config.appType === 'spa' || config.appType === 'mpa') {
@@ -940,6 +931,7 @@ export async function _createServer(
   if (config.appType === 'spa' || config.appType === 'mpa') {
     // transform index.html
     // middlewares.use(indexHtmlMiddleware(root, server))
+    middlewares.use(memoryFilesMiddleware(server, true));
 
     // handle 404s
     middlewares.use(notFoundMiddleware())
