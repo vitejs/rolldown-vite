@@ -13,7 +13,6 @@ import chokidar from 'chokidar'
 import type { FSWatcher, WatchOptions } from 'dep-types/chokidar'
 import type { Connect } from 'dep-types/connect'
 import launchEditorMiddleware from 'launch-editor-middleware'
-import type { SourceMap } from 'rolldown'
 import type { ModuleRunner } from 'vite/module-runner'
 import type { CommonServerOptions } from '../http'
 import {
@@ -38,13 +37,8 @@ import {
   setupSIGTERMListener,
   teardownSIGTERMListener,
 } from '../utils'
-import { ssrLoadModule } from '../ssr/ssrModuleLoader'
-import { ssrFixStacktrace, ssrRewriteStacktrace } from '../ssr/ssrStacktrace'
-import { ssrTransform } from '../ssr/ssrTransform'
-import { reloadOnTsconfigChange } from '../plugins/esbuild'
 import { bindCLIShortcuts } from '../shortcuts'
 import type { BindCLIShortcutsOptions } from '../shortcuts'
-import { ERR_OUTDATED_OPTIMIZED_DEP } from '../../shared/constants'
 import {
   CLIENT_DIR,
   DEFAULT_DEV_PORT,
@@ -52,7 +46,6 @@ import {
 } from '../constants'
 import type { Logger } from '../logger'
 import { printServerUrls } from '../logger'
-import { warnFutureDeprecation } from '../deprecations'
 import {
   createNoopWatcher,
   getResolvedOutDirs,
@@ -62,8 +55,7 @@ import {
 import { initPublicFiles } from '../publicDir'
 import { getEnvFilesForMode } from '../env'
 import type { RequiredExceptFor } from '../typeUtils'
-import type { PluginContainer } from './pluginContainer'
-import { ERR_CLOSED_SERVER, createPluginContainer } from './pluginContainer'
+import { cleanUrl } from '../../shared/utils'
 import type { WebSocketServer } from './ws'
 import { createWebSocketServer } from './ws'
 import { baseMiddleware } from './middlewares/base'
@@ -71,31 +63,22 @@ import { proxyMiddleware } from './middlewares/proxy'
 import { htmlFallbackMiddleware } from './middlewares/htmlFallback'
 import {
   cachedTransformMiddleware,
-  transformMiddleware,
+  // transformMiddleware,
 } from './middlewares/transform'
-import {
-  createDevHtmlTransformFn,
-  indexHtmlMiddleware,
-} from './middlewares/indexHtml'
+// import {
+//   indexHtmlMiddleware,
+// } from './middlewares/indexHtml'
 import {
   servePublicMiddleware,
-  serveRawFsMiddleware,
-  serveStaticMiddleware,
 } from './middlewares/static'
 import { timeMiddleware } from './middlewares/time'
-import { ModuleGraph } from './mixedModuleGraph'
-import type { ModuleNode } from './mixedModuleGraph'
 import { notFoundMiddleware } from './middlewares/notFound'
-import { buildErrorMessage, errorMiddleware } from './middlewares/error'
+import {  errorMiddleware } from './middlewares/error'
 import type { HmrOptions, HotBroadcaster } from './hmr'
 import {
   createDeprecatedHotBroadcaster,
-  handleHMRUpdate,
-  updateModules,
 } from './hmr'
 import { openBrowser as _openBrowser } from './openBrowser'
-import type { TransformOptions, TransformResult } from './transformRequest'
-import { transformRequest } from './transformRequest'
 import { searchForPackageRoot, searchForWorkspaceRoot } from './searchRoot'
 import type { DevEnvironment } from './environment'
 import { hostCheckMiddleware } from './middlewares/hostCheck'
@@ -285,7 +268,7 @@ export interface ViteDevServer {
   /**
    * Rollup plugin container that can run plugin hooks on a given file
    */
-  pluginContainer: PluginContainer
+  // pluginContainer: PluginContainer
   /**
    * Module execution environments attached to the Vite server.
    */
@@ -294,7 +277,7 @@ export interface ViteDevServer {
    * Module graph that tracks the import relationships, url to file mapping
    * and hmr state.
    */
-  moduleGraph: ModuleGraph
+  // moduleGraph: ModuleGraph
   /**
    * The resolved urls Vite prints on the CLI (URL-encoded). Returns `null`
    * in middleware mode or if the server is not listening on any port.
@@ -304,53 +287,53 @@ export interface ViteDevServer {
    * Programmatically resolve, load and transform a URL and get the result
    * without going through the http request pipeline.
    */
-  transformRequest(
-    url: string,
-    options?: TransformOptions,
-  ): Promise<TransformResult | null>
+  // transformRequest(
+  //   url: string,
+  //   options?: TransformOptions,
+  // ): Promise<TransformResult | null>
   /**
    * Same as `transformRequest` but only warm up the URLs so the next request
    * will already be cached. The function will never throw as it handles and
    * reports errors internally.
    */
-  warmupRequest(url: string, options?: TransformOptions): Promise<void>
+  // warmupRequest(url: string, options?: TransformOptions): Promise<void>
   /**
    * Apply vite built-in HTML transforms and any plugin HTML transforms.
    */
-  transformIndexHtml(
-    url: string,
-    html: string,
-    originalUrl?: string,
-  ): Promise<string>
+  // transformIndexHtml(
+  //   url: string,
+  //   html: string,
+  //   originalUrl?: string,
+  // ): Promise<string>
   /**
    * Transform module code into SSR format.
    */
-  ssrTransform(
-    code: string,
-    inMap: SourceMap | { mappings: '' } | null,
-    url: string,
-    originalCode?: string,
-  ): Promise<TransformResult | null>
+  // ssrTransform(
+  //   code: string,
+  //   inMap: SourceMap | { mappings: '' } | null,
+  //   url: string,
+  //   originalCode?: string,
+  // ): Promise<TransformResult | null>
   /**
    * Load a given URL as an instantiated module for SSR.
    */
-  ssrLoadModule(
-    url: string,
-    opts?: { fixStacktrace?: boolean },
-  ): Promise<Record<string, any>>
+  // ssrLoadModule(
+  //   url: string,
+  //   opts?: { fixStacktrace?: boolean },
+  // ): Promise<Record<string, any>>
   /**
    * Returns a fixed version of the given stack
    */
-  ssrRewriteStacktrace(stack: string): string
+  // ssrRewriteStacktrace(stack: string): string
   /**
    * Mutates the given SSR error by rewriting the stacktrace
    */
-  ssrFixStacktrace(e: Error): void
+  // ssrFixStacktrace(e: Error): void
   /**
    * Triggers HMR for a module in the module graph. You can use the `server.moduleGraph`
    * API to retrieve the module to be reloaded. If `hmr` is false, this is a no-op.
    */
-  reloadModule(module: ModuleNode): Promise<void>
+  // reloadModule(module: ModuleNode): Promise<void>
   /**
    * Start the server.
    */
@@ -414,11 +397,19 @@ export interface ViteDevServer {
   /**
    * @internal
    */
+  _currentServerHost?: string | undefined
+  /**
+   * @internal
+   */
   _configServerPort?: number | undefined
   /**
    * @internal
    */
   _ssrCompatModuleRunner?: ModuleRunner
+ /**
+   * @internal
+   */
+  memoryFiles: Record<string, string | Uint8Array>
 }
 
 export interface ResolvedServerUrls {
@@ -520,15 +511,15 @@ export async function _createServer(
 
   // Backward compatibility
 
-  let moduleGraph = new ModuleGraph({
-    client: () => environments.client.moduleGraph,
-    ssr: () => environments.ssr.moduleGraph,
-  })
-  const pluginContainer = createPluginContainer(environments)
+  // let moduleGraph = new ModuleGraph({
+  //   client: () => environments.client.moduleGraph,
+  //   ssr: () => environments.ssr.moduleGraph,
+  // })
+  // const pluginContainer = createPluginContainer(environments)
 
   const closeHttpServer = createServerCloseFn(httpServer)
 
-  const devHtmlTransformFn = createDevHtmlTransformFn(config)
+  // const devHtmlTransformFn = createDevHtmlTransformFn(config)
 
   // Promise used by `server.close()` to ensure `closeServer()` is only called once
   let closeServerPromise: Promise<void> | undefined
@@ -553,6 +544,7 @@ export async function _createServer(
   }
 
   let server: ViteDevServer = {
+    memoryFiles: {},
     config,
     middlewares,
     httpServer,
@@ -561,90 +553,90 @@ export async function _createServer(
     hot: createDeprecatedHotBroadcaster(ws),
 
     environments,
-    pluginContainer,
-    get moduleGraph() {
-      warnFutureDeprecation(config, 'removeServerModuleGraph')
-      return moduleGraph
-    },
-    set moduleGraph(graph) {
-      moduleGraph = graph
-    },
+    // pluginContainer,
+    // get moduleGraph() {
+    //   warnFutureDeprecation(config, 'removeServerModuleGraph')
+    //   return moduleGraph
+    // },
+    // set moduleGraph(graph) {
+    //   moduleGraph = graph
+    // },
 
     resolvedUrls: null, // will be set on listen
-    ssrTransform(
-      code: string,
-      inMap: SourceMap | { mappings: '' } | null,
-      url: string,
-      originalCode = code,
-    ) {
-      return ssrTransform(code, inMap, url, originalCode, {
-        json: {
-          stringify:
-            config.json.stringify === true && config.json.namedExports !== true,
-        },
-      })
-    },
+    // ssrTransform(
+    //   code: string,
+    //   inMap: SourceMap | { mappings: '' } | null,
+    //   url: string,
+    //   originalCode = code,
+    // ) {
+    //   return ssrTransform(code, inMap, url, originalCode, {
+    //     json: {
+    //       stringify:
+    //         config.json.stringify === true && config.json.namedExports !== true,
+    //     },
+    //   })
+    // },
     // environment.transformRequest and .warmupRequest don't take an options param for now,
     // so the logic and error handling needs to be duplicated here.
     // The only param in options that could be important is `html`, but we may remove it as
     // that is part of the internal control flow for the vite dev server to be able to bail
     // out and do the html fallback
-    transformRequest(url, options) {
-      warnFutureDeprecation(
-        config,
-        'removeServerTransformRequest',
-        'server.transformRequest() is deprecated. Use environment.transformRequest() instead.',
-      )
-      const environment = server.environments[options?.ssr ? 'ssr' : 'client']
-      return transformRequest(environment, url, options)
-    },
-    async warmupRequest(url, options) {
-      try {
-        const environment = server.environments[options?.ssr ? 'ssr' : 'client']
-        await transformRequest(environment, url, options)
-      } catch (e) {
-        if (
-          e?.code === ERR_OUTDATED_OPTIMIZED_DEP ||
-          e?.code === ERR_CLOSED_SERVER
-        ) {
-          // these are expected errors
-          return
-        }
-        // Unexpected error, log the issue but avoid an unhandled exception
-        server.config.logger.error(
-          buildErrorMessage(e, [`Pre-transform error: ${e.message}`], false),
-          {
-            error: e,
-            timestamp: true,
-          },
-        )
-      }
-    },
-    transformIndexHtml(url, html, originalUrl) {
-      return devHtmlTransformFn(server, url, html, originalUrl)
-    },
-    async ssrLoadModule(url, opts?: { fixStacktrace?: boolean }) {
-      warnFutureDeprecation(config, 'removeSsrLoadModule')
-      return ssrLoadModule(url, server, opts?.fixStacktrace)
-    },
-    ssrFixStacktrace(e) {
-      ssrFixStacktrace(e, server.environments.ssr.moduleGraph)
-    },
-    ssrRewriteStacktrace(stack: string) {
-      return ssrRewriteStacktrace(stack, server.environments.ssr.moduleGraph)
-    },
-    async reloadModule(module) {
-      if (serverConfig.hmr !== false && module.file) {
-        // TODO: Should we also update the node moduleGraph for backward compatibility?
-        const environmentModule = (module._clientModule ?? module._ssrModule)!
-        updateModules(
-          environments[environmentModule.environment]!,
-          module.file,
-          [environmentModule],
-          Date.now(),
-        )
-      }
-    },
+    // transformRequest(url, options) {
+    //   warnFutureDeprecation(
+    //     config,
+    //     'removeServerTransformRequest',
+    //     'server.transformRequest() is deprecated. Use environment.transformRequest() instead.',
+    //   )
+    //   const environment = server.environments[options?.ssr ? 'ssr' : 'client']
+    //   return transformRequest(environment, url, options)
+    // },
+    // async warmupRequest(url, options) {
+    //   try {
+    //     const environment = server.environments[options?.ssr ? 'ssr' : 'client']
+    //     await transformRequest(environment, url, options)
+    //   } catch (e) {
+    //     if (
+    //       e?.code === ERR_OUTDATED_OPTIMIZED_DEP ||
+    //       e?.code === ERR_CLOSED_SERVER
+    //     ) {
+    //       // these are expected errors
+    //       return
+    //     }
+    //     // Unexpected error, log the issue but avoid an unhandled exception
+    //     server.config.logger.error(
+    //       buildErrorMessage(e, [`Pre-transform error: ${e.message}`], false),
+    //       {
+    //         error: e,
+    //         timestamp: true,
+    //       },
+    //     )
+    //   }
+    // },
+    // transformIndexHtml(url, html, originalUrl) {
+    //   return devHtmlTransformFn(server, url, html, originalUrl)
+    // },
+    // async ssrLoadModule(url, opts?: { fixStacktrace?: boolean }) {
+    //   warnFutureDeprecation(config, 'removeSsrLoadModule')
+    //   return ssrLoadModule(url, server, opts?.fixStacktrace)
+    // },
+    // ssrFixStacktrace(e) {
+    //   ssrFixStacktrace(e, server.environments.ssr.moduleGraph)
+    // },
+    // ssrRewriteStacktrace(stack: string) {
+    //   return ssrRewriteStacktrace(stack, server.environments.ssr.moduleGraph)
+    // },
+    // async reloadModule(module) {
+    //   if (serverConfig.hmr !== false && module.file) {
+    //     // TODO: Should we also update the node moduleGraph for backward compatibility?
+    //     const environmentModule = (module._clientModule ?? module._ssrModule)!
+    //     updateModules(
+    //       environments[environmentModule.environment]!,
+    //       module.file,
+    //       [environmentModule],
+    //       Date.now(),
+    //     )
+    //   }
+    // },
     async listen(port?: number, isRestart?: boolean) {
       await startServer(server, port)
       if (httpServer) {
@@ -726,6 +718,7 @@ export async function _createServer(
     bindCLIShortcuts(options) {
       bindCLIShortcuts(server, options)
     },
+    // TODO(underfin): server restart need to update the rolldown runtime ws url
     async restart(forceOptimize?: boolean) {
       if (!server._restartPromise) {
         server._forceOptimizeOnRestart = !!forceOptimize
@@ -776,67 +769,69 @@ export async function _createServer(
     setupSIGTERMListener(closeServerAndExit)
   }
 
-  const onHMRUpdate = async (
-    type: 'create' | 'delete' | 'update',
-    file: string,
-  ) => {
-    if (serverConfig.hmr !== false) {
-      await handleHMRUpdate(type, file, server)
-    }
-  }
+  // const onHMRUpdate = async (
+  //   type: 'create' | 'delete' | 'update',
+  //   file: string,
+  // ) => {
+  //   if (serverConfig.hmr !== false) {
+  //     await handleHMRUpdate(type, file, server)
+  //   }
+  // }
 
-  const onFileAddUnlink = async (file: string, isUnlink: boolean) => {
-    file = normalizePath(file)
-    reloadOnTsconfigChange(server, file)
+  // const onFileAddUnlink = async (file: string, isUnlink: boolean) => {
+    // file = normalizePath(file)
+    // reloadOnTsconfigChange(server, file)
 
-    await pluginContainer.watchChange(file, {
-      event: isUnlink ? 'delete' : 'create',
-    })
+    // await pluginContainer.watchChange(file, {
+    //   event: isUnlink ? 'delete' : 'create',
+    // })
 
-    if (publicDir && publicFiles) {
-      if (file.startsWith(publicDir)) {
-        const path = file.slice(publicDir.length)
-        publicFiles[isUnlink ? 'delete' : 'add'](path)
-        if (!isUnlink) {
-          const clientModuleGraph = server.environments.client.moduleGraph
-          const moduleWithSamePath =
-            await clientModuleGraph.getModuleByUrl(path)
-          const etag = moduleWithSamePath?.transformResult?.etag
-          if (etag) {
-            // The public file should win on the next request over a module with the
-            // same path. Prevent the transform etag fast path from serving the module
-            clientModuleGraph.etagToModuleMap.delete(etag)
-          }
-        }
-      }
-    }
-    if (isUnlink) {
-      // invalidate module graph cache on file change
-      for (const environment of Object.values(server.environments)) {
-        environment.moduleGraph.onFileDelete(file)
-      }
-    }
-    await onHMRUpdate(isUnlink ? 'delete' : 'create', file)
-  }
+    // if (publicDir && publicFiles) {
+    //   if (file.startsWith(publicDir)) {
+    //     const path = file.slice(publicDir.length)
+    //     publicFiles[isUnlink ? 'delete' : 'add'](path)
+    //     if (!isUnlink) {
+    //       const clientModuleGraph = server.environments.client.moduleGraph
+    //       const moduleWithSamePath =
+    //         await clientModuleGraph.getModuleByUrl(path)
+    //       const etag = moduleWithSamePath?.transformResult?.etag
+    //       if (etag) {
+    //         // The public file should win on the next request over a module with the
+    //         // same path. Prevent the transform etag fast path from serving the module
+    //         clientModuleGraph.etagToModuleMap.delete(etag)
+    //       }
+    //     }
+    //   }
+    // }
+    // if (isUnlink) {
+    //   // invalidate module graph cache on file change
+    //   for (const environment of Object.values(server.environments)) {
+    //     environment.moduleGraph.onFileDelete(file)
+    //   }
+    // }
+    // await onHMRUpdate(isUnlink ? 'delete' : 'create', file)
+  // }
 
-  watcher.on('change', async (file) => {
-    file = normalizePath(file)
-    reloadOnTsconfigChange(server, file)
+  // watcher.on('change', async (file) => {
+    // file = normalizePath(file)
+    // TODO(underfin): handle ts config.json change
+    // reloadOnTsconfigChange(server, file)
 
-    await pluginContainer.watchChange(file, { event: 'update' })
+    // TODO(underfin): watchChange hooks how to migrate
+    // await pluginContainer.watchChange(file, { event: 'update' })
     // invalidate module graph cache on file change
-    for (const environment of Object.values(server.environments)) {
-      environment.moduleGraph.onFileChange(file)
-    }
-    await onHMRUpdate('update', file)
-  })
+    // for (const environment of Object.values(server.environments)) {
+    //   environment.moduleGraph.onFileChange(file)
+    // }
+    // await onHMRUpdate('update', file)
+  // })
 
-  watcher.on('add', (file) => {
-    onFileAddUnlink(file, false)
-  })
-  watcher.on('unlink', (file) => {
-    onFileAddUnlink(file, true)
-  })
+  // watcher.on('add', (file) => {
+  //   onFileAddUnlink(file, false)
+  // })
+  // watcher.on('unlink', (file) => {
+  //   onFileAddUnlink(file, true)
+  // })
 
   if (!middlewareMode && httpServer) {
     httpServer.once('listening', () => {
@@ -902,6 +897,7 @@ export async function _createServer(
     }
   })
 
+  // TODO(underfin): public dir also should be served to dist
   // serve static files under /public
   // this applies before the transform middleware so that these files are served
   // as-is without transforms.
@@ -910,11 +906,23 @@ export async function _createServer(
   }
 
   // main transform middleware
-  middlewares.use(transformMiddleware(server))
+  // middlewares.use(transformMiddleware(server))
 
   // serve static files
-  middlewares.use(serveRawFsMiddleware(server))
-  middlewares.use(serveStaticMiddleware(server))
+  // middlewares.use(serveRawFsMiddleware(server))
+  // middlewares.use(serveStaticMiddleware(server))
+
+  // serve memory output dist files
+  middlewares.use((req, res, next) => {
+    const cleanedUrl = cleanUrl(req.url!)
+    const file = server.memoryFiles[cleanedUrl]
+    if (
+      file
+    ) {
+      return res.end(file)
+    }
+    next()
+  });
 
   // html fallback
   if (config.appType === 'spa' || config.appType === 'mpa') {
@@ -928,7 +936,7 @@ export async function _createServer(
 
   if (config.appType === 'spa' || config.appType === 'mpa') {
     // transform index.html
-    middlewares.use(indexHtmlMiddleware(root, server))
+    // middlewares.use(indexHtmlMiddleware(root, server))
 
     // handle 404s
     middlewares.use(notFoundMiddleware())
@@ -950,7 +958,7 @@ export async function _createServer(
       // For backward compatibility, we call buildStart for the client
       // environment when initing the server. For other environments
       // buildStart will be called when the first request is transformed
-      await environments.client.pluginContainer.buildStart()
+      // await environments.client.pluginContainer.buildStart()
 
       // ensure ws server started
       if (onListen || options.listen) {
@@ -1012,6 +1020,7 @@ async function startServer(
     logger: server.config.logger,
   })
   server._currentServerPort = serverPort
+  server._currentServerHost = hostname.host
 }
 
 export function createServerCloseFn(

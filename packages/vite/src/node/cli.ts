@@ -176,7 +176,8 @@ cli
     '--force',
     `[boolean] force the optimizer to ignore the cache and re-bundle`,
   )
-  .action(async (root: string, options: ServerOptions & GlobalCLIOptions) => {
+  // TODO(underfin): Consider how to merge the build option into dev command.
+  .action(async (root: string, options: BuildEnvironmentOptions & BuilderCLIOptions & ServerOptions & GlobalCLIOptions) => {
     filterDuplicateOptions(options)
     // output structure is preserved even after bundling so require()
     // is ok here
@@ -197,6 +198,24 @@ cli
       if (!server.httpServer) {
         throw new Error('HTTP server not available')
       }
+
+      const { createBuilder } = await import('./build')
+
+      const buildOptions: BuildEnvironmentOptions = cleanBuilderCLIOptions(options)
+
+      const inlineConfig: InlineConfig = {
+        root,
+        base: options.base,
+        mode: options.mode,
+        configFile: options.config,
+        configLoader: options.configLoader,
+        logLevel: options.logLevel,
+        clearScreen: options.clearScreen,
+        build: buildOptions,
+        ...(options.app ? { builder: {} } : {}),
+      }
+      const builder = await createBuilder(inlineConfig, null, 'serve')
+      await builder.buildApp(server)
 
       await server.listen()
 
@@ -322,7 +341,7 @@ cli
           build: buildOptions,
           ...(options.app ? { builder: {} } : {}),
         }
-        const builder = await createBuilder(inlineConfig, null)
+        const builder = await createBuilder(inlineConfig, null, 'build')
         await builder.buildApp()
       } catch (e) {
         createLogger(options.logLevel).error(

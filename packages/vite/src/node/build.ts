@@ -89,6 +89,7 @@ import {
 import type { Plugin } from './plugin'
 import type { RollupPluginHooks } from './typeUtils'
 import { buildOxcPlugin } from './plugins/oxc'
+import type { ViteDevServer } from './server'
 
 export interface BuildEnvironmentOptions {
   /**
@@ -555,20 +556,21 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
 export async function build(
   inlineConfig: InlineConfig = {},
 ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
-  const builder = await createBuilder(inlineConfig, true)
+  const builder = await createBuilder(inlineConfig, true, 'build')
   const environment = Object.values(builder.environments)[0]
   if (!environment) throw new Error('No environment found')
   return builder.build(environment)
 }
 
 function resolveConfigToBuild(
+  command: 'build' | 'serve',
   inlineConfig: InlineConfig = {},
   patchConfig?: (config: ResolvedConfig) => void,
   patchPlugins?: (resolvedPlugins: Plugin[]) => void,
 ): Promise<ResolvedConfig> {
   return resolveConfig(
     inlineConfig,
-    'build',
+    command,
     'production',
     'production',
     false,
@@ -582,6 +584,7 @@ function resolveConfigToBuild(
  **/
 async function buildEnvironment(
   environment: BuildEnvironment,
+  server?: ViteDevServer
 ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
   const { root, packageCache } = environment.config
   const options = environment.config.build
@@ -667,6 +670,12 @@ async function buildEnvironment(
       ...options.rollupOptions.moduleTypes,
       '.css': 'js',
     },
+    experimental: {
+      hmr: server ? {
+        host: server._currentServerHost!,
+        port: server._currentServerPort!,
+      } : false,
+    }
   }
 
   /**
@@ -902,6 +911,29 @@ async function buildEnvironment(
     logger.info(
       `${colors.green(`✓ built in ${displayTime(Date.now() - startTime)}`)}`,
     )
+
+    if (server) {
+      for(const output of res) {
+        for (const outputFile of output.output) {
+          server.memoryFiles[outputFile.fileName] = outputFile.type === 'chunk' ? outputFile.code : outputFile.source;
+        }
+      }
+      server.watcher.on('change', async (file) => {
+        const patch = await bundle!.generateHmrPatch([file]);
+        if (patch) {
+          const url = `${Date.now()}.js`;
+          server.memoryFiles[url] = patch;
+          // TODO(underfin): fix ws msg typing
+          // @ts-expect-error
+          server.ws.send({
+            type: 'update',
+            url
+          })
+        }
+      })
+      // server.watcher = watcher
+    }
+
     return Array.isArray(outputs) ? res : res[0]
   } catch (e) {
     enhanceRollupError(e)
@@ -1628,9 +1660,10 @@ export class BuildEnvironment extends BaseEnvironment {
 export interface ViteBuilder {
   environments: Record<string, BuildEnvironment>
   config: ResolvedConfig
-  buildApp(): Promise<void>
+  buildApp(server?: ViteDevServer): Promise<void>
   build(
     environment: BuildEnvironment,
+    server?: ViteDevServer
   ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher>
 }
 
@@ -1649,12 +1682,12 @@ export interface BuilderOptions {
    * @experimental
    */
   sharedPlugins?: boolean
-  buildApp?: (builder: ViteBuilder) => Promise<void>
+  buildApp?: (builder: ViteBuilder, server?: ViteDevServer) => Promise<void>
 }
 
-async function defaultBuildApp(builder: ViteBuilder): Promise<void> {
+async function defaultBuildApp(builder: ViteBuilder, server?: ViteDevServer): Promise<void> {
   for (const environment of Object.values(builder.environments)) {
-    await builder.build(environment)
+    await builder.build(environment, server)
   }
 }
 
@@ -1683,6 +1716,7 @@ export type ResolvedBuilderOptions = Required<BuilderOptions>
 export async function createBuilder(
   inlineConfig: InlineConfig = {},
   useLegacyBuilder: null | boolean = false,
+  command: 'build' | 'serve',
 ): Promise<ViteBuilder> {
   const patchConfig = (resolved: ResolvedConfig) => {
     if (!(useLegacyBuilder ?? !resolved.builder)) return
@@ -1696,7 +1730,7 @@ export async function createBuilder(
       ...resolved.environments[environmentName].build,
     }
   }
-  const config = await resolveConfigToBuild(inlineConfig, patchConfig)
+  const config = await resolveConfigToBuild(command, inlineConfig, patchConfig)
   useLegacyBuilder ??= !config.builder
   const configBuilder = config.builder ?? resolveBuilderOptions({})!
 
@@ -1705,11 +1739,11 @@ export async function createBuilder(
   const builder: ViteBuilder = {
     environments,
     config,
-    async buildApp() {
-      return configBuilder.buildApp(builder)
+    async buildApp(server?: ViteDevServer) {
+      return configBuilder.buildApp(builder, server)
     },
-    async build(environment: BuildEnvironment) {
-      return buildEnvironment(environment)
+    async build(environment: BuildEnvironment, server?: ViteDevServer) {
+      return buildEnvironment(environment, server)
     },
   }
 
@@ -1759,6 +1793,7 @@ export async function createBuilder(
           }
         }
         environmentConfig = await resolveConfigToBuild(
+          command,
           inlineConfig,
           patchConfig,
           patchPlugins,
