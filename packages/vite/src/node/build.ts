@@ -585,7 +585,7 @@ async function buildEnvironment(
   environment: BuildEnvironment,
   server?: ViteDevServer
 ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
-  const { root, packageCache } = environment.config
+  const { root, packageCache, mode } = environment.config
   const options = environment.config.build
   const libOptions = options.lib
   const { logger } = environment
@@ -818,11 +818,12 @@ async function buildEnvironment(
           output.format === 'iife' ||
           (isSsrTargetWebworkerEnvironment &&
             (typeof input === 'string' || Object.keys(input).length === 1)),
-        minify:
+        minify: mode === 'production' ?
           options.minify === 'oxc'
             ? true
             : options.minify === false
               ? 'dce-only'
+              : false
               : false,
         ...output,
       }
