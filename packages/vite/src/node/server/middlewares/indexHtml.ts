@@ -437,6 +437,7 @@ import { cleanUrl,
 //   }
 // }
 
+// TODO(underfin): it only used for preview
 export function indexHtmlMiddleware(
   root: string,
   server: ViteDevServer | PreviewServer,
