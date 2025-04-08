@@ -571,8 +571,8 @@ function resolveConfigToBuild(
   return resolveConfig(
     inlineConfig,
     command,
-    'production',
-    'production',
+    command === 'serve' ? 'development' : 'production',
+    command === 'serve' ? 'development' : 'production',
     false,
     patchConfig,
     patchPlugins,
@@ -671,10 +671,11 @@ async function buildEnvironment(
       '.css': 'js',
     },
     experimental: {
-      hmr: server ? {
-        host: server._currentServerHost!,
-        port: server._currentServerPort!,
-      } : false,
+      hmr: true
+      // hmr: server ? {
+      //   host: server._currentServerHost!,
+      //   port: server._currentServerPort!,
+      // } : false,
     }
   }
 
