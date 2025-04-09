@@ -906,21 +906,41 @@ async function buildEnvironment(
       prepareOutDir(resolvedOutDirs, emptyOutDir, environment)
     }
 
-    const res: RolldownOutput[] = []
-    for (const output of normalizedOutputs) {
-      res.push(await bundle[options.write ? 'write' : 'generate'](output))
-    }
+    const res = await build()
+
     logger.info(
       `${colors.green(`✓ built in ${displayTime(Date.now() - startTime)}`)}`,
     )
 
-    if (server) {
-      for(const output of res) {
-        for (const outputFile of output.output) {
-          server.memoryFiles[outputFile.fileName] = outputFile.type === 'chunk' ? outputFile.code : outputFile.source;
+    async function build() {
+      const res: RolldownOutput[] = []
+      for (const output of normalizedOutputs) {
+        // TODO(underfin): using the generate at development build could be improve performance.
+        res.push(await bundle![options.write ? 'write' : 'generate'](output))
+      }
+      
+      if (server) {
+        // watching the files
+        for (const file of bundle!.watchFiles) {
+          if (path.isAbsolute(file) && fs.existsSync(file)) {
+            server.watcher.add(file)
+          }
+        }
+
+        // Write the output files to memory
+        for(const output of res) {
+          for (const outputFile of output.output) {
+            server.memoryFiles[outputFile.fileName] = outputFile.type === 'chunk' ? outputFile.code : outputFile.source;
+          }
         }
       }
+      return res
+    }
+
+   
+    if (server) {
       server.watcher.on('change', async (file) => {
+        const startTime = Date.now()
         const patch = await bundle!.generateHmrPatch([file]);
         if (patch) {
           const url = `${Date.now()}.js`;
@@ -930,10 +950,14 @@ async function buildEnvironment(
           server.ws.send({
             type: 'update',
             url
-          })
+          });
+          logger.info(
+            `${colors.green(`✓ Found ${path.relative(root, file)} changed, rebuilt in ${displayTime(Date.now() - startTime)}`)}`,
+          )
+
+          await build();
         }
       })
-      // server.watcher = watcher
     }
 
     return Array.isArray(outputs) ? res : res[0]
@@ -948,7 +972,8 @@ async function buildEnvironment(
     }
     throw e
   } finally {
-    if (bundle) await bundle.close()
+    // close the bundle will make the rolldown hmr invalid, so dev build need to disable it.
+    if (bundle && !server) await bundle.close()
   }
 }
 
