@@ -250,7 +250,11 @@ export async function startDefaultServe(): Promise<void> {
   if (!isBuild) {
     process.env.VITE_INLINE = 'inline-serve'
     const config = await loadConfig({ command: 'serve', mode: 'development' })
-    viteServer = server = await (await createServer(config)).listen()
+
+    viteServer = server = await createServer(config) 
+    const builder = await createBuilder(config, null, 'serve')
+    await builder.buildApp(server)
+    await server.listen()
     viteTestUrl = server.resolvedUrls.local[0]
     if (server.config.base === '/') {
       viteTestUrl = viteTestUrl.replace(/\/$/, '')
@@ -272,7 +276,7 @@ export async function startDefaultServe(): Promise<void> {
       },
     )
     if (buildConfig.builder) {
-      const builder = await createBuilder(buildConfig)
+      const builder = await createBuilder(buildConfig, null, 'build')
       await builder.buildApp()
     } else {
       /* const rollupOutput = */ await build(buildConfig)
