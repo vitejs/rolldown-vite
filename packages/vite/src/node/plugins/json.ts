@@ -45,10 +45,10 @@ export function jsonPlugin(
     name: 'vite:json',
 
     transform: {
+      filter: {
+        id: { include: jsonExtRE, exclude: SPECIAL_QUERY_RE },
+      },
       handler(json, id) {
-        if (!jsonExtRE.test(id)) return null
-        if (SPECIAL_QUERY_RE.test(id)) return null
-
         if (inlineRE.test(id) || noInlineRE.test(id)) {
           this.warn(
             `\n` +
@@ -81,6 +81,7 @@ export function jsonPlugin(
               return {
                 code,
                 map: { mappings: '' },
+                moduleType: 'js',
               }
             }
 
@@ -99,6 +100,7 @@ export function jsonPlugin(
               return {
                 code: `export default /* #__PURE__ */ JSON.parse(${JSON.stringify(json)})`,
                 map: { mappings: '' },
+                moduleType: 'js',
               }
             }
           }
@@ -109,6 +111,7 @@ export function jsonPlugin(
               namedExports: options.namedExports,
             }),
             map: { mappings: '' },
+            moduleType: 'js',
           }
         } catch (e) {
           const position = extractJsonErrorPosition(e.message, json.length)

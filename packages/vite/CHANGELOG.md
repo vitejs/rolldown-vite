@@ -1,12 +1,66 @@
-## 6.3.0-beta.1 (2025-04-03)
+## 6.3.0-beta.6 (2025-04-10)
 
-* fix: align plugin hook filter behavior with pluginutils (#19736) ([0bbdd2c](https://github.com/vitejs/vite/commit/0bbdd2c1338624fa0e76c81648989f8f9a5b36d7)), closes [#19736](https://github.com/vitejs/vite/issues/19736)
-* fix: fs check in transform middleware (#19761) ([5967313](https://github.com/vitejs/vite/commit/59673137c45ac2bcfad1170d954347c1a17ab949)), closes [#19761](https://github.com/vitejs/vite/issues/19761)
-* fix(hmr): throw non-standard error info causes logical error (#19776) ([6b648c7](https://github.com/vitejs/vite/commit/6b648c73ae33a57f648af87204a325335afffca8)), closes [#19776](https://github.com/vitejs/vite/issues/19776)
-* perf: only bundle node version `debug` (#19715) ([e435aae](https://github.com/vitejs/vite/commit/e435aae22ffda441a24332cd79226bfca55326aa)), closes [#19715](https://github.com/vitejs/vite/issues/19715)
-* feat(env): add false option for envDir to disable env loading (#19503) ([bca89e1](https://github.com/vitejs/vite/commit/bca89e153e58edd2b506807958557a21edacfaf8)), closes [#19503](https://github.com/vitejs/vite/issues/19503)
-* feat(types): make CustomPluginOptionsVite backward compatible (#19760) ([821edf1](https://github.com/vitejs/vite/commit/821edf196f281b90af0742647a3feaf3226be439)), closes [#19760](https://github.com/vitejs/vite/issues/19760)
-* chore: fix some typos in comment (#19728) ([35ee848](https://github.com/vitejs/vite/commit/35ee84808af3a5443019e36cba351af859113695)), closes [#19728](https://github.com/vitejs/vite/issues/19728)
+* feat: update rolldown ([e28b1c0](https://github.com/vitejs/rolldown-vite/commit/e28b1c0))
+* feat: update rolldown ([c7e3e04](https://github.com/vitejs/rolldown-vite/commit/c7e3e04))
+* perf: define viteMetadata instead of assign (#106) ([7912459](https://github.com/vitejs/rolldown-vite/commit/7912459)), closes [#106](https://github.com/vitejs/rolldown-vite/issues/106)
+* perf(css): avoid constructing `renderedModules` (#19775) ([59d0b35](https://github.com/vitejs/rolldown-vite/commit/59d0b35)), closes [#19775](https://github.com/vitejs/rolldown-vite/issues/19775)
+* fix: correct the behavior when multiple transform filter options are specified (#19818) ([7200dee](https://github.com/vitejs/rolldown-vite/commit/7200dee)), closes [#19818](https://github.com/vitejs/rolldown-vite/issues/19818)
+* fix: reject requests with `#` in request-target (#19830) ([175a839](https://github.com/vitejs/rolldown-vite/commit/175a839)), closes [#19830](https://github.com/vitejs/rolldown-vite/issues/19830)
+* fix: unbundle `fdir` to fix `commonjsOptions.dynamicRequireTargets` (#19791) ([71227be](https://github.com/vitejs/rolldown-vite/commit/71227be)), closes [#19791](https://github.com/vitejs/rolldown-vite/issues/19791)
+* fix(css): remove empty chunk imports correctly when chunk file name contained special characters (#1 ([b125172](https://github.com/vitejs/rolldown-vite/commit/b125172)), closes [#19814](https://github.com/vitejs/rolldown-vite/issues/19814)
+* fix(dev): make query selector regexes more inclusive (fix #19213) (#19767) ([f530a72](https://github.com/vitejs/rolldown-vite/commit/f530a72)), closes [#19213](https://github.com/vitejs/rolldown-vite/issues/19213) [#19767](https://github.com/vitejs/rolldown-vite/issues/19767)
+* fix(module-runner): allow already resolved id as entry (#19768) ([e2e11b1](https://github.com/vitejs/rolldown-vite/commit/e2e11b1)), closes [#19768](https://github.com/vitejs/rolldown-vite/issues/19768)
+* fix(types): remove the `keepProcessEnv` from the `DefaultEnvironmentOptions` type (#19796) ([36935b5](https://github.com/vitejs/rolldown-vite/commit/36935b5)), closes [#19796](https://github.com/vitejs/rolldown-vite/issues/19796)
+* chore: bump rolldown (#105) ([8646e4e](https://github.com/vitejs/rolldown-vite/commit/8646e4e)), closes [#105](https://github.com/vitejs/rolldown-vite/issues/105)
+* test: tweak generateCodeFrame test (#19812) ([8fe3538](https://github.com/vitejs/rolldown-vite/commit/8fe3538)), closes [#19812](https://github.com/vitejs/rolldown-vite/issues/19812)
+* docs(vite): fix description of `transformIndexHtml` hook (#19799) ([a0e1a04](https://github.com/vitejs/rolldown-vite/commit/a0e1a04)), closes [#19799](https://github.com/vitejs/rolldown-vite/issues/19799)
+
+
+
+## 6.3.0-beta.5 (2025-04-03)
+
+* chore: cleanup changelog ([b17bade](https://github.com/vitejs/rolldown-vite/commit/b17bade))
+* chore: remove unused eslint directive (#19781) ([cb4f5b4](https://github.com/vitejs/rolldown-vite/commit/cb4f5b4)), closes [#19781](https://github.com/vitejs/rolldown-vite/issues/19781)
+* feat(oxc)!: jsxRefresh filter (#101) ([7c6faa6](https://github.com/vitejs/rolldown-vite/commit/7c6faa6)), closes [#101](https://github.com/vitejs/rolldown-vite/issues/101)
+* fix: fs check with svg and relative paths (#19782) ([62d7e81](https://github.com/vitejs/rolldown-vite/commit/62d7e81)), closes [#19782](https://github.com/vitejs/rolldown-vite/issues/19782)
+* fix: keep entry asset files imported by other files (#19779) ([2fa1495](https://github.com/vitejs/rolldown-vite/commit/2fa1495)), closes [#19779](https://github.com/vitejs/rolldown-vite/issues/19779)
+* fix(hmr): throw non-standard error info causes logical error (#19776) ([6b648c7](https://github.com/vitejs/rolldown-vite/commit/6b648c7)), closes [#19776](https://github.com/vitejs/rolldown-vite/issues/19776)
+* release: v6.3.0-beta.1 ([a299106](https://github.com/vitejs/rolldown-vite/commit/a299106))
+
+
+
+## 6.3.0-beta.4 (2025-04-02)
+
+* fix: accept worker iife format (#94) ([df12968](https://github.com/vitejs/rolldown-vite/commit/df12968)), closes [#94](https://github.com/vitejs/rolldown-vite/issues/94)
+* fix: align plugin hook filter behavior with pluginutils (#19736) ([0bbdd2c](https://github.com/vitejs/rolldown-vite/commit/0bbdd2c)), closes [#19736](https://github.com/vitejs/rolldown-vite/issues/19736)
+* fix: fs check in transform middleware (#19761) ([5967313](https://github.com/vitejs/rolldown-vite/commit/5967313)), closes [#19761](https://github.com/vitejs/rolldown-vite/issues/19761)
+* fix: make `this.environment` available in outputOptions hook ([efe2728](https://github.com/vitejs/rolldown-vite/commit/efe2728))
+* fix: plugin hook filter ([8dd6f69](https://github.com/vitejs/rolldown-vite/commit/8dd6f69))
+* fix(worker): suppress export related warnings in worker build (#95) ([5a6a776](https://github.com/vitejs/rolldown-vite/commit/5a6a776)), closes [#95](https://github.com/vitejs/rolldown-vite/issues/95)
+* feat: update rolldown ([96d9065](https://github.com/vitejs/rolldown-vite/commit/96d9065))
+* feat(env): add false option for envDir to disable env loading (#19503) ([bca89e1](https://github.com/vitejs/rolldown-vite/commit/bca89e1)), closes [#19503](https://github.com/vitejs/rolldown-vite/issues/19503)
+* feat(types): make CustomPluginOptionsVite backward compatible (#19760) ([821edf1](https://github.com/vitejs/rolldown-vite/commit/821edf1)), closes [#19760](https://github.com/vitejs/rolldown-vite/issues/19760)
+* perf: only bundle node version `debug` (#19715) ([e435aae](https://github.com/vitejs/rolldown-vite/commit/e435aae)), closes [#19715](https://github.com/vitejs/rolldown-vite/issues/19715)
+* chore: fix some typos in comment (#19728) ([35ee848](https://github.com/vitejs/rolldown-vite/commit/35ee848)), closes [#19728](https://github.com/vitejs/rolldown-vite/issues/19728)
+
+
+
+## 6.3.0-beta.3 (2025-03-27)
+
+* fix: use exact regexp filter for virtual module (#89) ([fbbfca4](https://github.com/vitejs/rolldown-vite/commit/fbbfca4)), closes [#89](https://github.com/vitejs/rolldown-vite/issues/89)
+* fix(optimizer): derive `resolve.symlinks` option properly (#91) ([0fc1af8](https://github.com/vitejs/rolldown-vite/commit/0fc1af8)), closes [#91](https://github.com/vitejs/rolldown-vite/issues/91)
+* fix(transform): merge tsconfig jsx options with oxc jsx options correctly (#90) ([1851a57](https://github.com/vitejs/rolldown-vite/commit/1851a57)), closes [#90](https://github.com/vitejs/rolldown-vite/issues/90)
+
+
+
+## 6.3.0-beta.2 (2025-03-26)
+
+* chore: fix publish workflow ([fbaeca3](https://github.com/vitejs/rolldown-vite/commit/fbaeca3))
+
+
+
+## 6.3.0-beta.1 (2025-03-26)
+
 
 
 
