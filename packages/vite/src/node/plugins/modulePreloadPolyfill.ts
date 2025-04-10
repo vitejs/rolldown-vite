@@ -22,7 +22,7 @@ export function modulePreloadPolyfillPlugin(config: ResolvedConfig): Plugin {
       handler(_id) {
         // `isModernFlag` is only available during build since it is resolved by `vite:build-import-analysis`
         if (
-          config.command !== 'build' ||
+          // config.command !== 'build' ||
           this.environment.config.consumer !== 'client'
         ) {
           return ''
