@@ -85,7 +85,7 @@ async function ssrTransformScript(
   url: string,
   originalCode: string,
 ): Promise<TransformResult | null> {
-  if (!process.env['DISABLE_OXC_MODULE_TRANSFORM']) {
+  if (!process.env['ROLLDOWN_VITE_OLD_MODULE_RUNNER_TRANSFORM']) {
     const result = moduleRunnerTransform('test.js', code, { sourcemap: true })
     if (result.errors.length) {
       // eslint-disable-next-line no-console
