@@ -18,7 +18,7 @@ import { extract_names as extractNames } from 'periscopic'
 import { walk as eswalk } from 'estree-walker'
 import type { RawSourceMap } from '@ampproject/remapping'
 import { parseAstAsync as rolldownParseAstAsync } from 'rolldown/parseAst'
-import { moduleRunnerTransform } from 'oxc-transform'
+import { moduleRunnerTransform } from 'rolldown/experimental'
 import type { TransformResult } from '../server/transformRequest'
 import {
   combineSourcemaps,
