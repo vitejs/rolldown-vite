@@ -13,11 +13,11 @@ import type {
 import { mergeConfig } from '../utils'
 import { fetchModule } from '../ssr/fetchModule'
 import type { DepsOptimizer } from '../optimizer'
-import { isDepOptimizationDisabled } from '../optimizer'
-import {
-  createDepsOptimizer,
-  createExplicitDepsOptimizer,
-} from '../optimizer/optimizer'
+// import { isDepOptimizationDisabled } from '../optimizer'
+// import {
+//   createDepsOptimizer,
+//   createExplicitDepsOptimizer,
+// } from '../optimizer/optimizer'
 import { resolveEnvironmentPlugins } from '../plugin'
 import { ERR_OUTDATED_OPTIMIZED_DEP } from '../../shared/constants'
 import { promiseWithResolvers } from '../../shared/utils'

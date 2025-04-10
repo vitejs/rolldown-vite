@@ -1,4 +1,5 @@
 import type { Connect } from 'dep-types/connect'
+import * as mrmime from 'mrmime'
 import { cleanUrl } from '../../../shared/utils'
 import type { ViteDevServer } from '..'
 
@@ -14,7 +15,13 @@ export function memoryFilesMiddleware(server: ViteDevServer, handleHtml: boolean
       ) {
         if (cleanedUrl.endsWith('.js')) {
           res.setHeader('Content-Type', 'text/javascript')
+        } else {
+          const mime = mrmime.lookup(cleanedUrl)
+          if (mime) {
+            res.setHeader('Content-Type', mime)
+          }
         }
+       
         const headers = server.config.server.headers
         if (headers) {
           for (const name in headers) {
