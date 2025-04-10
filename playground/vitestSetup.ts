@@ -261,7 +261,7 @@ export async function startDefaultServe(): Promise<void> {
       },
     )
     if (buildConfig.builder) {
-      const builder = await createBuilder(buildConfig)
+      const builder = await createBuilder(buildConfig, null, 'build')
       await builder.buildApp()
     } else {
       const rollupOutput = await build(buildConfig)
