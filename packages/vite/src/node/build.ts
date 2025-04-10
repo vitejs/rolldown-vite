@@ -86,6 +86,7 @@ import {
 import type { MinimalPluginContext, Plugin, PluginContext } from './plugin'
 import type { RollupPluginHooks } from './typeUtils'
 import { buildOxcPlugin } from './plugins/oxc'
+import type { ViteDevServer } from './server'
 
 export interface BuildEnvironmentOptions {
   /**
@@ -539,22 +540,23 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
 export async function build(
   inlineConfig: InlineConfig = {},
 ): Promise<RolldownOutput | RolldownOutput[] /* | RollupWatcher */> {
-  const builder = await createBuilder(inlineConfig, true)
+  const builder = await createBuilder(inlineConfig, true, 'build')
   const environment = Object.values(builder.environments)[0]
   if (!environment) throw new Error('No environment found')
   return builder.build(environment)
 }
 
 function resolveConfigToBuild(
+  command: 'build' | 'serve',
   inlineConfig: InlineConfig = {},
   patchConfig?: (config: ResolvedConfig) => void,
   patchPlugins?: (resolvedPlugins: Plugin[]) => void,
 ): Promise<ResolvedConfig> {
   return resolveConfig(
     inlineConfig,
-    'build',
-    'production',
-    'production',
+    command,
+    command === 'serve' ? 'development' : 'production',
+    command === 'serve' ? 'development' : 'production',
     false,
     patchConfig,
     patchPlugins,
@@ -566,8 +568,9 @@ function resolveConfigToBuild(
  **/
 async function buildEnvironment(
   environment: BuildEnvironment,
+  server?: ViteDevServer
 ): Promise<RolldownOutput | RolldownOutput[] /* | RollupWatcher */> {
-  const { root, packageCache } = environment.config
+  const { root, packageCache, mode } = environment.config
   const options = environment.config.build
   const libOptions = options.lib
   const { logger } = environment
@@ -651,6 +654,13 @@ async function buildEnvironment(
       ...options.rollupOptions.moduleTypes,
       '.css': 'js',
     },
+    experimental: {
+      hmr: true
+      // hmr: server ? {
+      //   host: server._currentServerHost!,
+      //   port: server._currentServerPort!,
+      // } : false,
+    }
   }
 
   /**
@@ -793,11 +803,12 @@ async function buildEnvironment(
           output.format === 'iife' ||
           (isSsrTargetWebworkerEnvironment &&
             (typeof input === 'string' || Object.keys(input).length === 1)),
-        minify:
+        minify: mode === 'production' ?
           options.minify === 'oxc'
             ? true
             : options.minify === false
               ? 'dce-only'
+              : false
               : false,
         ...output,
       }
@@ -878,13 +889,60 @@ async function buildEnvironment(
       prepareOutDir(resolvedOutDirs, emptyOutDir, environment)
     }
 
-    const res: RolldownOutput[] = []
-    for (const output of normalizedOutputs) {
-      res.push(await bundle[options.write ? 'write' : 'generate'](output))
-    }
+    const res = await build()
+
     logger.info(
       `${colors.green(`✓ built in ${displayTime(Date.now() - startTime)}`)}`,
     )
+
+    async function build() {
+      const res: RolldownOutput[] = []
+      for (const output of normalizedOutputs) {
+        // TODO(underfin): using the generate at development build could be improve performance.
+        res.push(await bundle![options.write ? 'write' : 'generate'](output))
+      }
+      
+      if (server) {
+        // watching the files
+        for (const file of bundle!.watchFiles) {
+          if (path.isAbsolute(file) && fs.existsSync(file)) {
+            server.watcher.add(file)
+          }
+        }
+
+        // Write the output files to memory
+        for(const output of res) {
+          for (const outputFile of output.output) {
+            server.memoryFiles[outputFile.fileName] = outputFile.type === 'chunk' ? outputFile.code : outputFile.source;
+          }
+        }
+      }
+      return res
+    }
+
+   
+    if (server) {
+      server.watcher.on('change', async (file) => {
+        const startTime = Date.now()
+        const patch = await bundle!.generateHmrPatch([file]);
+        if (patch) {
+          const url = `${Date.now()}.js`;
+          server.memoryFiles[url] = patch;
+          // TODO(underfin): fix ws msg typing
+          // @ts-expect-error
+          server.ws.send({
+            type: 'update',
+            url
+          });
+          logger.info(
+            `${colors.green(`✓ Found ${path.relative(root, file)} changed, rebuilt in ${displayTime(Date.now() - startTime)}`)}`,
+          )
+
+          await build();
+        }
+      })
+    }
+
     return Array.isArray(outputs) ? res : res[0]
   } catch (e) {
     enhanceRollupError(e)
@@ -897,7 +955,8 @@ async function buildEnvironment(
     }
     throw e
   } finally {
-    if (bundle) await bundle.close()
+    // close the bundle will make the rolldown hmr invalid, so dev build need to disable it.
+    if (bundle && !server) await bundle.close()
   }
 }
 
@@ -1611,9 +1670,10 @@ export class BuildEnvironment extends BaseEnvironment {
 export interface ViteBuilder {
   environments: Record<string, BuildEnvironment>
   config: ResolvedConfig
-  buildApp(): Promise<void>
+  buildApp(server?: ViteDevServer): Promise<void>
   build(
     environment: BuildEnvironment,
+    server?: ViteDevServer
   ): Promise<RolldownOutput | RolldownOutput[] /* | RollupWatcher */>
 }
 
@@ -1632,12 +1692,12 @@ export interface BuilderOptions {
    * @experimental
    */
   sharedPlugins?: boolean
-  buildApp?: (builder: ViteBuilder) => Promise<void>
+  buildApp?: (builder: ViteBuilder, server?: ViteDevServer) => Promise<void>
 }
 
-async function defaultBuildApp(builder: ViteBuilder): Promise<void> {
+async function defaultBuildApp(builder: ViteBuilder, server?: ViteDevServer): Promise<void> {
   for (const environment of Object.values(builder.environments)) {
-    await builder.build(environment)
+    await builder.build(environment, server)
   }
 }
 
@@ -1666,6 +1726,7 @@ export type ResolvedBuilderOptions = Required<BuilderOptions>
 export async function createBuilder(
   inlineConfig: InlineConfig = {},
   useLegacyBuilder: null | boolean = false,
+  command: 'build' | 'serve',
 ): Promise<ViteBuilder> {
   const patchConfig = (resolved: ResolvedConfig) => {
     if (!(useLegacyBuilder ?? !resolved.builder)) return
@@ -1679,7 +1740,7 @@ export async function createBuilder(
       ...resolved.environments[environmentName].build,
     }
   }
-  const config = await resolveConfigToBuild(inlineConfig, patchConfig)
+  const config = await resolveConfigToBuild(command, inlineConfig, patchConfig)
   useLegacyBuilder ??= !config.builder
   const configBuilder = config.builder ?? resolveBuilderOptions({})!
 
@@ -1688,11 +1749,11 @@ export async function createBuilder(
   const builder: ViteBuilder = {
     environments,
     config,
-    async buildApp() {
-      return configBuilder.buildApp(builder)
+    async buildApp(server?: ViteDevServer) {
+      return configBuilder.buildApp(builder, server)
     },
-    async build(environment: BuildEnvironment) {
-      return buildEnvironment(environment)
+    async build(environment: BuildEnvironment, server?: ViteDevServer) {
+      return buildEnvironment(environment, server)
     },
   }
 
@@ -1742,6 +1803,7 @@ export async function createBuilder(
           }
         }
         environmentConfig = await resolveConfigToBuild(
+          command,
           inlineConfig,
           patchConfig,
           patchPlugins,

@@ -38,7 +38,7 @@ import type {
 } from 'lightningcss'
 import type { CustomPluginOptionsVite } from 'types/metadata'
 import type { EsbuildTransformOptions } from 'types/internal/esbuildOptions'
-import { getCodeWithSourcemap, injectSourcesContent } from '../server/sourcemap'
+// import { getCodeWithSourcemap, injectSourcesContent } from '../server/sourcemap'
 import type { EnvironmentModuleNode } from '../server/moduleGraph'
 import {
   createToImportMetaURLBasedRelativeRuntime,
@@ -48,7 +48,7 @@ import {
 } from '../build'
 import type { LibraryOptions } from '../build'
 import {
-  CLIENT_PUBLIC_PATH,
+  // CLIENT_PUBLIC_PATH,
   CSS_LANGS_RE,
   DEV_PROD_CONDITION,
   ESBUILD_MODULES_TARGET,
@@ -72,7 +72,7 @@ import {
   isDataUrl,
   isExternalUrl,
   isObject,
-  joinUrlSegments,
+  // joinUrlSegments,
   mergeWithDefaults,
   normalizePath,
   processSrcSet,
@@ -286,9 +286,9 @@ const postcssConfigCache = new WeakMap<
   PostCSSConfigResult | null | Promise<PostCSSConfigResult | null>
 >()
 
-function encodePublicUrlsInCSS(config: ResolvedConfig) {
-  return config.command === 'build'
-}
+// function encodePublicUrlsInCSS(config: ResolvedConfig) {
+//   return config.command === 'build'
+// }
 
 const cssUrlAssetRE = /__VITE_CSS_URL__([\da-f]+)__/g
 
@@ -296,7 +296,7 @@ const cssUrlAssetRE = /__VITE_CSS_URL__([\da-f]+)__/g
  * Plugin applied before user plugins
  */
 export function cssPlugin(config: ResolvedConfig): Plugin {
-  const isBuild = config.command === 'build'
+  // const isBuild = config.command === 'build'
   let moduleCache: Map<string, Record<string, string>>
 
   const idResolver = createBackCompatIdResolver(config, {
@@ -353,7 +353,7 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
 
           // *.css?url
           // in dev, it's handled by assets plugin.
-          if (isBuild) {
+          // if (isBuild) {
             id = injectQuery(removeUrlQuery(id), 'transform-only')
             return (
               `import ${JSON.stringify(id)};` +
@@ -361,7 +361,7 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
                 'hex',
               )}__"`
             )
-          }
+          // }
         }
       },
     },
@@ -391,11 +391,11 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
       const urlResolver: CssUrlResolver = async (url, importer) => {
         const decodedUrl = decodeURI(url)
         if (checkPublicFile(decodedUrl, config)) {
-          if (encodePublicUrlsInCSS(config)) {
+          // if (encodePublicUrlsInCSS(config)) {
             return [publicFileToBuiltUrl(decodedUrl, config), undefined]
-          } else {
-            return [joinUrlSegments(config.base, decodedUrl), undefined]
-          }
+          // } else {
+          //   return [joinUrlSegments(config.base, decodedUrl), undefined]
+          // }
         }
         const [id, fragment] = decodedUrl.split('#')
         let resolved = await resolveUrl(id, importer)
@@ -403,7 +403,7 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
           if (fragment) resolved += '#' + fragment
           return [await fileToUrl(this, resolved), resolved]
         }
-        if (config.command === 'build') {
+        // if (config.command === 'build') {
           const isExternal = config.build.rollupOptions.external
             ? resolveUserExternal(
                 config.build.rollupOptions.external,
@@ -419,7 +419,7 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
               `\n${decodedUrl} referenced in ${id} didn't resolve at build time, it will remain unchanged to be resolved at runtime`,
             )
           }
-        }
+        // }
         return [url, undefined]
       }
 
@@ -578,46 +578,47 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
           !inlined &&
           dataToEsm(modules, { namedExports: true, preferConst: true })
 
-        if (config.command === 'serve') {
-          const getContentWithSourcemap = async (content: string) => {
-            if (config.css.devSourcemap) {
-              const sourcemap = this.getCombinedSourcemap()
-              if (sourcemap.mappings) {
-                await injectSourcesContent(
-                  sourcemap,
-                  cleanUrl(id),
-                  config.logger,
-                )
-              }
-              return getCodeWithSourcemap('css', content, sourcemap)
-            }
-            return content
-          }
+        // TODO(underfin): css hmr
+        // if (config.command === 'serve') {
+        //   const getContentWithSourcemap = async (content: string) => {
+        //     if (config.css.devSourcemap) {
+        //       const sourcemap = this.getCombinedSourcemap()
+        //       if (sourcemap.mappings) {
+        //         await injectSourcesContent(
+        //           sourcemap,
+        //           cleanUrl(id),
+        //           config.logger,
+        //         )
+        //       }
+        //       return getCodeWithSourcemap('css', content, sourcemap)
+        //     }
+        //     return content
+        //   }
 
-          if (isDirectCSSRequest(id)) {
-            return null
-          }
-          if (inlined) {
-            return `export default ${JSON.stringify(css)}`
-          }
-          if (this.environment.config.consumer === 'server') {
-            return modulesCode || 'export {}'
-          }
+        //   if (isDirectCSSRequest(id)) {
+        //     return null
+        //   }
+        //   if (inlined) {
+        //     return `export default ${JSON.stringify(css)}`
+        //   }
+        //   if (this.environment.config.consumer === 'server') {
+        //     return modulesCode || 'export {}'
+        //   }
 
-          const cssContent = await getContentWithSourcemap(css)
-          const code = [
-            `import { updateStyle as __vite__updateStyle, removeStyle as __vite__removeStyle } from ${JSON.stringify(
-              path.posix.join(config.base, CLIENT_PUBLIC_PATH),
-            )}`,
-            `const __vite__id = ${JSON.stringify(id)}`,
-            `const __vite__css = ${JSON.stringify(cssContent)}`,
-            `__vite__updateStyle(__vite__id, __vite__css)`,
-            // css modules exports change on edit so it can't self accept
-            `${modulesCode || 'import.meta.hot.accept()'}`,
-            `import.meta.hot.prune(() => __vite__removeStyle(__vite__id))`,
-          ].join('\n')
-          return { code, map: { mappings: '' } }
-        }
+        //   const cssContent = await getContentWithSourcemap(css)
+        //   const code = [
+        //     `import { updateStyle as __vite__updateStyle, removeStyle as __vite__removeStyle } from ${JSON.stringify(
+        //       path.posix.join(config.base, CLIENT_PUBLIC_PATH),
+        //     )}`,
+        //     `const __vite__id = ${JSON.stringify(id)}`,
+        //     `const __vite__css = ${JSON.stringify(cssContent)}`,
+        //     `__vite__updateStyle(__vite__id, __vite__css)`,
+        //     // css modules exports change on edit so it can't self accept
+        //     `${modulesCode || 'import.meta.hot.accept()'}`,
+        //     `import.meta.hot.prune(() => __vite__removeStyle(__vite__id))`,
+        //   ].join('\n')
+        //   return { code, map: { mappings: '' } }
+        // }
 
         // build CSS handling ----------------------------------------------------
 
@@ -699,7 +700,7 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
         chunkCSS: string,
         cssAssetName: string,
       ) => {
-        const encodedPublicUrls = encodePublicUrlsInCSS(config)
+        const encodedPublicUrls = true
 
         const relative = config.base === './' || config.base === ''
         const cssAssetDirname =
@@ -3493,9 +3494,10 @@ async function compileLightningCSS(
           },
           minify: config.isProduction && !!config.build.cssMinify,
           sourceMap:
-            config.command === 'build'
-              ? !!config.build.sourcemap
-              : config.css.devSourcemap,
+            // config.command === 'build' ?
+               !!config.build.sourcemap,
+               // TODO(underfin): deprecate css.devSourcemap
+              // : config.css.devSourcemap,
           analyzeDependencies: true,
           cssModules: cssModuleRE.test(id)
             ? (config.css.lightningcss?.cssModules ?? true)
