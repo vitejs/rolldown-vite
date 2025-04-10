@@ -238,7 +238,7 @@ test('json', async () => {
     null,
     '/test.json',
   )
-  expect(json?.code.length).toMatchInlineSnapshot(`61`)
+  expect(json?.code.length).toMatchInlineSnapshot(`60`)
 })
 
 test('file url', async () => {
