@@ -184,14 +184,14 @@ const workerImportMetaUrlRE =
   /new\s+(?:Worker|SharedWorker).+new\s+URL.+import\.meta\.url/s
 
 export function workerImportMetaUrlPlugin(config: ResolvedConfig): Plugin {
-  const isBuild = config.command === 'build'
+  const isBuild = true
   let workerResolver: ResolveIdFn
 
   const fsResolveOptions: InternalResolveOptions = {
     ...config.resolve,
     root: config.root,
     isProduction: config.isProduction,
-    isBuild: config.command === 'build',
+    isBuild,
     packageCache: config.packageCache,
     asSrc: true,
   }
