@@ -285,7 +285,7 @@ export function webWorkerPostPlugin(): Plugin {
 }
 
 export function webWorkerPlugin(config: ResolvedConfig): Plugin {
-  const isBuild = config.command === 'build'
+  const isBuild = true
   const isWorker = config.isWorker
 
   return {
