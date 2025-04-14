@@ -229,11 +229,11 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
           // Force rollup to keep this module from being shared between other entry points if it's an entrypoint.
           // If the resulting chunk is empty, it will be removed in generateBundle.
           moduleSideEffects:
-            // config.command === 'build' && 
-            this.getModuleInfo(id)?.isEntry
-              ? 'no-treeshake'
-              : false,
-          meta: /* config.command === 'build' ? */ { 'vite:asset': true } /* : undefined */,
+            // config.command === 'build' &&
+            this.getModuleInfo(id)?.isEntry ? 'no-treeshake' : false,
+          meta: /* config.command === 'build' ? */ {
+            'vite:asset': true,
+          } /* : undefined */,
           moduleType: 'js', // NOTE: needs to be set to avoid double `export default` in `.txt`s
         }
       },
@@ -313,7 +313,7 @@ export async function fileToUrl(
   // if (environment.config.command === 'serve') {
   //   return fileToDevUrl(environment, id)
   // } else {
-    return fileToBuiltUrl(pluginContext, id)
+  return fileToBuiltUrl(pluginContext, id)
   // }
 }
 

@@ -100,7 +100,7 @@
     "overrides": {
       "vitest>vite": "npm:vite@^6.2.6",
       "vite": "workspace:rolldown-vite@*"
-    }, 
+    },
     "patchedDependencies": {
       "http-proxy@1.18.1": "patches/http-proxy@1.18.1.patch",
       "sirv@3.0.1": "patches/sirv@3.0.1.patch",
