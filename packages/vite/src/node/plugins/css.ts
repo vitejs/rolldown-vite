@@ -295,7 +295,7 @@ const cssUrlAssetRE = /__VITE_CSS_URL__([\da-f]+)__/g
  * Plugin applied before user plugins
  */
 export function cssPlugin(config: ResolvedConfig): Plugin {
-  // const isBuild = config.command === 'build'
+  const isBuild = config.mode === 'production'
   let moduleCache: Map<string, Record<string, string>>
 
   const idResolver = createBackCompatIdResolver(config, {
@@ -352,15 +352,15 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
 
           // *.css?url
           // in dev, it's handled by assets plugin.
-          // if (isBuild) {
-          id = injectQuery(removeUrlQuery(id), 'transform-only')
-          return (
-            `import ${JSON.stringify(id)};` +
-            `export default "__VITE_CSS_URL__${Buffer.from(id).toString(
-              'hex',
-            )}__"`
-          )
-          // }
+          if (isBuild) {
+            id = injectQuery(removeUrlQuery(id), 'transform-only')
+            return (
+              `import ${JSON.stringify(id)};` +
+              `export default "__VITE_CSS_URL__${Buffer.from(id).toString(
+                'hex',
+              )}__"`
+            )
+          }
         }
       },
     },
