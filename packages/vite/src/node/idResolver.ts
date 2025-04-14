@@ -66,7 +66,7 @@ export function createIdResolver(
                 {
                   root: config.root,
                   isProduction: config.isProduction,
-                  isBuild: config.command === 'build',
+                  isBuild: config.mode === 'production',
                   asSrc: true,
                   preferRelative: false,
                   tryIndex: true,
@@ -80,7 +80,7 @@ export function createIdResolver(
                 resolvePlugin({
                   root: config.root,
                   isProduction: config.isProduction,
-                  isBuild: config.command === 'build',
+                  isBuild: config.mode === 'production',
                   asSrc: true,
                   preferRelative: false,
                   tryIndex: true,
