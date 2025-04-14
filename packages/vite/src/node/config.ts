@@ -1310,7 +1310,7 @@ export async function resolveConfig(
 
   const [prePlugins, normalPlugins, postPlugins] = sortUserPlugins(rawPlugins)
 
-  const isBuild = command === 'build'
+  const isBuild = mode === 'production'
 
   // run config hooks
   const userPlugins = [...prePlugins, ...normalPlugins, ...postPlugins]
