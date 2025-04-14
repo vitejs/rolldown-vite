@@ -4,9 +4,9 @@ import path from 'node:path'
 // import MagicString from 'magic-string'
 // import type { SourceMapInput } from 'rolldown'
 import type { Connect } from 'dep-types/connect'
-// import type { 
+// import type {
 //   DefaultTreeAdapterMap,
-//   Token 
+//   Token
 // } from 'parse5'
 // import type { IndexHtmlTransformHook } from '../../plugins/html'
 // import {
@@ -27,13 +27,16 @@ import type { Connect } from 'dep-types/connect'
 //   resolveHtmlTransforms,
 //   traverseHtml,
 // } from '../../plugins/html'
-import type { PreviewServer, 
+import type {
+  PreviewServer,
   // ResolvedConfig,
-   ViteDevServer } from '../..'
+  ViteDevServer,
+} from '../..'
 import { send } from '../send'
-import { 
-  // CLIENT_PUBLIC_PATH, 
-  FS_PREFIX } from '../../constants'
+import {
+  // CLIENT_PUBLIC_PATH,
+  FS_PREFIX,
+} from '../../constants'
 import {
   // ensureWatchedFile,
   fsPathFromId,
@@ -49,8 +52,9 @@ import {
 // import { checkPublicFile } from '../../publicDir'
 // import { isCSSRequest } from '../../plugins/css'
 // import { getCodeWithSourcemap, injectSourcesContent } from '../sourcemap'
-import { cleanUrl, 
-  // unwrapId, wrapId 
+import {
+  cleanUrl,
+  // unwrapId, wrapId
 } from '../../../shared/utils'
 // import { getNodeAssetAttributes } from '../../assetSource'
 

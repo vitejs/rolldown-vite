@@ -67,16 +67,12 @@ import {
 // import {
 //   indexHtmlMiddleware,
 // } from './middlewares/indexHtml'
-import {
-  servePublicMiddleware,
-} from './middlewares/static'
+import { servePublicMiddleware } from './middlewares/static'
 import { timeMiddleware } from './middlewares/time'
 import { notFoundMiddleware } from './middlewares/notFound'
-import {  errorMiddleware } from './middlewares/error'
+import { errorMiddleware } from './middlewares/error'
 import type { HmrOptions, HotBroadcaster } from './hmr'
-import {
-  createDeprecatedHotBroadcaster,
-} from './hmr'
+import { createDeprecatedHotBroadcaster } from './hmr'
 import { openBrowser as _openBrowser } from './openBrowser'
 import { searchForPackageRoot, searchForWorkspaceRoot } from './searchRoot'
 import type { DevEnvironment } from './environment'
@@ -406,7 +402,7 @@ export interface ViteDevServer {
    * @internal
    */
   _ssrCompatModuleRunner?: ModuleRunner
- /**
+  /**
    * @internal
    */
   memoryFiles: Record<string, string | Uint8Array>
@@ -779,51 +775,51 @@ export async function _createServer(
   // }
 
   // const onFileAddUnlink = async (file: string, isUnlink: boolean) => {
-    // file = normalizePath(file)
-    // reloadOnTsconfigChange(server, file)
+  // file = normalizePath(file)
+  // reloadOnTsconfigChange(server, file)
 
-    // await pluginContainer.watchChange(file, {
-    //   event: isUnlink ? 'delete' : 'create',
-    // })
+  // await pluginContainer.watchChange(file, {
+  //   event: isUnlink ? 'delete' : 'create',
+  // })
 
-    // if (publicDir && publicFiles) {
-    //   if (file.startsWith(publicDir)) {
-    //     const path = file.slice(publicDir.length)
-    //     publicFiles[isUnlink ? 'delete' : 'add'](path)
-    //     if (!isUnlink) {
-    //       const clientModuleGraph = server.environments.client.moduleGraph
-    //       const moduleWithSamePath =
-    //         await clientModuleGraph.getModuleByUrl(path)
-    //       const etag = moduleWithSamePath?.transformResult?.etag
-    //       if (etag) {
-    //         // The public file should win on the next request over a module with the
-    //         // same path. Prevent the transform etag fast path from serving the module
-    //         clientModuleGraph.etagToModuleMap.delete(etag)
-    //       }
-    //     }
-    //   }
-    // }
-    // if (isUnlink) {
-    //   // invalidate module graph cache on file change
-    //   for (const environment of Object.values(server.environments)) {
-    //     environment.moduleGraph.onFileDelete(file)
-    //   }
-    // }
-    // await onHMRUpdate(isUnlink ? 'delete' : 'create', file)
+  // if (publicDir && publicFiles) {
+  //   if (file.startsWith(publicDir)) {
+  //     const path = file.slice(publicDir.length)
+  //     publicFiles[isUnlink ? 'delete' : 'add'](path)
+  //     if (!isUnlink) {
+  //       const clientModuleGraph = server.environments.client.moduleGraph
+  //       const moduleWithSamePath =
+  //         await clientModuleGraph.getModuleByUrl(path)
+  //       const etag = moduleWithSamePath?.transformResult?.etag
+  //       if (etag) {
+  //         // The public file should win on the next request over a module with the
+  //         // same path. Prevent the transform etag fast path from serving the module
+  //         clientModuleGraph.etagToModuleMap.delete(etag)
+  //       }
+  //     }
+  //   }
+  // }
+  // if (isUnlink) {
+  //   // invalidate module graph cache on file change
+  //   for (const environment of Object.values(server.environments)) {
+  //     environment.moduleGraph.onFileDelete(file)
+  //   }
+  // }
+  // await onHMRUpdate(isUnlink ? 'delete' : 'create', file)
   // }
 
   // watcher.on('change', async (file) => {
-    // file = normalizePath(file)
-    // TODO(underfin): handle ts config.json change
-    // reloadOnTsconfigChange(server, file)
+  // file = normalizePath(file)
+  // TODO(underfin): handle ts config.json change
+  // reloadOnTsconfigChange(server, file)
 
-    // TODO(underfin): watchChange hooks how to migrate
-    // await pluginContainer.watchChange(file, { event: 'update' })
-    // invalidate module graph cache on file change
-    // for (const environment of Object.values(server.environments)) {
-    //   environment.moduleGraph.onFileChange(file)
-    // }
-    // await onHMRUpdate('update', file)
+  // TODO(underfin): watchChange hooks how to migrate
+  // await pluginContainer.watchChange(file, { event: 'update' })
+  // invalidate module graph cache on file change
+  // for (const environment of Object.values(server.environments)) {
+  //   environment.moduleGraph.onFileChange(file)
+  // }
+  // await onHMRUpdate('update', file)
   // })
 
   // watcher.on('add', (file) => {
@@ -913,7 +909,7 @@ export async function _createServer(
   // middlewares.use(c(server))
 
   // serve memory output dist files
-  middlewares.use(memoryFilesMiddleware(server, false));
+  middlewares.use(memoryFilesMiddleware(server, false))
 
   // html fallback
   if (config.appType === 'spa' || config.appType === 'mpa') {
@@ -928,7 +924,7 @@ export async function _createServer(
   if (config.appType === 'spa' || config.appType === 'mpa') {
     // transform index.html
     // middlewares.use(indexHtmlMiddleware(root, server))
-    middlewares.use(memoryFilesMiddleware(server, true));
+    middlewares.use(memoryFilesMiddleware(server, true))
 
     // handle 404s
     middlewares.use(notFoundMiddleware())
