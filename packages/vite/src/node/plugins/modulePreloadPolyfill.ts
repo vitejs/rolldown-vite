@@ -6,7 +6,7 @@ import { isModernFlag } from './importAnalysisBuild'
 export const modulePreloadPolyfillId = 'vite/modulepreload-polyfill'
 const resolvedModulePreloadPolyfillId = '\0' + modulePreloadPolyfillId + '.js'
 
-export function modulePreloadPolyfillPlugin(config: ResolvedConfig): Plugin {
+export function modulePreloadPolyfillPlugin(_config: ResolvedConfig): Plugin {
   let polyfillString: string | undefined
 
   return {

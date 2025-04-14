@@ -206,8 +206,8 @@ export async function replaceDefine(
     define,
     sourcemap:
       // environment.config.command === 'build' ?
-         !!environment.config.build.sourcemap
-        // : true,
+      !!environment.config.build.sourcemap,
+    // : true,
   })
 
   if (result.errors.length > 0) {

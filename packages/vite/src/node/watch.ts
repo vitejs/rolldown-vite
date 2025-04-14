@@ -64,9 +64,9 @@ export function resolveChokidarOptions(
   ]
   // TODO(underfin): revert it if the dev build only write output to memory.
   // if (emptyOutDir) {
-    ignored.push(
-      ...[...resolvedOutDirs].map((outDir) => escapePath(outDir) + '/**'),
-    )
+  ignored.push(
+    ...[...resolvedOutDirs].map((outDir) => escapePath(outDir) + '/**'),
+  )
   // }
 
   const resolvedWatchOptions: WatchOptions = {

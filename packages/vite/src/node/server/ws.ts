@@ -225,7 +225,7 @@ export function createWebSocketServer(
       //   [HMR_HEADER, 'vite-ping'].includes(protocol) &&
       //   parsedUrl.pathname === hmrBase
       // ) {
-        handleUpgrade(req, socket as Socket, head, protocol === 'vite-ping')
+      handleUpgrade(req, socket as Socket, head, protocol === 'vite-ping')
       // }
     }
     wsServer.on('upgrade', hmrServerWsListener)

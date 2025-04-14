@@ -25,9 +25,11 @@ import { jsonPlugin } from './json'
 import { oxcResolvePlugin, resolvePlugin } from './resolve'
 // import { optimizedDepsPlugin } from './optimizedDeps'
 // import { importAnalysisPlugin } from './importAnalysis'
-import { 
+import {
   // cssAnalysisPlugin,
-   cssPlugin, cssPostPlugin } from './css'
+  cssPlugin,
+  cssPostPlugin,
+} from './css'
 import { assetPlugin } from './asset'
 // import { clientInjectionsPlugin } from './clientInjections'
 import { buildHtmlPlugin, htmlInlineProxyPlugin } from './html'
@@ -174,7 +176,7 @@ export async function resolvePlugins(
       : wasmFallbackPlugin(),
     definePlugin(config),
     cssPostPlugin(config),
-    // isBuild && 
+    // isBuild &&
     buildHtmlPlugin(config),
     workerImportMetaUrlPlugin(config),
     assetImportMetaUrlPlugin(config),

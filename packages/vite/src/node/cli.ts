@@ -177,64 +177,72 @@ cli
     `[boolean] force the optimizer to ignore the cache and re-bundle`,
   )
   // TODO(underfin): Consider how to merge the build option into dev command.
-  .action(async (root: string, options: BuildEnvironmentOptions & BuilderCLIOptions & ServerOptions & GlobalCLIOptions) => {
-    filterDuplicateOptions(options)
-    // output structure is preserved even after bundling so require()
-    // is ok here
-    const { createServer } = await import('./server')
-    try {
-      const server = await createServer({
-        root,
-        base: options.base,
-        mode: options.mode,
-        configFile: options.config,
-        configLoader: options.configLoader,
-        logLevel: options.logLevel,
-        clearScreen: options.clearScreen,
-        server: cleanGlobalCLIOptions(options),
-        forceOptimizeDeps: options.force,
-      })
+  .action(
+    async (
+      root: string,
+      options: BuildEnvironmentOptions &
+        BuilderCLIOptions &
+        ServerOptions &
+        GlobalCLIOptions,
+    ) => {
+      filterDuplicateOptions(options)
+      // output structure is preserved even after bundling so require()
+      // is ok here
+      const { createServer } = await import('./server')
+      try {
+        const server = await createServer({
+          root,
+          base: options.base,
+          mode: options.mode,
+          configFile: options.config,
+          configLoader: options.configLoader,
+          logLevel: options.logLevel,
+          clearScreen: options.clearScreen,
+          server: cleanGlobalCLIOptions(options),
+          forceOptimizeDeps: options.force,
+        })
 
-      if (!server.httpServer) {
-        throw new Error('HTTP server not available')
-      }
+        if (!server.httpServer) {
+          throw new Error('HTTP server not available')
+        }
 
-      const { createBuilder } = await import('./build')
+        const { createBuilder } = await import('./build')
 
-      const buildOptions: BuildEnvironmentOptions = cleanBuilderCLIOptions(options)
+        const buildOptions: BuildEnvironmentOptions =
+          cleanBuilderCLIOptions(options)
 
-      const inlineConfig: InlineConfig = {
-        root,
-        base: options.base,
-        mode: options.mode,
-        configFile: options.config,
-        configLoader: options.configLoader,
-        logLevel: options.logLevel,
-        clearScreen: options.clearScreen,
-        build: buildOptions,
-        ...(options.app ? { builder: {} } : {}),
-      }
-      const builder = await createBuilder(inlineConfig, null, 'serve')
-      await builder.buildApp(server)
+        const inlineConfig: InlineConfig = {
+          root,
+          base: options.base,
+          mode: options.mode,
+          configFile: options.config,
+          configLoader: options.configLoader,
+          logLevel: options.logLevel,
+          clearScreen: options.clearScreen,
+          build: buildOptions,
+          ...(options.app ? { builder: {} } : {}),
+        }
+        const builder = await createBuilder(inlineConfig, null, 'serve')
+        await builder.buildApp(server)
 
-      await server.listen()
+        await server.listen()
 
-      const info = server.config.logger.info
+        const info = server.config.logger.info
 
-      const modeString =
-        options.mode && options.mode !== 'development'
-          ? `  ${colors.bgGreen(` ${colors.bold(options.mode)} `)}`
+        const modeString =
+          options.mode && options.mode !== 'development'
+            ? `  ${colors.bgGreen(` ${colors.bold(options.mode)} `)}`
+            : ''
+        const viteStartTime = global.__vite_start_time ?? false
+        const startupDurationString = viteStartTime
+          ? colors.dim(
+              `ready in ${colors.reset(
+                colors.bold(Math.ceil(performance.now() - viteStartTime)),
+              )} ms`,
+            )
           : ''
-      const viteStartTime = global.__vite_start_time ?? false
-      const startupDurationString = viteStartTime
-        ? colors.dim(
-            `ready in ${colors.reset(
-              colors.bold(Math.ceil(performance.now() - viteStartTime)),
-            )} ms`,
-          )
-        : ''
-      const hasExistingLogs =
-        process.stdout.bytesWritten > 0 || process.stderr.bytesWritten > 0
+        const hasExistingLogs =
+          process.stdout.bytesWritten > 0 || process.stderr.bytesWritten > 0
 
       info(
         `\n  ${colors.green(
@@ -245,43 +253,47 @@ cli
         },
       )
 
-      server.printUrls()
-      const customShortcuts: CLIShortcut<typeof server>[] = []
-      if (profileSession) {
-        customShortcuts.push({
-          key: 'p',
-          description: 'start/stop the profiler',
-          async action(server) {
-            if (profileSession) {
-              await stopProfiler(server.config.logger.info)
-            } else {
-              const inspector = await import('node:inspector').then(
-                (r) => r.default,
-              )
-              await new Promise<void>((res) => {
-                profileSession = new inspector.Session()
-                profileSession.connect()
-                profileSession.post('Profiler.enable', () => {
-                  profileSession!.post('Profiler.start', () => {
-                    server.config.logger.info('Profiler started')
-                    res()
+        server.printUrls()
+        const customShortcuts: CLIShortcut<typeof server>[] = []
+        if (profileSession) {
+          customShortcuts.push({
+            key: 'p',
+            description: 'start/stop the profiler',
+            async action(server) {
+              if (profileSession) {
+                await stopProfiler(server.config.logger.info)
+              } else {
+                const inspector = await import('node:inspector').then(
+                  (r) => r.default,
+                )
+                await new Promise<void>((res) => {
+                  profileSession = new inspector.Session()
+                  profileSession.connect()
+                  profileSession.post('Profiler.enable', () => {
+                    profileSession!.post('Profiler.start', () => {
+                      server.config.logger.info('Profiler started')
+                      res()
+                    })
                   })
                 })
-              })
-            }
+              }
+            },
+          })
+        }
+        server.bindCLIShortcuts({ print: true, customShortcuts })
+      } catch (e) {
+        const logger = createLogger(options.logLevel)
+        logger.error(
+          colors.red(`error when starting dev server:\n${e.stack}`),
+          {
+            error: e,
           },
-        })
+        )
+        stopProfiler(logger.info)
+        process.exit(1)
       }
-      server.bindCLIShortcuts({ print: true, customShortcuts })
-    } catch (e) {
-      const logger = createLogger(options.logLevel)
-      logger.error(colors.red(`error when starting dev server:\n${e.stack}`), {
-        error: e,
-      })
-      stopProfiler(logger.info)
-      process.exit(1)
-    }
-  })
+    },
+  )
 
 // build
 cli

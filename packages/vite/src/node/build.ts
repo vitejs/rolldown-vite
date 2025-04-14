@@ -671,12 +671,12 @@ async function buildEnvironment(
       '.css': 'js',
     },
     experimental: {
-      hmr: true
+      hmr: true,
       // hmr: server ? {
       //   host: server._currentServerHost!,
       //   port: server._currentServerPort!,
       // } : false,
-    }
+    },
   }
 
   /**
@@ -819,13 +819,14 @@ async function buildEnvironment(
           output.format === 'iife' ||
           (isSsrTargetWebworkerEnvironment &&
             (typeof input === 'string' || Object.keys(input).length === 1)),
-        minify: mode === 'production' ?
-          options.minify === 'oxc'
-            ? true
-            : options.minify === false
-              ? 'dce-only'
-              : false
-              : false,
+        minify:
+          mode === 'production'
+            ? options.minify === 'oxc'
+              ? true
+              : options.minify === false
+                ? 'dce-only'
+                : false
+            : false,
         ...output,
       }
     }
@@ -918,7 +919,7 @@ async function buildEnvironment(
         // TODO(underfin): using the generate at development build could be improve performance.
         res.push(await bundle![options.write ? 'write' : 'generate'](output))
       }
-      
+
       if (server) {
         // watching the files
         for (const file of bundle!.watchFiles) {
@@ -928,34 +929,34 @@ async function buildEnvironment(
         }
 
         // Write the output files to memory
-        for(const output of res) {
+        for (const output of res) {
           for (const outputFile of output.output) {
-            server.memoryFiles[outputFile.fileName] = outputFile.type === 'chunk' ? outputFile.code : outputFile.source;
+            server.memoryFiles[outputFile.fileName] =
+              outputFile.type === 'chunk' ? outputFile.code : outputFile.source
           }
         }
       }
       return res
     }
 
-   
     if (server) {
       server.watcher.on('change', async (file) => {
         const startTime = Date.now()
-        const patch = await bundle!.generateHmrPatch([file]);
+        const patch = await bundle!.generateHmrPatch([file])
         if (patch) {
-          const url = `${Date.now()}.js`;
-          server.memoryFiles[url] = patch;
+          const url = `${Date.now()}.js`
+          server.memoryFiles[url] = patch
           // TODO(underfin): fix ws msg typing
-          // @ts-expect-error
+          // @ts-expect-error fix ws msg typing
           server.ws.send({
             type: 'update',
-            url
-          });
+            url,
+          })
           logger.info(
             `${colors.green(`✓ Found ${path.relative(root, file)} changed, rebuilt in ${displayTime(Date.now() - startTime)}`)}`,
           )
 
-          await build();
+          await build()
         }
       })
     }
@@ -1712,7 +1713,10 @@ export interface BuilderOptions {
   buildApp?: (builder: ViteBuilder, server?: ViteDevServer) => Promise<void>
 }
 
-async function defaultBuildApp(builder: ViteBuilder, server?: ViteDevServer): Promise<void> {
+async function defaultBuildApp(
+  builder: ViteBuilder,
+  server?: ViteDevServer,
+): Promise<void> {
   for (const environment of Object.values(builder.environments)) {
     await builder.build(environment, server)
   }

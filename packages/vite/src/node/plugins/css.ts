@@ -353,13 +353,13 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
           // *.css?url
           // in dev, it's handled by assets plugin.
           // if (isBuild) {
-            id = injectQuery(removeUrlQuery(id), 'transform-only')
-            return (
-              `import ${JSON.stringify(id)};` +
-              `export default "__VITE_CSS_URL__${Buffer.from(id).toString(
-                'hex',
-              )}__"`
-            )
+          id = injectQuery(removeUrlQuery(id), 'transform-only')
+          return (
+            `import ${JSON.stringify(id)};` +
+            `export default "__VITE_CSS_URL__${Buffer.from(id).toString(
+              'hex',
+            )}__"`
+          )
           // }
         }
       },
@@ -391,7 +391,7 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
         const decodedUrl = decodeURI(url)
         if (checkPublicFile(decodedUrl, config)) {
           // if (encodePublicUrlsInCSS(config)) {
-            return [publicFileToBuiltUrl(decodedUrl, config), undefined]
+          return [publicFileToBuiltUrl(decodedUrl, config), undefined]
           // } else {
           //   return [joinUrlSegments(config.base, decodedUrl), undefined]
           // }
@@ -403,21 +403,21 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
           return [await fileToUrl(this, resolved), resolved]
         }
         // if (config.command === 'build') {
-          const isExternal = config.build.rollupOptions.external
-            ? resolveUserExternal(
-                config.build.rollupOptions.external,
-                decodedUrl, // use URL as id since id could not be resolved
-                id,
-                false,
-              )
-            : false
-
-          if (!isExternal) {
-            // #9800 If we cannot resolve the css url, leave a warning.
-            config.logger.warnOnce(
-              `\n${decodedUrl} referenced in ${id} didn't resolve at build time, it will remain unchanged to be resolved at runtime`,
+        const isExternal = config.build.rollupOptions.external
+          ? resolveUserExternal(
+              config.build.rollupOptions.external,
+              decodedUrl, // use URL as id since id could not be resolved
+              id,
+              false,
             )
-          }
+          : false
+
+        if (!isExternal) {
+          // #9800 If we cannot resolve the css url, leave a warning.
+          config.logger.warnOnce(
+            `\n${decodedUrl} referenced in ${id} didn't resolve at build time, it will remain unchanged to be resolved at runtime`,
+          )
+        }
         // }
         return [url, undefined]
       }
@@ -3516,9 +3516,9 @@ async function compileLightningCSS(
           minify: config.isProduction && !!config.build.cssMinify,
           sourceMap:
             // config.command === 'build' ?
-               !!config.build.sourcemap,
-               // TODO(underfin): deprecate css.devSourcemap
-              // : config.css.devSourcemap,
+            !!config.build.sourcemap,
+          // TODO(underfin): deprecate css.devSourcemap
+          // : config.css.devSourcemap,
           analyzeDependencies: true,
           cssModules: cssModuleRE.test(id)
             ? (config.css.lightningcss?.cssModules ?? true)
