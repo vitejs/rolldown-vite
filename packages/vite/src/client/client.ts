@@ -7,7 +7,8 @@ import {
 } from '../shared/moduleRunnerTransport'
 import { createHMRHandler } from '../shared/hmrHandler'
 import { ErrorOverlay, overlayId } from './overlay'
-import '@vite/env'
+import './hmrModuleRunner'
+// import '@vite/env'
 
 // injected by the hmr plugin when served
 declare const __BASE__: string
@@ -140,19 +141,16 @@ const hmrClient = new HMRClient(
   },
   transport,
   async function importUpdatedModule({
+    url,
     acceptedPath,
-    timestamp,
-    explicitImportRequired,
+    // timestamp,
+    // explicitImportRequired,
     isWithinCircularImport,
   }) {
-    const [acceptedPathWithoutQuery, query] = acceptedPath.split(`?`)
+    // const [acceptedPathWithoutQuery, query] = acceptedPath.split(`?`)
     const importPromise = import(
       /* @vite-ignore */
-      base +
-        acceptedPathWithoutQuery.slice(1) +
-        `?${explicitImportRequired ? 'import&' : ''}t=${timestamp}${
-          query ? `&${query}` : ''
-        }`
+      base + url
     )
     if (isWithinCircularImport) {
       importPromise.catch(() => {
@@ -163,7 +161,10 @@ const hmrClient = new HMRClient(
         pageReload()
       })
     }
-    return await importPromise
+    // @ts-expect-error globalThis.__rolldown_runtime__
+    return await importPromise.then(() =>
+      globalThis.__rolldown_runtime__.loadExports(acceptedPath),
+    )
   },
 )
 transport.connect!(createHMRHandler(handleMessage))
