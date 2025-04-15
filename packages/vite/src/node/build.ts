@@ -89,6 +89,7 @@ import type { Plugin } from './plugin'
 import type { RollupPluginHooks } from './typeUtils'
 import { buildOxcPlugin } from './plugins/oxc'
 import type { ViteDevServer } from './server'
+import { getHmrImplement } from './plugins/clientInjections'
 
 export interface BuildEnvironmentOptions {
   /**
@@ -655,7 +656,12 @@ async function buildEnvironment(
       '.css': 'js',
     },
     experimental: {
-      hmr: true,
+      hmr: server
+        ? {
+            implement: await getHmrImplement(environment.config),
+          }
+        : false,
+      // hmr: true,
       // hmr: server ? {
       //   host: server._currentServerHost!,
       //   port: server._currentServerPort!,
