@@ -24,6 +24,7 @@ export interface UpdatePayload {
 
 export interface Update {
   type: 'js-update' | 'css-update'
+  url?: string // the hmr chunk url
   path: string
   acceptedPath: string
   timestamp: number
