@@ -12,7 +12,7 @@ const importMetaEnvMarker = '__vite_import_meta_env__'
 const importMetaEnvKeyReCache = new Map<string, RegExp>()
 
 export function definePlugin(config: ResolvedConfig): Plugin {
-  const isBuild = config.mode === 'production'
+  // const isBuild = config.mode === 'production'
   const isBuildLib = config.build.lib
 
   // ignore replace process.env in lib build
@@ -29,21 +29,20 @@ export function definePlugin(config: ResolvedConfig): Plugin {
     })
   }
 
-  // during dev, import.meta properties are handled by importAnalysis plugin.
   const importMetaKeys: Record<string, string> = {}
   const importMetaEnvKeys: Record<string, string> = {}
   const importMetaFallbackKeys: Record<string, string> = {}
-  if (isBuild) {
-    importMetaKeys['import.meta.hot'] = `undefined`
-    for (const key in config.env) {
-      const val = JSON.stringify(config.env[key])
-      importMetaKeys[`import.meta.env.${key}`] = val
-      importMetaEnvKeys[key] = val
-    }
-    // these will be set to a proper value in `generatePattern`
-    importMetaKeys['import.meta.env.SSR'] = `undefined`
-    importMetaFallbackKeys['import.meta.env'] = `undefined`
+  // if (isBuild) {
+  importMetaKeys['import.meta.hot'] = `undefined`
+  for (const key in config.env) {
+    const val = JSON.stringify(config.env[key])
+    importMetaKeys[`import.meta.env.${key}`] = val
+    importMetaEnvKeys[key] = val
   }
+  // these will be set to a proper value in `generatePattern`
+  importMetaKeys['import.meta.env.SSR'] = `undefined`
+  importMetaFallbackKeys['import.meta.env'] = `undefined`
+  // }
 
   function generatePattern(environment: Environment) {
     const keepProcessEnv = environment.config.keepProcessEnv
