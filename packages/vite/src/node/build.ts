@@ -948,15 +948,20 @@ async function buildEnvironment(
     if (server) {
       server.watcher.on('change', async (file) => {
         const startTime = Date.now()
-        const patch = await bundle!.generateHmrPatch([file])
-        if (patch) {
+        const hmrOutput = (await bundle!.generateHmrPatch([file]))!
+        if (hmrOutput.patch) {
           const url = `${Date.now()}.js`
-          server.memoryFiles[url] = patch
-          // TODO(underfin): fix ws msg typing
-          // @ts-expect-error fix ws msg typing
+          server.memoryFiles[url] = hmrOutput.patch
           server.ws.send({
             type: 'update',
-            url,
+            updates: hmrOutput.hmrBoundaries.map((boundary) => {
+              return {
+                type: 'js-update',
+                url,
+                path: boundary.boundary,
+                acceptedPath: boundary.acceptedVia,
+              }
+            }),
           })
           logger.info(
             `${colors.green(`✓ Found ${path.relative(root, file)} changed, rebuilt in ${displayTime(Date.now() - startTime)}`)}`,

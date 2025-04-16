@@ -27,7 +27,7 @@ export interface Update {
   url?: string // the hmr chunk url
   path: string
   acceptedPath: string
-  timestamp: number
+  // timestamp: number
   /** @internal */
   explicitImportRequired?: boolean
   /** @internal */
