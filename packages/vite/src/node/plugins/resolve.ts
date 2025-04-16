@@ -202,9 +202,9 @@ const perEnvironmentOrWorkerPlugin = (
 export function oxcResolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
   overrideEnvConfig: (ResolvedConfig & ResolvedEnvironmentOptions) | undefined,
-): Plugin[] {
+): (Plugin | false)[] {
   return [
-    optimizerResolvePlugin(resolveOptions),
+    !resolveOptions.isBuild && optimizerResolvePlugin(resolveOptions),
     importGlobSubpathImportsResolvePlugin(resolveOptions),
     perEnvironmentOrWorkerPlugin(
       'vite:resolve-builtin',
@@ -324,7 +324,6 @@ function optimizerResolvePlugin(
 
   return {
     name: 'vite:resolve-dev',
-    apply: 'serve',
     resolveId: {
       filter: {
         id: {
