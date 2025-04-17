@@ -21,41 +21,50 @@ export function dataURIPlugin(): Plugin {
       resolved = new Map()
     },
 
-    resolveId(id) {
-      if (!id.trimStart().startsWith('data:')) {
-        return
-      }
+    resolveId: {
+      filter: {
+        id: /^\s*data:/,
+      },
+      handler(id) {
+        if (!id.trimStart().startsWith('data:')) {
+          return
+        }
 
-      const uri = new URL(id)
-      if (uri.protocol !== 'data:') {
-        return
-      }
+        const uri = new URL(id)
+        if (uri.protocol !== 'data:') {
+          return
+        }
 
-      const match = dataUriRE.exec(uri.pathname)
-      if (!match) {
-        return
-      }
+        const match = dataUriRE.exec(uri.pathname)
+        if (!match) {
+          return
+        }
 
-      const [, mime, format, data] = match
-      if (mime !== 'text/javascript') {
-        throw new Error(
-          `data URI with non-JavaScript mime type is not supported. If you're using legacy JavaScript MIME types (such as 'application/javascript'), please use 'text/javascript' instead.`,
-        )
-      }
+        const [, mime, format, data] = match
+        if (mime !== 'text/javascript') {
+          throw new Error(
+            `data URI with non-JavaScript mime type is not supported. If you're using legacy JavaScript MIME types (such as 'application/javascript'), please use 'text/javascript' instead.`,
+          )
+        }
 
-      // decode data
-      const base64 = format && base64RE.test(format.substring(1))
-      const content = base64
-        ? Buffer.from(data, 'base64').toString('utf-8')
-        : data
-      resolved.set(id, content)
-      return dataUriPrefix + id
+        // decode data
+        const base64 = format && base64RE.test(format.substring(1))
+        const content = base64
+          ? Buffer.from(data, 'base64').toString('utf-8')
+          : data
+        resolved.set(id, content)
+        return dataUriPrefix + id
+      },
     },
 
-    load(id) {
-      if (id.startsWith(dataUriPrefix)) {
-        return resolved.get(id.slice(dataUriPrefix.length))
-      }
+    load: {
+      filter: {
+        id: new RegExp(`^${dataUriPrefix}`),
+      },
+      handler(id) {
+        const content = resolved.get(id.slice(dataUriPrefix.length))
+        return content
+      },
     },
   }
 }
