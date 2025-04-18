@@ -1,11 +1,11 @@
-// import path from 'node:path'
+import path from 'node:path'
 import type { IncomingMessage, Server } from 'node:http'
 import { STATUS_CODES, createServer as createHttpServer } from 'node:http'
 import type { ServerOptions as HttpsServerOptions } from 'node:https'
 import { createServer as createHttpsServer } from 'node:https'
 import type { Socket } from 'node:net'
 import type { Duplex } from 'node:stream'
-// import crypto from 'node:crypto'
+import crypto from 'node:crypto'
 import colors from 'picocolors'
 import type { WebSocket as WebSocketRaw } from 'ws'
 import { WebSocketServer as WebSocketServerRaw_ } from 'ws'
@@ -102,19 +102,19 @@ function noop() {
 //
 // using the query params means the token might be logged out in server or middleware logs
 // but we assume that is not an issue since the token is regenerated for each process
-// function hasValidToken(config: ResolvedConfig, url: URL) {
-//   const token = url.searchParams.get('token')
-//   if (!token) return false
+function hasValidToken(config: ResolvedConfig, url: URL) {
+  const token = url.searchParams.get('token')
+  if (!token) return false
 
-//   try {
-//     const isValidToken = crypto.timingSafeEqual(
-//       Buffer.from(token),
-//       Buffer.from(config.webSocketToken),
-//     )
-//     return isValidToken
-//   } catch {} // an error is thrown when the length is incorrect
-//   return false
-// }
+  try {
+    const isValidToken = crypto.timingSafeEqual(
+      Buffer.from(token),
+      Buffer.from(config.webSocketToken),
+    )
+    return isValidToken
+  } catch {} // an error is thrown when the length is incorrect
+  return false
+}
 
 export function createWebSocketServer(
   server: HttpServer | null,
@@ -181,10 +181,10 @@ export function createWebSocketServer(
 
     // If the Origin header is set, this request might be coming from a browser.
     // Browsers always sets the Origin header for WebSocket connections.
-    // if (req.headers.origin) {
-    //   const parsedUrl = new URL(`http://example.com${req.url!}`)
-    //   return hasValidToken(config, parsedUrl)
-    // }
+    if (req.headers.origin) {
+      const parsedUrl = new URL(`http://example.com${req.url!}`)
+      return hasValidToken(config, parsedUrl)
+    }
 
     // We allow non-browser requests to connect without a token
     // for backward compat and convenience
@@ -213,20 +213,20 @@ export function createWebSocketServer(
   wss.shouldHandle = shouldHandle
 
   if (wsServer) {
-    // let hmrBase = config.base
-    // const hmrPath = hmr ? hmr.path : undefined
-    // if (hmrPath) {
-    //   hmrBase = path.posix.join(hmrBase, hmrPath)
-    // }
+    let hmrBase = config.base
+    const hmrPath = hmr ? hmr.path : undefined
+    if (hmrPath) {
+      hmrBase = path.posix.join(hmrBase, hmrPath)
+    }
     hmrServerWsListener = (req, socket, head) => {
       const protocol = req.headers['sec-websocket-protocol']!
-      // const parsedUrl = new URL(`http://example.com${req.url!}`)
-      // if (
-      //   [HMR_HEADER, 'vite-ping'].includes(protocol) &&
-      //   parsedUrl.pathname === hmrBase
-      // ) {
-      handleUpgrade(req, socket as Socket, head, protocol === 'vite-ping')
-      // }
+      const parsedUrl = new URL(`http://example.com${req.url!}`)
+      if (
+        [HMR_HEADER, 'vite-ping'].includes(protocol) &&
+        parsedUrl.pathname === hmrBase
+      ) {
+        handleUpgrade(req, socket as Socket, head, protocol === 'vite-ping')
+      }
     }
     wsServer.on('upgrade', hmrServerWsListener)
   } else {
