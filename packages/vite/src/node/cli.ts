@@ -188,24 +188,8 @@ cli
       filterDuplicateOptions(options)
       // output structure is preserved even after bundling so require()
       // is ok here
-      const { createServer } = await import('./server')
+      const { createServerWithResolvedConfig } = await import('./server')
       try {
-        const server = await createServer({
-          root,
-          base: options.base,
-          mode: options.mode,
-          configFile: options.config,
-          configLoader: options.configLoader,
-          logLevel: options.logLevel,
-          clearScreen: options.clearScreen,
-          server: cleanGlobalCLIOptions(options),
-          forceOptimizeDeps: options.force,
-        })
-
-        if (!server.httpServer) {
-          throw new Error('HTTP server not available')
-        }
-
         const { createBuilder } = await import('./build')
 
         const buildOptions: BuildEnvironmentOptions =
@@ -223,6 +207,13 @@ cli
           ...(options.app ? { builder: {} } : {}),
         }
         const builder = await createBuilder(inlineConfig, null, 'serve')
+
+        const server = await createServerWithResolvedConfig(builder.config)
+
+        if (!server.httpServer) {
+          throw new Error('HTTP server not available')
+        }
+
         await builder.buildApp(server)
 
         await server.listen()
