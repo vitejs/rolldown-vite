@@ -413,21 +413,26 @@ export interface ResolvedServerUrls {
   network: string[]
 }
 
-export function createServer(
+export async function createServer(
   inlineConfig: InlineConfig = {},
 ): Promise<ViteDevServer> {
-  return _createServer(inlineConfig, { listen: true })
+  const config = await resolveConfig(inlineConfig, 'serve')
+  return _createServer(config, { listen: true })
+}
+
+export function createServerWithResolvedConfig(
+  config: ResolvedConfig,
+): Promise<ViteDevServer> {
+  return _createServer(config, { listen: true })
 }
 
 export async function _createServer(
-  inlineConfig: InlineConfig = {},
+  config: ResolvedConfig,
   options: {
     listen: boolean
     previousEnvironments?: Record<string, DevEnvironment>
   },
 ): Promise<ViteDevServer> {
-  const config = await resolveConfig(inlineConfig, 'serve')
-
   const initPublicFilesPromise = initPublicFiles(config)
 
   const { root, server: serverConfig } = config
@@ -1187,7 +1192,8 @@ async function restartServer(server: ViteDevServer) {
     let newServer: ViteDevServer | null = null
     try {
       // delay ws server listen
-      newServer = await _createServer(inlineConfig, {
+      const config = await resolveConfig(inlineConfig, 'serve')
+      newServer = await _createServer(config, {
         listen: false,
         previousEnvironments: server.environments,
       })
