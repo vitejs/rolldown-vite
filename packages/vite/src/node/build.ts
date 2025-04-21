@@ -672,6 +672,7 @@ async function buildEnvironment(
       '.css': 'js',
     },
     experimental: {
+      ...options.rollupOptions.experimental,
       hmr: server
         ? {
             implement: await getHmrImplement(environment.config),
