@@ -238,6 +238,11 @@ export async function startDefaultServe(): Promise<void> {
   if (!isBuild) {
     process.env.VITE_INLINE = 'inline-serve'
     const config = await loadConfig({ command: 'serve', mode: 'development' })
+    // test full bundle mode
+    // viteServer = server = await createServer(config)
+    // const builder = await createBuilder(config, null, 'serve')
+    // await builder.buildApp(server)
+    // await server.listen()
     viteServer = server = await (await createServer(config)).listen()
     viteTestUrl = stripTrailingSlashIfNeeded(
       server.resolvedUrls.local[0],
