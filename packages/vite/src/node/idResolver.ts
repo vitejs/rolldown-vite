@@ -56,6 +56,9 @@ export function createIdResolver(
   ): Promise<PartialResolvedId | null> {
     let pluginContainer = pluginContainerMap.get(environment)
     if (!pluginContainer) {
+      const isBuild = config.experimental?.fullBundleMode
+        ? config.mode === 'production'
+        : config.command === 'build'
       pluginContainer = await createEnvironmentPluginContainer(
         environment as Environment,
         [
@@ -66,7 +69,7 @@ export function createIdResolver(
                 {
                   root: config.root,
                   isProduction: config.isProduction,
-                  isBuild: config.mode === 'production',
+                  isBuild,
                   asSrc: true,
                   preferRelative: false,
                   tryIndex: true,
@@ -80,7 +83,7 @@ export function createIdResolver(
                 resolvePlugin({
                   root: config.root,
                   isProduction: config.isProduction,
-                  isBuild: config.mode === 'production',
+                  isBuild,
                   asSrc: true,
                   preferRelative: false,
                   tryIndex: true,

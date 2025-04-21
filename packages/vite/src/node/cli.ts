@@ -32,6 +32,7 @@ interface GlobalCLIOptions {
   mode?: string
   force?: boolean
   w?: boolean
+  fullBundleMode?: boolean
 }
 
 interface BuilderCLIOptions {
@@ -187,8 +188,9 @@ cli
       filterDuplicateOptions(options)
       // output structure is preserved even after bundling so require()
       // is ok here
-      const { createServerWithResolvedConfig } = await import('./server')
-      try {
+      async function createServerWithFullBundleMode() {
+        const { createServerWithResolvedConfig } = await import('./server')
+
         const { createBuilder } = await import('./build')
 
         const buildOptions: BuildEnvironmentOptions =
@@ -203,6 +205,9 @@ cli
           logLevel: options.logLevel,
           clearScreen: options.clearScreen,
           build: buildOptions,
+          experimental: {
+            fullBundleMode: true,
+          },
           ...(options.app ? { builder: {} } : {}),
         }
         const builder = await createBuilder(inlineConfig, null, 'serve')
@@ -216,6 +221,30 @@ cli
         await builder.buildApp(server)
 
         await server.listen()
+
+        return server
+      }
+
+      async function createServer() {
+        const { createServer } = await import('./server')
+        const server = await createServer({
+          root,
+          base: options.base,
+          mode: options.mode,
+          configFile: options.config,
+          configLoader: options.configLoader,
+          logLevel: options.logLevel,
+          clearScreen: options.clearScreen,
+          server: cleanGlobalCLIOptions(options),
+          forceOptimizeDeps: options.force,
+        })
+        return server
+      }
+
+      try {
+        const server = options.fullBundleMode
+          ? await createServerWithFullBundleMode()
+          : await createServer()
 
         const info = server.config.logger.info
 

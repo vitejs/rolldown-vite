@@ -293,7 +293,7 @@ export function buildReporterPlugin(config: ResolvedConfig): Plugin[] {
       : {}),
 
     renderStart() {
-      if (config.mode === 'production') {
+      if (config.command === 'build' && !config.experimental.fullBundleMode) {
         chunksReporter(this).reset()
       }
     },
@@ -329,7 +329,7 @@ export function buildReporterPlugin(config: ResolvedConfig): Plugin[] {
         }
       }
 
-      if (config.mode === 'production') {
+      if (config.command === 'build' && !config.experimental.fullBundleMode) {
         chunksReporter(this).register()
       }
     },
@@ -339,7 +339,7 @@ export function buildReporterPlugin(config: ResolvedConfig): Plugin[] {
     },
 
     async writeBundle({ dir }, output) {
-      if (config.mode === 'production') {
+      if (config.command === 'build' && !config.experimental.fullBundleMode) {
         await chunksReporter(this).log(output, dir)
       }
     },

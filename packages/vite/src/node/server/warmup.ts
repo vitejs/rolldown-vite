@@ -1,6 +1,6 @@
-// import fs from 'node:fs/promises'
+import fs from 'node:fs/promises'
 import path from 'node:path'
-// import colors from 'picocolors'
+import colors from 'picocolors'
 import { glob, isDynamicPattern } from 'tinyglobby'
 import { FS_PREFIX } from '../constants'
 import { normalizePath } from '../utils'
@@ -30,19 +30,19 @@ async function warmupFile(
   if (file.endsWith('.html')) {
     const url = htmlFileToUrl(file, server.config.root)
     if (url) {
-      // try {
-      //   const html = await fs.readFile(file, 'utf-8')
-      //   await server.transformIndexHtml(url, html)
-      // } catch (e) {
-      //   // Unexpected error, log the issue but avoid an unhandled exception
-      //   environment.logger.error(
-      //     `Pre-transform error (${colors.cyan(file)}): ${e.message}`,
-      //     {
-      //       error: e,
-      //       timestamp: true,
-      //     },
-      //   )
-      // }
+      try {
+        const html = await fs.readFile(file, 'utf-8')
+        await server.transformIndexHtml(url, html)
+      } catch (e) {
+        // Unexpected error, log the issue but avoid an unhandled exception
+        environment.logger.error(
+          `Pre-transform error (${colors.cyan(file)}): ${e.message}`,
+          {
+            error: e,
+            timestamp: true,
+          },
+        )
+      }
     }
   }
   // for other files, pass it through `transformRequest` with warmup

@@ -93,6 +93,10 @@ export function clientInjectionsPlugin(config: ResolvedConfig): Plugin {
           .replace(`__HMR_ENABLE_OVERLAY__`, hmrEnableOverlayReplacement)
           .replace(`__HMR_CONFIG_NAME__`, hmrConfigNameReplacement)
           .replace(`__WS_TOKEN__`, wsTokenReplacement)
+          .replace(
+            `__FULL_BUNDLE_MODE__`,
+            escapeReplacement(config.experimental.fullBundleMode || false),
+          )
       }
     },
     async transform(code, id, options) {
@@ -183,4 +187,8 @@ export async function getHmrImplement(config: ResolvedConfig): Promise<string> {
     .replace(`__HMR_ENABLE_OVERLAY__`, hmrEnableOverlayReplacement)
     .replace(`__HMR_CONFIG_NAME__`, hmrConfigNameReplacement)
     .replace(`__WS_TOKEN__`, wsTokenReplacement)
+    .replace(
+      `__FULL_BUNDLE_MODE__`,
+      escapeReplacement(config.experimental.fullBundleMode || false),
+    )
 }

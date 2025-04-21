@@ -23,20 +23,16 @@ import { watchPackageDataPlugin } from '../packages'
 import { normalizePath } from '../utils'
 import { jsonPlugin } from './json'
 import { oxcResolvePlugin, resolvePlugin } from './resolve'
-// import { optimizedDepsPlugin } from './optimizedDeps'
-// import { importAnalysisPlugin } from './importAnalysis'
-import {
-  // cssAnalysisPlugin,
-  cssPlugin,
-  cssPostPlugin,
-} from './css'
+import { optimizedDepsPlugin } from './optimizedDeps'
+import { importAnalysisPlugin } from './importAnalysis'
+import { cssAnalysisPlugin, cssPlugin, cssPostPlugin } from './css'
 import { assetPlugin } from './asset'
-// import { clientInjectionsPlugin } from './clientInjections'
+import { clientInjectionsPlugin } from './clientInjections'
 import { buildHtmlPlugin, htmlInlineProxyPlugin } from './html'
 import { wasmFallbackPlugin, wasmHelperPlugin } from './wasm'
 import { modulePreloadPolyfillPlugin } from './modulePreloadPolyfill'
 import { webWorkerPlugin } from './worker'
-// import { preAliasPlugin } from './preAlias'
+import { preAliasPlugin } from './preAlias'
 import { definePlugin } from './define'
 import { workerImportMetaUrlPlugin } from './workerImportMetaUrl'
 import { assetImportMetaUrlPlugin } from './assetImportMetaUrl'
@@ -57,7 +53,8 @@ export async function resolvePlugins(
   normalPlugins: Plugin[],
   postPlugins: Plugin[],
 ): Promise<Plugin[]> {
-  const isBuild = true
+  const isBuild =
+    config.command === 'build' || !!config.experimental.fullBundleMode
   const isWorker = config.isWorker
   const buildPlugins = isBuild
     ? await (await import('../build')).resolveBuildPlugins(config)
@@ -66,9 +63,9 @@ export async function resolvePlugins(
   const enableNativePlugin = config.experimental.enableNativePlugin
 
   return [
-    // !isBuild ? optimizedDepsPlugin() : null,
+    !isBuild ? optimizedDepsPlugin() : null,
     !isWorker ? watchPackageDataPlugin(config.packageCache) : null,
-    // !isBuild ? preAliasPlugin(config) : null,
+    !isBuild ? preAliasPlugin(config) : null,
     enableNativePlugin === true
       ? nativeAliasPlugin({
           entries: config.resolve.alias.map((item) => {
@@ -176,8 +173,7 @@ export async function resolvePlugins(
       : wasmFallbackPlugin(),
     definePlugin(config),
     cssPostPlugin(config),
-    // isBuild &&
-    buildHtmlPlugin(config),
+    isBuild && buildHtmlPlugin(config),
     workerImportMetaUrlPlugin(config),
     assetImportMetaUrlPlugin(config),
     ...buildPlugins.pre,
@@ -196,13 +192,13 @@ export async function resolvePlugins(
     ...buildPlugins.post,
 
     // // internal server-only plugins are always applied after everything else
-    // ...(isBuild
-    //   ? []
-    //   : [
-    //       clientInjectionsPlugin(config),
-    //       cssAnalysisPlugin(config),
-    //       importAnalysisPlugin(config),
-    //     ]),
+    ...(isBuild
+      ? []
+      : [
+          clientInjectionsPlugin(config),
+          cssAnalysisPlugin(config),
+          importAnalysisPlugin(config),
+        ]),
   ].filter(Boolean) as Plugin[]
 }
 
