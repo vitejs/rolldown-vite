@@ -98,6 +98,7 @@ function cleanGlobalCLIOptions<Options extends GlobalCLIOptions>(
   delete ret.mode
   delete ret.force
   delete ret.w
+  delete ret.fullBundleMode
 
   // convert the sourcemap option to a boolean if necessary
   if ('sourcemap' in ret) {
@@ -177,6 +178,10 @@ cli
     '--force',
     `[boolean] force the optimizer to ignore the cache and re-bundle`,
   )
+  .option(
+    '--fullBundleMode',
+    `[boolean] Enable bundle at dev to instead of esm dev server`,
+  )
   // TODO(underfin): Consider how to merge the build option into dev command.
   .action(
     async (
@@ -239,6 +244,7 @@ cli
           server: cleanGlobalCLIOptions(options),
           forceOptimizeDeps: options.force,
         })
+        await server.listen()
         return server
       }
 
