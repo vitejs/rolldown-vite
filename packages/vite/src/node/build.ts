@@ -1752,7 +1752,7 @@ export type ResolvedBuilderOptions = Required<BuilderOptions>
 export async function createBuilder(
   inlineConfig: InlineConfig = {},
   useLegacyBuilder: null | boolean = false,
-  command: 'build' | 'serve',
+  command: 'build' | 'serve' = 'build',
 ): Promise<ViteBuilder> {
   const patchConfig = (resolved: ResolvedConfig) => {
     if (!(useLegacyBuilder ?? !resolved.builder)) return
