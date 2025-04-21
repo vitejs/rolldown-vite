@@ -12,8 +12,7 @@ const importMetaEnvMarker = '__vite_import_meta_env__'
 const importMetaEnvKeyReCache = new Map<string, RegExp>()
 
 export function definePlugin(config: ResolvedConfig): Plugin {
-  const isBuild =
-    config.command === 'build' || config.experimental.fullBundleMode
+  const isBuild = config.command === 'build'
   const isBuildLib = isBuild && config.build.lib
 
   // ignore replace process.env in lib build
