@@ -1,4 +1,4 @@
-// import fsp from 'node:fs/promises'
+import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { EventEmitter } from 'node:events'
 import colors from 'picocolors'
@@ -9,35 +9,32 @@ import type {
   InvokeResponseData,
   InvokeSendData,
 } from '../../shared/invokeMethods'
-// import { CLIENT_DIR } from '../constants'
-import {
-  createDebugger,
-  // normalizePath
-} from '../utils'
+import { CLIENT_DIR } from '../constants'
+import { createDebugger, normalizePath } from '../utils'
 import type { InferCustomEventPayload, ViteDevServer } from '..'
-// import { getHookHandler } from '../plugins'
+import { getHookHandler } from '../plugins'
 import { isCSSRequest } from '../plugins/css'
 import { isExplicitImportRequired } from '../plugins/importAnalysis'
-// import { getEnvFilesForMode } from '../env'
-// import type { Environment } from '../environment'
+import { getEnvFilesForMode } from '../env'
+import type { Environment } from '../environment'
 import { withTrailingSlash, wrapId } from '../../shared/utils'
 import type { Plugin } from '../plugin'
-// import {
-//   ignoreDeprecationWarnings,
-//   warnFutureDeprecation,
-// } from '../deprecations'
+import {
+  ignoreDeprecationWarnings,
+  warnFutureDeprecation,
+} from '../deprecations'
 import type { EnvironmentModuleNode } from './moduleGraph'
 import type { ModuleNode } from './mixedModuleGraph'
 import type { DevEnvironment } from './environment'
-// import { prepareError } from './middlewares/error'
+import { prepareError } from './middlewares/error'
 import type { HttpServer } from '.'
-// import { restartServerWithUrls } from '.'
+import { restartServerWithUrls } from '.'
 
 export const debugHmr = createDebugger('vite:hmr')
 
 const whitespaceRE = /\s/
 
-// const normalizedClientDir = normalizePath(CLIENT_DIR)
+const normalizedClientDir = normalizePath(CLIENT_DIR)
 
 export interface HmrOptions {
   protocol?: string
@@ -365,268 +362,268 @@ export function getSortedPluginsByHotUpdateHook(
   return sortedPlugins
 }
 
-// const sortedHotUpdatePluginsCache = new WeakMap<Environment, Plugin[]>()
-// function getSortedHotUpdatePlugins(environment: Environment): Plugin[] {
-//   let sortedPlugins = sortedHotUpdatePluginsCache.get(environment)
-//   if (!sortedPlugins) {
-//     sortedPlugins = getSortedPluginsByHotUpdateHook(environment.plugins)
-//     sortedHotUpdatePluginsCache.set(environment, sortedPlugins)
-//   }
-//   return sortedPlugins
-// }
+const sortedHotUpdatePluginsCache = new WeakMap<Environment, Plugin[]>()
+function getSortedHotUpdatePlugins(environment: Environment): Plugin[] {
+  let sortedPlugins = sortedHotUpdatePluginsCache.get(environment)
+  if (!sortedPlugins) {
+    sortedPlugins = getSortedPluginsByHotUpdateHook(environment.plugins)
+    sortedHotUpdatePluginsCache.set(environment, sortedPlugins)
+  }
+  return sortedPlugins
+}
 
-// export async function handleHMRUpdate(
-//   type: 'create' | 'delete' | 'update',
-//   file: string,
-//   server: ViteDevServer,
-// ): Promise<void> {
-//   const { config } = server
-//   const mixedModuleGraph = ignoreDeprecationWarnings(() => server.moduleGraph)
+export async function handleHMRUpdate(
+  type: 'create' | 'delete' | 'update',
+  file: string,
+  server: ViteDevServer,
+): Promise<void> {
+  const { config } = server
+  const mixedModuleGraph = ignoreDeprecationWarnings(() => server.moduleGraph)
 
-//   const environments = Object.values(server.environments)
-//   const shortFile = getShortName(file, config.root)
+  const environments = Object.values(server.environments)
+  const shortFile = getShortName(file, config.root)
 
-//   const isConfig = file === config.configFile
-//   const isConfigDependency = config.configFileDependencies.some(
-//     (name) => file === name,
-//   )
+  const isConfig = file === config.configFile
+  const isConfigDependency = config.configFileDependencies.some(
+    (name) => file === name,
+  )
 
-//   const isEnv =
-//     config.envDir !== false &&
-//     getEnvFilesForMode(config.mode, config.envDir).includes(file)
-//   if (isConfig || isConfigDependency || isEnv) {
-//     // auto restart server
-//     debugHmr?.(`[config change] ${colors.dim(shortFile)}`)
-//     config.logger.info(
-//       colors.green(
-//         `${normalizePath(
-//           path.relative(process.cwd(), file),
-//         )} changed, restarting server...`,
-//       ),
-//       { clear: true, timestamp: true },
-//     )
-//     try {
-//       await restartServerWithUrls(server)
-//     } catch (e) {
-//       config.logger.error(colors.red(e))
-//     }
-//     return
-//   }
+  const isEnv =
+    config.envDir !== false &&
+    getEnvFilesForMode(config.mode, config.envDir).includes(file)
+  if (isConfig || isConfigDependency || isEnv) {
+    // auto restart server
+    debugHmr?.(`[config change] ${colors.dim(shortFile)}`)
+    config.logger.info(
+      colors.green(
+        `${normalizePath(
+          path.relative(process.cwd(), file),
+        )} changed, restarting server...`,
+      ),
+      { clear: true, timestamp: true },
+    )
+    try {
+      await restartServerWithUrls(server)
+    } catch (e) {
+      config.logger.error(colors.red(e))
+    }
+    return
+  }
 
-//   debugHmr?.(`[file change] ${colors.dim(shortFile)}`)
+  debugHmr?.(`[file change] ${colors.dim(shortFile)}`)
 
-//   // (dev only) the client itself cannot be hot updated.
-//   if (file.startsWith(withTrailingSlash(normalizedClientDir))) {
-//     environments.forEach(({ hot }) =>
-//       hot.send({
-//         type: 'full-reload',
-//         path: '*',
-//         triggeredBy: path.resolve(config.root, file),
-//       }),
-//     )
-//     return
-//   }
+  // (dev only) the client itself cannot be hot updated.
+  if (file.startsWith(withTrailingSlash(normalizedClientDir))) {
+    environments.forEach(({ hot }) =>
+      hot.send({
+        type: 'full-reload',
+        path: '*',
+        triggeredBy: path.resolve(config.root, file),
+      }),
+    )
+    return
+  }
 
-//   const timestamp = Date.now()
-//   const contextMeta = {
-//     type,
-//     file,
-//     timestamp,
-//     read: () => readModifiedFile(file),
-//     server,
-//   }
-//   const hotMap = new Map<
-//     Environment,
-//     { options: HotUpdateOptions; error?: Error }
-//   >()
+  const timestamp = Date.now()
+  const contextMeta = {
+    type,
+    file,
+    timestamp,
+    read: () => readModifiedFile(file),
+    server,
+  }
+  const hotMap = new Map<
+    Environment,
+    { options: HotUpdateOptions; error?: Error }
+  >()
 
-//   for (const environment of Object.values(server.environments)) {
-//     const mods = new Set(environment.moduleGraph.getModulesByFile(file))
-//     if (type === 'create') {
-//       for (const mod of environment.moduleGraph._hasResolveFailedErrorModules) {
-//         mods.add(mod)
-//       }
-//     }
-//     const options = {
-//       ...contextMeta,
-//       modules: [...mods],
-//       // later on hotUpdate will be called for each runtime with a new HotUpdateOptions
-//       environment,
-//     }
-//     hotMap.set(environment, { options })
-//   }
+  for (const environment of Object.values(server.environments)) {
+    const mods = new Set(environment.moduleGraph.getModulesByFile(file))
+    if (type === 'create') {
+      for (const mod of environment.moduleGraph._hasResolveFailedErrorModules) {
+        mods.add(mod)
+      }
+    }
+    const options = {
+      ...contextMeta,
+      modules: [...mods],
+      // later on hotUpdate will be called for each runtime with a new HotUpdateOptions
+      environment,
+    }
+    hotMap.set(environment, { options })
+  }
 
-//   const mixedMods = new Set(mixedModuleGraph.getModulesByFile(file))
+  const mixedMods = new Set(mixedModuleGraph.getModulesByFile(file))
 
-//   const mixedHmrContext: HmrContext = {
-//     ...contextMeta,
-//     modules: [...mixedMods],
-//   }
+  const mixedHmrContext: HmrContext = {
+    ...contextMeta,
+    modules: [...mixedMods],
+  }
 
-//   const clientEnvironment = server.environments.client
-//   const ssrEnvironment = server.environments.ssr
-//   const clientContext = { environment: clientEnvironment }
-//   const clientHotUpdateOptions = hotMap.get(clientEnvironment)!.options
-//   const ssrHotUpdateOptions = hotMap.get(ssrEnvironment)?.options
-//   try {
-//     for (const plugin of getSortedHotUpdatePlugins(
-//       server.environments.client,
-//     )) {
-//       if (plugin.hotUpdate) {
-//         const filteredModules = await getHookHandler(plugin.hotUpdate).call(
-//           clientContext,
-//           clientHotUpdateOptions,
-//         )
-//         if (filteredModules) {
-//           clientHotUpdateOptions.modules = filteredModules
-//           // Invalidate the hmrContext to force compat modules to be updated
-//           mixedHmrContext.modules = mixedHmrContext.modules.filter(
-//             (mixedMod) =>
-//               filteredModules.some((mod) => mixedMod.id === mod.id) ||
-//               ssrHotUpdateOptions?.modules.some(
-//                 (ssrMod) => ssrMod.id === mixedMod.id,
-//               ),
-//           )
-//           mixedHmrContext.modules.push(
-//             ...filteredModules
-//               .filter(
-//                 (mod) =>
-//                   !mixedHmrContext.modules.some(
-//                     (mixedMod) => mixedMod.id === mod.id,
-//                   ),
-//               )
-//               .map((mod) =>
-//                 mixedModuleGraph.getBackwardCompatibleModuleNode(mod),
-//               ),
-//           )
-//         }
-//       } else if (type === 'update') {
-//         warnFutureDeprecation(
-//           config,
-//           'removePluginHookHandleHotUpdate',
-//           `Used in plugin "${plugin.name}".`,
-//           false,
-//         )
-//         // later on, we'll need: if (runtime === 'client')
-//         // Backward compatibility with mixed client and ssr moduleGraph
-//         const filteredModules = await getHookHandler(plugin.handleHotUpdate!)(
-//           mixedHmrContext,
-//         )
-//         if (filteredModules) {
-//           mixedHmrContext.modules = filteredModules
-//           clientHotUpdateOptions.modules =
-//             clientHotUpdateOptions.modules.filter((mod) =>
-//               filteredModules.some((mixedMod) => mod.id === mixedMod.id),
-//             )
-//           clientHotUpdateOptions.modules.push(
-//             ...(filteredModules
-//               .filter(
-//                 (mixedMod) =>
-//                   !clientHotUpdateOptions.modules.some(
-//                     (mod) => mod.id === mixedMod.id,
-//                   ),
-//               )
-//               .map((mixedMod) => mixedMod._clientModule)
-//               .filter(Boolean) as EnvironmentModuleNode[]),
-//           )
-//           if (ssrHotUpdateOptions) {
-//             ssrHotUpdateOptions.modules = ssrHotUpdateOptions.modules.filter(
-//               (mod) =>
-//                 filteredModules.some((mixedMod) => mod.id === mixedMod.id),
-//             )
-//             ssrHotUpdateOptions.modules.push(
-//               ...(filteredModules
-//                 .filter(
-//                   (mixedMod) =>
-//                     !ssrHotUpdateOptions.modules.some(
-//                       (mod) => mod.id === mixedMod.id,
-//                     ),
-//                 )
-//                 .map((mixedMod) => mixedMod._ssrModule)
-//                 .filter(Boolean) as EnvironmentModuleNode[]),
-//             )
-//           }
-//         }
-//       }
-//     }
-//   } catch (error) {
-//     hotMap.get(server.environments.client)!.error = error
-//   }
+  const clientEnvironment = server.environments.client
+  const ssrEnvironment = server.environments.ssr
+  const clientContext = { environment: clientEnvironment }
+  const clientHotUpdateOptions = hotMap.get(clientEnvironment)!.options
+  const ssrHotUpdateOptions = hotMap.get(ssrEnvironment)?.options
+  try {
+    for (const plugin of getSortedHotUpdatePlugins(
+      server.environments.client,
+    )) {
+      if (plugin.hotUpdate) {
+        const filteredModules = await getHookHandler(plugin.hotUpdate).call(
+          clientContext,
+          clientHotUpdateOptions,
+        )
+        if (filteredModules) {
+          clientHotUpdateOptions.modules = filteredModules
+          // Invalidate the hmrContext to force compat modules to be updated
+          mixedHmrContext.modules = mixedHmrContext.modules.filter(
+            (mixedMod) =>
+              filteredModules.some((mod) => mixedMod.id === mod.id) ||
+              ssrHotUpdateOptions?.modules.some(
+                (ssrMod) => ssrMod.id === mixedMod.id,
+              ),
+          )
+          mixedHmrContext.modules.push(
+            ...filteredModules
+              .filter(
+                (mod) =>
+                  !mixedHmrContext.modules.some(
+                    (mixedMod) => mixedMod.id === mod.id,
+                  ),
+              )
+              .map((mod) =>
+                mixedModuleGraph.getBackwardCompatibleModuleNode(mod),
+              ),
+          )
+        }
+      } else if (type === 'update') {
+        warnFutureDeprecation(
+          config,
+          'removePluginHookHandleHotUpdate',
+          `Used in plugin "${plugin.name}".`,
+          false,
+        )
+        // later on, we'll need: if (runtime === 'client')
+        // Backward compatibility with mixed client and ssr moduleGraph
+        const filteredModules = await getHookHandler(plugin.handleHotUpdate!)(
+          mixedHmrContext,
+        )
+        if (filteredModules) {
+          mixedHmrContext.modules = filteredModules
+          clientHotUpdateOptions.modules =
+            clientHotUpdateOptions.modules.filter((mod) =>
+              filteredModules.some((mixedMod) => mod.id === mixedMod.id),
+            )
+          clientHotUpdateOptions.modules.push(
+            ...(filteredModules
+              .filter(
+                (mixedMod) =>
+                  !clientHotUpdateOptions.modules.some(
+                    (mod) => mod.id === mixedMod.id,
+                  ),
+              )
+              .map((mixedMod) => mixedMod._clientModule)
+              .filter(Boolean) as EnvironmentModuleNode[]),
+          )
+          if (ssrHotUpdateOptions) {
+            ssrHotUpdateOptions.modules = ssrHotUpdateOptions.modules.filter(
+              (mod) =>
+                filteredModules.some((mixedMod) => mod.id === mixedMod.id),
+            )
+            ssrHotUpdateOptions.modules.push(
+              ...(filteredModules
+                .filter(
+                  (mixedMod) =>
+                    !ssrHotUpdateOptions.modules.some(
+                      (mod) => mod.id === mixedMod.id,
+                    ),
+                )
+                .map((mixedMod) => mixedMod._ssrModule)
+                .filter(Boolean) as EnvironmentModuleNode[]),
+            )
+          }
+        }
+      }
+    }
+  } catch (error) {
+    hotMap.get(server.environments.client)!.error = error
+  }
 
-//   for (const environment of Object.values(server.environments)) {
-//     if (environment.name === 'client') continue
-//     const hot = hotMap.get(environment)!
-//     const environmentThis = { environment }
-//     try {
-//       for (const plugin of getSortedHotUpdatePlugins(environment)) {
-//         if (plugin.hotUpdate) {
-//           const filteredModules = await getHookHandler(plugin.hotUpdate).call(
-//             environmentThis,
-//             hot.options,
-//           )
-//           if (filteredModules) {
-//             hot.options.modules = filteredModules
-//           }
-//         }
-//       }
-//     } catch (error) {
-//       hot.error = error
-//     }
-//   }
+  for (const environment of Object.values(server.environments)) {
+    if (environment.name === 'client') continue
+    const hot = hotMap.get(environment)!
+    const environmentThis = { environment }
+    try {
+      for (const plugin of getSortedHotUpdatePlugins(environment)) {
+        if (plugin.hotUpdate) {
+          const filteredModules = await getHookHandler(plugin.hotUpdate).call(
+            environmentThis,
+            hot.options,
+          )
+          if (filteredModules) {
+            hot.options.modules = filteredModules
+          }
+        }
+      }
+    } catch (error) {
+      hot.error = error
+    }
+  }
 
-//   async function hmr(environment: DevEnvironment) {
-//     try {
-//       const { options, error } = hotMap.get(environment)!
-//       if (error) {
-//         throw error
-//       }
-//       if (!options.modules.length) {
-//         // html file cannot be hot updated
-//         if (file.endsWith('.html') && environment.name === 'client') {
-//           environment.logger.info(
-//             colors.green(`page reload `) + colors.dim(shortFile),
-//             {
-//               clear: true,
-//               timestamp: true,
-//             },
-//           )
-//           environment.hot.send({
-//             type: 'full-reload',
-//             path: config.server.middlewareMode
-//               ? '*'
-//               : '/' + normalizePath(path.relative(config.root, file)),
-//           })
-//         } else {
-//           // loaded but not in the module graph, probably not js
-//           debugHmr?.(
-//             `(${environment.name}) [no modules matched] ${colors.dim(shortFile)}`,
-//           )
-//         }
-//         return
-//       }
+  async function hmr(environment: DevEnvironment) {
+    try {
+      const { options, error } = hotMap.get(environment)!
+      if (error) {
+        throw error
+      }
+      if (!options.modules.length) {
+        // html file cannot be hot updated
+        if (file.endsWith('.html') && environment.name === 'client') {
+          environment.logger.info(
+            colors.green(`page reload `) + colors.dim(shortFile),
+            {
+              clear: true,
+              timestamp: true,
+            },
+          )
+          environment.hot.send({
+            type: 'full-reload',
+            path: config.server.middlewareMode
+              ? '*'
+              : '/' + normalizePath(path.relative(config.root, file)),
+          })
+        } else {
+          // loaded but not in the module graph, probably not js
+          debugHmr?.(
+            `(${environment.name}) [no modules matched] ${colors.dim(shortFile)}`,
+          )
+        }
+        return
+      }
 
-//       updateModules(environment, shortFile, options.modules, timestamp)
-//     } catch (err) {
-//       environment.hot.send({
-//         type: 'error',
-//         err: prepareError(err),
-//       })
-//     }
-//   }
+      updateModules(environment, shortFile, options.modules, timestamp)
+    } catch (err) {
+      environment.hot.send({
+        type: 'error',
+        err: prepareError(err),
+      })
+    }
+  }
 
-//   const hotUpdateEnvironments =
-//     server.config.server.hotUpdateEnvironments ??
-//     ((server, hmr) => {
-//       // Run HMR in parallel for all environments by default
-//       return Promise.all(
-//         Object.values(server.environments).map((environment) =>
-//           hmr(environment),
-//         ),
-//       )
-//     })
+  const hotUpdateEnvironments =
+    server.config.server.hotUpdateEnvironments ??
+    ((server, hmr) => {
+      // Run HMR in parallel for all environments by default
+      return Promise.all(
+        Object.values(server.environments).map((environment) =>
+          hmr(environment),
+        ),
+      )
+    })
 
-//   await hotUpdateEnvironments(server, hmr)
-// }
+  await hotUpdateEnvironments(server, hmr)
+}
 
 type HasDeadEnd = string | boolean
 
@@ -1100,24 +1097,24 @@ function error(pos: number) {
 // vitejs/vite#610 when hot-reloading Vue files, we read immediately on file
 // change event and sometimes this can be too early and get an empty buffer.
 // Poll until the file's modified time has changed before reading again.
-// async function readModifiedFile(file: string): Promise<string> {
-//   const content = await fsp.readFile(file, 'utf-8')
-//   if (!content) {
-//     const mtime = (await fsp.stat(file)).mtimeMs
+async function readModifiedFile(file: string): Promise<string> {
+  const content = await fsp.readFile(file, 'utf-8')
+  if (!content) {
+    const mtime = (await fsp.stat(file)).mtimeMs
 
-//     for (let n = 0; n < 10; n++) {
-//       await new Promise((r) => setTimeout(r, 10))
-//       const newMtime = (await fsp.stat(file)).mtimeMs
-//       if (newMtime !== mtime) {
-//         break
-//       }
-//     }
+    for (let n = 0; n < 10; n++) {
+      await new Promise((r) => setTimeout(r, 10))
+      const newMtime = (await fsp.stat(file)).mtimeMs
+      if (newMtime !== mtime) {
+        break
+      }
+    }
 
-//     return await fsp.readFile(file, 'utf-8')
-//   } else {
-//     return content
-//   }
-// }
+    return await fsp.readFile(file, 'utf-8')
+  } else {
+    return content
+  }
+}
 
 export type ServerHotChannelApi = {
   innerEmitter: EventEmitter

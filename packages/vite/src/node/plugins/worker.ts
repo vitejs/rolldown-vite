@@ -285,7 +285,8 @@ export function webWorkerPostPlugin(): Plugin {
 }
 
 export function webWorkerPlugin(config: ResolvedConfig): Plugin {
-  const isBuild = true
+  const isBuild =
+    config.command === 'build' || config.experimental.fullBundleMode
   const isWorker = config.isWorker
 
   return {

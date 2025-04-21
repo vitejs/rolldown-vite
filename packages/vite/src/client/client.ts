@@ -8,7 +8,7 @@ import {
 import { createHMRHandler } from '../shared/hmrHandler'
 import { ErrorOverlay, overlayId } from './overlay'
 import './hmrModuleRunner'
-// import '@vite/env'
+import '@vite/env'
 
 // injected by the hmr plugin when served
 declare const __BASE__: string
@@ -21,6 +21,7 @@ declare const __HMR_BASE__: string
 declare const __HMR_TIMEOUT__: number
 declare const __HMR_ENABLE_OVERLAY__: boolean
 declare const __WS_TOKEN__: string
+declare const __FULL_BUNDLE_MODE__: boolean
 
 console.debug('[vite] connecting...')
 
@@ -143,15 +144,34 @@ const hmrClient = new HMRClient(
   async function importUpdatedModule({
     url,
     acceptedPath,
-    // timestamp,
-    // explicitImportRequired,
+    timestamp,
+    explicitImportRequired,
     isWithinCircularImport,
   }) {
-    // const [acceptedPathWithoutQuery, query] = acceptedPath.split(`?`)
-    const importPromise = import(
-      /* @vite-ignore */
-      base + url
-    )
+    function importModuleWithFullBundleMode() {
+      const importPromise = import(base + url)
+      return importPromise.then(() =>
+        // @ts-expect-error globalThis.__rolldown_runtime__
+        globalThis.__rolldown_runtime__.loadExports(acceptedPath),
+      )
+    }
+
+    function importModule() {
+      const [acceptedPathWithoutQuery, query] = acceptedPath.split(`?`)
+      const importPromise = import(
+        /* @vite-ignore */
+        base +
+          acceptedPathWithoutQuery.slice(1) +
+          `?${explicitImportRequired ? 'import&' : ''}t=${timestamp}${
+            query ? `&${query}` : ''
+          }`
+      )
+      return importPromise
+    }
+
+    const importPromise = __FULL_BUNDLE_MODE__
+      ? importModuleWithFullBundleMode()
+      : importModule()
     if (isWithinCircularImport) {
       importPromise.catch(() => {
         console.info(
@@ -161,10 +181,7 @@ const hmrClient = new HMRClient(
         pageReload()
       })
     }
-    // @ts-expect-error globalThis.__rolldown_runtime__
-    return await importPromise.then(() =>
-      globalThis.__rolldown_runtime__.loadExports(acceptedPath),
-    )
+    return await importPromise
   },
 )
 transport.connect!(createHMRHandler(handleMessage))

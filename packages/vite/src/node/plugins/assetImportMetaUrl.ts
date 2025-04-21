@@ -38,7 +38,9 @@ export function assetImportMetaUrlPlugin(config: ResolvedConfig): Plugin {
     ...config.resolve,
     root: config.root,
     isProduction: config.isProduction,
-    isBuild: config.mode === 'production',
+    isBuild: config.experimental?.fullBundleMode
+      ? config.mode === 'production'
+      : config.command === 'build',
     packageCache: config.packageCache,
     asSrc: true,
   }

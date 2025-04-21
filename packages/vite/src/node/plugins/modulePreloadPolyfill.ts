@@ -6,7 +6,7 @@ import { isModernFlag } from './importAnalysisBuild'
 export const modulePreloadPolyfillId = 'vite/modulepreload-polyfill'
 const resolvedModulePreloadPolyfillId = '\0' + modulePreloadPolyfillId + '.js'
 
-export function modulePreloadPolyfillPlugin(_config: ResolvedConfig): Plugin {
+export function modulePreloadPolyfillPlugin(config: ResolvedConfig): Plugin {
   let polyfillString: string | undefined
 
   return {
@@ -22,7 +22,7 @@ export function modulePreloadPolyfillPlugin(_config: ResolvedConfig): Plugin {
       handler(_id) {
         // `isModernFlag` is only available during build since it is resolved by `vite:build-import-analysis`
         if (
-          // config.command !== 'build' ||
+          (config.command !== 'build' && !config.experimental.fullBundleMode) ||
           this.environment.config.consumer !== 'client'
         ) {
           return ''
