@@ -13,11 +13,11 @@ import type {
 import { mergeConfig } from '../utils'
 import { fetchModule } from '../ssr/fetchModule'
 import type { DepsOptimizer } from '../optimizer'
-// import { isDepOptimizationDisabled } from '../optimizer'
-// import {
-//   createDepsOptimizer,
-//   createExplicitDepsOptimizer,
-// } from '../optimizer/optimizer'
+import { isDepOptimizationDisabled } from '../optimizer'
+import {
+  createDepsOptimizer,
+  createExplicitDepsOptimizer,
+} from '../optimizer/optimizer'
 import { resolveEnvironmentPlugins } from '../plugin'
 import { ERR_OUTDATED_OPTIMIZED_DEP } from '../../shared/constants'
 import { promiseWithResolvers } from '../../shared/utils'
@@ -145,18 +145,18 @@ export class DevEnvironment extends BaseEnvironment {
       },
     )
 
-    // const { optimizeDeps } = this.config
-    // if (context.depsOptimizer) {
-    //   this.depsOptimizer = context.depsOptimizer
-    // } else if (isDepOptimizationDisabled(optimizeDeps)) {
-    //   this.depsOptimizer = undefined
-    // } else {
-    //   this.depsOptimizer = (
-    //     optimizeDeps.noDiscovery
-    //       ? createExplicitDepsOptimizer
-    //       : createDepsOptimizer
-    //   )(this)
-    // }
+    const { optimizeDeps, experimental } = this.config
+    if (context.depsOptimizer && !experimental.fullBundleMode) {
+      this.depsOptimizer = context.depsOptimizer
+    } else if (isDepOptimizationDisabled(optimizeDeps)) {
+      this.depsOptimizer = undefined
+    } else {
+      this.depsOptimizer = (
+        optimizeDeps.noDiscovery
+          ? createExplicitDepsOptimizer
+          : createDepsOptimizer
+      )(this)
+    }
   }
 
   async init(options?: {
@@ -188,8 +188,10 @@ export class DevEnvironment extends BaseEnvironment {
    */
   async listen(server: ViteDevServer): Promise<void> {
     this.hot.listen()
-    await this.depsOptimizer?.init()
-    warmupFiles(server, this)
+    if (!this.config.experimental.fullBundleMode) {
+      await this.depsOptimizer?.init()
+      warmupFiles(server, this)
+    }
   }
 
   fetchModule(

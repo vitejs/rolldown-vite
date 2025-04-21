@@ -587,7 +587,7 @@ async function buildEnvironment(
   environment: BuildEnvironment,
   server?: ViteDevServer
 ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
-  const { root, packageCache, mode } = environment.config
+  const { root, packageCache } = environment.config
   const options = environment.config.build
   const libOptions = options.lib
   const { logger } = environment
@@ -677,11 +677,6 @@ async function buildEnvironment(
             implement: await getHmrImplement(environment.config),
           }
         : false,
-      // hmr: true,
-      // hmr: server ? {
-      //   host: server._currentServerHost!,
-      //   port: server._currentServerPort!,
-      // } : false,
     },
   }
 
@@ -826,13 +821,11 @@ async function buildEnvironment(
           (isSsrTargetWebworkerEnvironment &&
             (typeof input === 'string' || Object.keys(input).length === 1)),
         minify:
-          mode === 'production'
-            ? options.minify === 'oxc'
-              ? true
-              : options.minify === false
-                ? 'dce-only'
-                : false
-            : false,
+          options.minify === 'oxc'
+            ? true
+            : options.minify === false
+              ? 'dce-only'
+              : false,
         ...output,
       }
     }
@@ -960,6 +953,7 @@ async function buildEnvironment(
                 url,
                 path: boundary.boundary,
                 acceptedPath: boundary.acceptedVia,
+                timestamp: 0,
               }
             }),
           })

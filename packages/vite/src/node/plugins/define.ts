@@ -12,8 +12,9 @@ const importMetaEnvMarker = '__vite_import_meta_env__'
 const importMetaEnvKeyReCache = new Map<string, RegExp>()
 
 export function definePlugin(config: ResolvedConfig): Plugin {
-  // const isBuild = config.mode === 'production'
-  const isBuildLib = config.build.lib
+  const isBuild =
+    config.command === 'build' || config.experimental.fullBundleMode
+  const isBuildLib = isBuild && config.build.lib
 
   // ignore replace process.env in lib build
   const processEnv: Record<string, string> = {}
@@ -29,20 +30,21 @@ export function definePlugin(config: ResolvedConfig): Plugin {
     })
   }
 
+  // during dev, import.meta properties are handled by importAnalysis plugin.
   const importMetaKeys: Record<string, string> = {}
   const importMetaEnvKeys: Record<string, string> = {}
   const importMetaFallbackKeys: Record<string, string> = {}
-  // if (isBuild) {
-  importMetaKeys['import.meta.hot'] = `undefined`
-  for (const key in config.env) {
-    const val = JSON.stringify(config.env[key])
-    importMetaKeys[`import.meta.env.${key}`] = val
-    importMetaEnvKeys[key] = val
+  if (isBuild) {
+    importMetaKeys['import.meta.hot'] = `undefined`
+    for (const key in config.env) {
+      const val = JSON.stringify(config.env[key])
+      importMetaKeys[`import.meta.env.${key}`] = val
+      importMetaEnvKeys[key] = val
+    }
+    // these will be set to a proper value in `generatePattern`
+    importMetaKeys['import.meta.env.SSR'] = `undefined`
+    importMetaFallbackKeys['import.meta.env'] = `undefined`
   }
-  // these will be set to a proper value in `generatePattern`
-  importMetaKeys['import.meta.env.SSR'] = `undefined`
-  importMetaFallbackKeys['import.meta.env'] = `undefined`
-  // }
 
   function generatePattern(environment: Environment) {
     const keepProcessEnv = environment.config.keepProcessEnv
@@ -53,7 +55,7 @@ export function definePlugin(config: ResolvedConfig): Plugin {
       userDefine[key] = handleDefineValue(environment.config.define[key])
 
       // make sure `import.meta.env` object has user define properties
-      if (key.startsWith('import.meta.env.')) {
+      if (isBuild && key.startsWith('import.meta.env.')) {
         userDefineEnv[key.slice(16)] = environment.config.define[key]
       }
     }
@@ -127,12 +129,12 @@ export function definePlugin(config: ResolvedConfig): Plugin {
 
     transform: {
       async handler(code, id) {
-        // if (this.environment.config.consumer === 'client' && !isBuild) {
-        // for dev we inject actual global defines in the vite client to
-        // avoid the transform cost. see the `clientInjection` and
-        // `importAnalysis` plugin.
-        //   return
-        // }
+        if (this.environment.config.consumer === 'client' && !isBuild) {
+          // for dev we inject actual global defines in the vite client to
+          // avoid the transform cost. see the `clientInjection` and
+          // `importAnalysis` plugin.
+          return
+        }
 
         if (
           // exclude html, css and static assets for performance
@@ -204,9 +206,10 @@ export async function replaceDefine(
     sourceType: 'module',
     define,
     sourcemap:
-      // environment.config.command === 'build' ?
-      !!environment.config.build.sourcemap,
-    // : true,
+      environment.config.command === 'build' ||
+      environment.config.experimental.fullBundleMode
+        ? !!environment.config.build.sourcemap
+        : true,
   })
 
   if (result.errors.length > 0) {

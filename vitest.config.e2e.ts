@@ -14,11 +14,6 @@ export default defineConfig({
   test: {
     include: ['./playground/**/*.spec.[tj]s'],
     exclude: [
-      './playground/hmr/**/*.spec.[tj]s',
-      './playground/html/**/*.spec.[tj]s',
-      './playground/resolve/**/*.spec.[tj]s',
-      './playground/ssr/**/*.spec.[tj]s',
-      './playground/ssr*/**/*.spec.[tj]s',
       './playground/legacy/**/*.spec.[tj]s', // system format
       ...(isBuild
         ? [

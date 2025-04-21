@@ -525,6 +525,13 @@ export interface ExperimentalOptions {
    * @default false
    */
   enableNativePlugin?: boolean | 'resolver'
+  /**
+   * Enable full bundle mode at dev.
+   *
+   * @experimental
+   * @default false
+   */
+  fullBundleMode?: boolean
 }
 
 export interface LegacyOptions {
@@ -1310,7 +1317,9 @@ export async function resolveConfig(
 
   const [prePlugins, normalPlugins, postPlugins] = sortUserPlugins(rawPlugins)
 
-  const isBuild = mode === 'production'
+  const isBuild = config.experimental?.fullBundleMode
+    ? mode === 'production'
+    : command === 'build'
 
   // run config hooks
   const userPlugins = [...prePlugins, ...normalPlugins, ...postPlugins]
