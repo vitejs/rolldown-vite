@@ -918,17 +918,17 @@ export async function _createServer(
     }
   })
 
+  // serve static files under /public
+  // this applies before the transform middleware so that these files are served
+  // as-is without transforms.
+  if (publicDir) {
+    middlewares.use(servePublicMiddleware(server, publicFiles))
+  }
+
   if (config.experimental.fullBundleMode) {
     // serve memory output dist files
     middlewares.use(memoryFilesMiddleware(server, false))
   } else {
-    // serve static files under /public
-    // this applies before the transform middleware so that these files are served
-    // as-is without transforms.
-    if (publicDir) {
-      middlewares.use(servePublicMiddleware(server, publicFiles))
-    }
-
     // main transform middleware
     middlewares.use(transformMiddleware(server))
 
