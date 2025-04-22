@@ -79,5 +79,6 @@ if (__FULL_BUNDLE_MODE__) {
     // createCjsInitializer = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports)
   }
 
+  // @ts-expect-error __rolldown_runtime__
   globalThis.__rolldown_runtime__ ||= new DevRuntime()
 }
