@@ -27,7 +27,7 @@ if (__FULL_BUNDLE_MODE__) {
 
     registerModule(
       id: string,
-      esmExportGettersOrCjsExports: Record<string, () => any>,
+      esmExportGettersOrCjsExports: Record<string, unknown>,
       meta: { cjs?: boolean } = {},
     ) {
       const exports = {}
