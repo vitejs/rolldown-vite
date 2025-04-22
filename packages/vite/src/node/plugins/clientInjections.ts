@@ -78,6 +78,9 @@ export function clientInjectionsPlugin(config: ResolvedConfig): Plugin {
       const hmrEnableOverlayReplacement = escapeReplacement(overlay)
       const hmrConfigNameReplacement = escapeReplacement(hmrConfigName)
       const wsTokenReplacement = escapeReplacement(config.webSocketToken)
+      const fullBundleModeReplacement = escapeReplacement(
+        config.experimental.fullBundleMode || false,
+      )
 
       injectConfigValues = (code: string) => {
         return code
@@ -93,10 +96,7 @@ export function clientInjectionsPlugin(config: ResolvedConfig): Plugin {
           .replace(`__HMR_ENABLE_OVERLAY__`, hmrEnableOverlayReplacement)
           .replace(`__HMR_CONFIG_NAME__`, hmrConfigNameReplacement)
           .replace(`__WS_TOKEN__`, wsTokenReplacement)
-          .replaceAll(
-            `__FULL_BUNDLE_MODE__`,
-            escapeReplacement(config.experimental.fullBundleMode || false),
-          )
+          .replaceAll(`__FULL_BUNDLE_MODE__`, fullBundleModeReplacement)
       }
     },
     async transform(code, id, options) {
@@ -173,6 +173,9 @@ export async function getHmrImplement(config: ResolvedConfig): Promise<string> {
   const hmrEnableOverlayReplacement = escapeReplacement(overlay)
   const hmrConfigNameReplacement = escapeReplacement(hmrConfigName)
   const wsTokenReplacement = escapeReplacement(config.webSocketToken)
+  const fullBundleModeReplacement = escapeReplacement(
+    config.experimental.fullBundleMode || false,
+  )
 
   return content
     .replace(`__MODE__`, modeReplacement)
@@ -187,8 +190,5 @@ export async function getHmrImplement(config: ResolvedConfig): Promise<string> {
     .replace(`__HMR_ENABLE_OVERLAY__`, hmrEnableOverlayReplacement)
     .replace(`__HMR_CONFIG_NAME__`, hmrConfigNameReplacement)
     .replace(`__WS_TOKEN__`, wsTokenReplacement)
-    .replaceAll(
-      `__FULL_BUNDLE_MODE__`,
-      escapeReplacement(config.experimental.fullBundleMode || false),
-    )
+    .replace(`__FULL_BUNDLE_MODE__`, fullBundleModeReplacement)
 }
