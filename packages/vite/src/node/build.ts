@@ -945,6 +945,18 @@ async function buildEnvironment(
       server.watcher.on('change', async (file) => {
         const startTime = Date.now()
         const hmrOutput = (await bundle!.generateHmrPatch([file]))!
+        // @ts-expect-error Need to upgrade rolldown
+        if (hmrOutput.fullReload) {
+          await build()
+          server.ws.send({
+            type: 'full-reload',
+          })
+          logger.info(colors.green(`page reload `) + colors.dim(file), {
+            clear: true,
+            timestamp: true,
+          })
+        }
+
         if (hmrOutput.patch) {
           const url = `${Date.now()}.js`
           server.memoryFiles[url] = hmrOutput.patch
