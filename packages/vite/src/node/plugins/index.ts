@@ -1,3 +1,4 @@
+import url from 'node:url'
 import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
 import {
@@ -18,6 +19,7 @@ import {
   perEnvironmentPlugin,
 } from '../plugin'
 import { watchPackageDataPlugin } from '../packages'
+import { normalizePath } from '../utils'
 import { jsonPlugin } from './json'
 import { oxcResolvePlugin, resolvePlugin } from './resolve'
 import { optimizedDepsPlugin } from './optimizedDeps'
@@ -125,7 +127,36 @@ export async function resolvePlugins(
     esbuildBannerFooterCompatPlugin(config),
     config.oxc !== false
       ? enableNativePlugin === true
-        ? nativeTransformPlugin()
+        ? perEnvironmentPlugin('native:transform', (environment) => {
+            const {
+              jsxInject,
+              include = /\.(m?ts|[jt]sx)$/,
+              exclude = /\.js$/,
+              jsxRefreshInclude,
+              jsxRefreshExclude,
+              ...transformOptions
+            } = config.oxc as any
+
+            const isServerConsumer = environment.config.consumer === 'server'
+            const runtimeResolveBase = normalizePath(
+              url.fileURLToPath(import.meta.url),
+            )
+
+            transformOptions.sourcemap =
+              environment.config.mode !== 'build' ||
+              !!environment.config.build.sourcemap
+
+            return nativeTransformPlugin({
+              include,
+              exclude,
+              jsxRefreshInclude,
+              jsxRefreshExclude,
+              isServerConsumer,
+              runtimeResolveBase,
+              jsxInject,
+              transformOptions,
+            })
+          })
         : oxcPlugin(config)
       : null,
     enableNativePlugin === true
