@@ -222,10 +222,10 @@ cli
         if (!server.httpServer) {
           throw new Error('HTTP server not available')
         }
+        // Need to make sure the server port and then start build.
+        await server.listen()
 
         await builder.buildApp(server)
-
-        await server.listen()
 
         return server
       }
