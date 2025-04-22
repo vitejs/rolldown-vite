@@ -62,6 +62,7 @@ import {
   mergeWithDefaults,
   normalizePath,
   partialEncodeURIPath,
+  setupSIGTERMListener,
   unique,
 } from './utils'
 import { perEnvironmentPlugin, resolveEnvironmentPlugins } from './plugin'
@@ -993,8 +994,20 @@ async function buildEnvironment(
     }
     throw e
   } finally {
-    // close the bundle will make the rolldown hmr invalid, so dev build need to disable it.
-    if (bundle && !server) await bundle.close()
+    // Note: close the bundle will make the rolldown hmr invalid, so dev build need to disable it.
+    if (server) {
+      const closeBundleAndExit = async (_: unknown, exitCode?: number) => {
+        try {
+          if (bundle) await bundle.close()
+        } finally {
+          process.exitCode ??= exitCode ? 128 + exitCode : undefined
+          process.exit()
+        }
+      }
+      setupSIGTERMListener(closeBundleAndExit)
+    } else {
+      if (bundle) await bundle.close()
+    }
   }
 }
 
