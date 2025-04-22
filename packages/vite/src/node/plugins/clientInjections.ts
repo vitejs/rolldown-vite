@@ -129,5 +129,9 @@ async function replaceClientConfigValues(
 
 export async function getHmrImplement(config: ResolvedConfig): Promise<string> {
   const content = fs.readFileSync(normalizedClientEntry, 'utf-8')
-  return replaceClientConfigValues(content, config)
+  return (
+    (await replaceClientConfigValues(content, config))
+      // the rolldown runtime shouldn't be importer a module
+      .replace(`import '@vite/env'`, '')
+  )
 }
