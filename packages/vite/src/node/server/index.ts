@@ -888,7 +888,9 @@ export async function _createServer(
     middlewares.use(hostCheckMiddleware(config, false))
   }
 
-  middlewares.use(cachedTransformMiddleware(server))
+  if (!config.experimental.fullBundleMode) {
+    middlewares.use(cachedTransformMiddleware(server))
+  }
 
   // proxy
   const { proxy } = serverConfig
