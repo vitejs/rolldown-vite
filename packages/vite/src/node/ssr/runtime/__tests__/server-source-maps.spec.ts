@@ -63,6 +63,9 @@ describe('module runner initialization', async () => {
     expect(serializeStack(server, methodErrorNew)).toBe(
       '    at Module.throwError (<root>/fixtures/throws-error-method.ts:11:9)',
     )
+
+    // TODO: test stacktrace on first line
+    // https://github.com/vitejs/vite/issues/19627
   })
 
   it('deep stacktrace', async ({ runner, server }) => {
