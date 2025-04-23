@@ -12,8 +12,7 @@ const importMetaEnvMarker = '__vite_import_meta_env__'
 const importMetaEnvKeyReCache = new Map<string, RegExp>()
 
 export function definePlugin(config: ResolvedConfig): Plugin {
-  const isBuild =
-    config.command === 'build' || config.experimental.fullBundleMode
+  const isBuild = config.command === 'build'
   const isBuildLib = isBuild && config.build.lib
 
   // ignore replace process.env in lib build
@@ -34,7 +33,7 @@ export function definePlugin(config: ResolvedConfig): Plugin {
   const importMetaKeys: Record<string, string> = {}
   const importMetaEnvKeys: Record<string, string> = {}
   const importMetaFallbackKeys: Record<string, string> = {}
-  if (isBuild) {
+  if (isBuild && !config.experimental.fullBundleMode) {
     importMetaKeys['import.meta.hot'] = `undefined`
     for (const key in config.env) {
       const val = JSON.stringify(config.env[key])
@@ -55,7 +54,11 @@ export function definePlugin(config: ResolvedConfig): Plugin {
       userDefine[key] = handleDefineValue(environment.config.define[key])
 
       // make sure `import.meta.env` object has user define properties
-      if (isBuild && key.startsWith('import.meta.env.')) {
+      if (
+        isBuild &&
+        !config.experimental.fullBundleMode &&
+        key.startsWith('import.meta.env.')
+      ) {
         userDefineEnv[key.slice(16)] = environment.config.define[key]
       }
     }
@@ -129,7 +132,11 @@ export function definePlugin(config: ResolvedConfig): Plugin {
 
     transform: {
       async handler(code, id) {
-        if (this.environment.config.consumer === 'client' && !isBuild) {
+        if (
+          this.environment.config.consumer === 'client' &&
+          !isBuild &&
+          !config.experimental.fullBundleMode
+        ) {
           // for dev we inject actual global defines in the vite client to
           // avoid the transform cost. see the `clientInjection` and
           // `importAnalysis` plugin.
