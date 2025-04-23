@@ -13,6 +13,7 @@ Object.assign(module.exports, require('./dist/node-cjs/publicUtils.cjs'))
 const asyncFunctions = [
   'build',
   'createServer',
+  'createServerWithResolvedConfig',
   'preview',
   'transformWithEsbuild',
   'transformWithOxc',

@@ -15,6 +15,7 @@ import {
   build,
   createBuilder,
   createServer,
+  createServerWithResolvedConfig,
   loadConfigFromFile,
   mergeConfig,
   preview,
@@ -227,6 +228,9 @@ async function loadConfig(configEnv: ConfigEnv) {
       // tests are flaky when `emptyOutDir` is `true`
       emptyOutDir: false,
     },
+    experimental: {
+      fullBundleMode: !!process.env.VITE_TEST_FULL_BUNDLE_MODE,
+    },
     customLogger: createInMemoryLogger(serverLogs),
   }
   return mergeConfig(options, config || {})
@@ -238,12 +242,16 @@ export async function startDefaultServe(): Promise<void> {
   if (!isBuild) {
     process.env.VITE_INLINE = 'inline-serve'
     const config = await loadConfig({ command: 'serve', mode: 'development' })
-    // test full bundle mode
-    // viteServer = server = await createServer(config)
-    // const builder = await createBuilder(config, null, 'serve')
-    // await builder.buildApp(server)
-    // await server.listen()
-    viteServer = server = await (await createServer(config)).listen()
+
+    if (process.env.VITE_TEST_FULL_BUNDLE_MODE) {
+      const builder = await createBuilder(config, null, 'serve')
+      viteServer = server = await createServerWithResolvedConfig(builder.config)
+      await server.listen()
+      await builder.buildApp(server)
+    } else {
+      viteServer = server = await (await createServer(config)).listen()
+    }
+
     viteTestUrl = stripTrailingSlashIfNeeded(
       server.resolvedUrls.local[0],
       server.config.base,
