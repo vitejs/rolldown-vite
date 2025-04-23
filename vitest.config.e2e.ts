@@ -12,7 +12,13 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['./playground/**/*.spec.[tj]s'],
+    include: process.env.VITE_TEST_FULL_BUNDLE_MODE
+      ? [
+          './playground/define/**/*.spec.[tj]s',
+          // './playground/hmr-root/**/*.spec.[tj]s',
+          // './playground/hmr/**/*.spec.[tj]s'
+        ]
+      : ['./playground/**/*.spec.[tj]s'],
     exclude: [
       './playground/legacy/**/*.spec.[tj]s', // system format
       ...(isBuild

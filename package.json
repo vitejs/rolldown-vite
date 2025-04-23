@@ -24,6 +24,7 @@
     "lint": "eslint --cache .",
     "typecheck": "tsc -p scripts --noEmit && pnpm -r --parallel run typecheck",
     "test": "pnpm test-unit && pnpm test-serve && pnpm test-build",
+    "test-full-bundle-mode": "VITE_TEST_FULL_BUNDLE_MODE=1 vitest run -c vitest.config.e2e.ts",
     "test-serve": "vitest run -c vitest.config.e2e.ts",
     "test-build": "VITE_TEST_BUILD=1 vitest run -c vitest.config.e2e.ts",
     "test-unit": "vitest run",
