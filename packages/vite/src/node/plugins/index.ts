@@ -1,6 +1,7 @@
 import url from 'node:url'
 import aliasPlugin, { type ResolverFunction } from '@rollup/plugin-alias'
 import type { ObjectHook } from 'rolldown'
+import type { TransformOptions as OxcTransformOptions } from 'rolldown/experimental'
 import {
   aliasPlugin as nativeAliasPlugin,
   dynamicImportVarsPlugin as nativeDynamicImportVarsPlugin,
@@ -43,7 +44,7 @@ import {
   createFilterForTransform,
   createIdFilter,
 } from './pluginFilter'
-import { oxcPlugin } from './oxc'
+import { type OxcOptions, oxcPlugin } from './oxc'
 import { esbuildBannerFooterCompatPlugin } from './esbuildBannerFooterCompatPlugin'
 
 export async function resolvePlugins(
@@ -134,25 +135,27 @@ export async function resolvePlugins(
               exclude = /\.js$/,
               jsxRefreshInclude,
               jsxRefreshExclude,
-              ...transformOptions
-            } = config.oxc as any
+              ..._transformOptions
+            } = config.oxc as Exclude<OxcOptions, false | undefined>
 
-            const isServerConsumer = environment.config.consumer === 'server'
-            const runtimeResolveBase = normalizePath(
-              url.fileURLToPath(import.meta.url),
-            )
-
+            const transformOptions: OxcTransformOptions = _transformOptions
             transformOptions.sourcemap =
               environment.config.mode !== 'build' ||
               !!environment.config.build.sourcemap
 
             return nativeTransformPlugin({
+              // @ts-expect-error https://github.com/rolldown/rolldown/pull/4266
               include,
+              // @ts-expect-error https://github.com/rolldown/rolldown/pull/4266
               exclude,
+              // @ts-expect-error https://github.com/rolldown/rolldown/pull/4266
               jsxRefreshInclude,
+              // @ts-expect-error https://github.com/rolldown/rolldown/pull/4266
               jsxRefreshExclude,
-              isServerConsumer,
-              runtimeResolveBase,
+              isServerConsumer: environment.config.consumer === 'server',
+              runtimeResolveBase: normalizePath(
+                url.fileURLToPath(import.meta.url),
+              ),
               jsxInject,
               transformOptions,
             })
