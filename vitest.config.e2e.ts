@@ -15,8 +15,8 @@ export default defineConfig({
     include: process.env.VITE_TEST_FULL_BUNDLE_MODE
       ? [
           './playground/define/**/*.spec.[tj]s',
-          // './playground/hmr-root/**/*.spec.[tj]s',
-          // './playground/hmr/**/*.spec.[tj]s'
+          './playground/hmr-root/**/*.spec.[tj]s',
+          './playground/hmr/**/*.spec.[tj]s',
         ]
       : ['./playground/**/*.spec.[tj]s'],
     exclude: [
