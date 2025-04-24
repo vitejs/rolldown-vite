@@ -32,6 +32,7 @@ import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
 import type { EsbuildTarget } from 'types/internal/esbuildOptions'
 import type { ChunkMetadata } from 'types/metadata'
+import type { Update } from 'types/hmrPayload'
 import { withTrailingSlash } from '../shared/utils'
 import {
   DEFAULT_ASSETS_INLINE_LIMIT,
@@ -944,6 +945,7 @@ async function buildEnvironment(
 
     if (server) {
       server.watcher.on('change', async (file) => {
+        logger.info(`${colors.green(`${path.relative(root, file)} changed.`)}`)
         const startTime = Date.now()
         const hmrOutput = (await bundle!.generateHmrPatch([file]))!
         // @ts-expect-error Need to upgrade rolldown
@@ -961,23 +963,29 @@ async function buildEnvironment(
         if (hmrOutput.patch) {
           const url = `${Date.now()}.js`
           server.memoryFiles[url] = hmrOutput.patch
+          const updates = hmrOutput.hmrBoundaries.map((boundary) => {
+            return {
+              type: 'js-update',
+              url,
+              path: boundary.boundary,
+              acceptedPath: boundary.acceptedVia,
+              timestamp: 0,
+            }
+          }) as Update[]
           server.ws.send({
             type: 'update',
-            updates: hmrOutput.hmrBoundaries.map((boundary) => {
-              return {
-                type: 'js-update',
-                url,
-                path: boundary.boundary,
-                acceptedPath: boundary.acceptedVia,
-                timestamp: 0,
-              }
-            }),
+            updates,
           })
           logger.info(
-            `${colors.green(`✓ Found ${path.relative(root, file)} changed, rebuilt in ${displayTime(Date.now() - startTime)}`)}`,
+            colors.green(`hmr update `) +
+              colors.dim([...new Set(updates.map((u) => u.path))].join(', ')),
+            { clear: true, timestamp: true },
           )
 
           await build()
+          logger.info(
+            `${colors.green(`✓ rebuilt in ${displayTime(Date.now() - startTime)}`)}`,
+          )
         }
       })
     }
