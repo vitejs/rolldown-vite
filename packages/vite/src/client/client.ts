@@ -183,6 +183,7 @@ const hmrClient = new HMRClient(
     }
     return await importPromise
   },
+  __FULL_BUNDLE_MODE__,
 )
 transport.connect!(createHMRHandler(handleMessage))
 

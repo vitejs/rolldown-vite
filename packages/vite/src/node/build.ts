@@ -655,6 +655,7 @@ async function buildEnvironment(
     //     ? 'strict'
     //     : false,
     // cache: options.watch ? undefined : false,
+    cwd: root,
     ...options.rollupOptions,
     output: options.rollupOptions.output,
     input,

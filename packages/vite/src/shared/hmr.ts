@@ -181,6 +181,7 @@ export class HMRClient {
     private transport: NormalizedModuleRunnerTransport,
     // This allows implementing reloading via different methods depending on the environment
     private importUpdatedModule: (update: Update) => Promise<ModuleNamespace>,
+    private fullBundleMode: boolean,
   ) {}
 
   public async notifyListeners<T extends string>(
@@ -296,7 +297,13 @@ export class HMRClient {
             ),
           )
         }
-        const loggedPath = isSelfUpdate ? path : `${acceptedPath} via ${path}`
+        const loggedPath = this.fullBundleMode
+          ? isSelfUpdate
+            ? `/${path}`
+            : `/${acceptedPath} via /${path}`
+          : isSelfUpdate
+            ? path
+            : `${acceptedPath} via ${path}`
         this.logger.debug(`hot updated: ${loggedPath}`)
       } finally {
         this.currentFirstInvalidatedBy = undefined
