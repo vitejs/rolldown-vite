@@ -74,9 +74,13 @@ if (__FULL_BUNDLE_MODE__) {
     }
 
     // __esmMin
-    // createEsmInitializer = (fn, res) => () => (fn && (res = fn(fn = 0)), res)
+    // @ts-expect-error need to add typing
+    createEsmInitializer = (fn, res) => () => (fn && (res = fn((fn = 0))), res)
     // __commonJSMin
-    // createCjsInitializer = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports)
+    // @ts-expect-error need to add typing
+    createCjsInitializer = (cb, mod) => () => (
+      mod || cb((mod = { exports: {} }).exports, mod), mod.exports
+    )
   }
 
   // @ts-expect-error __rolldown_runtime__
