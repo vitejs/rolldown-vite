@@ -30,6 +30,7 @@ if (!isBuild) {
     browserLogs.length = 0
   })
 
+  if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
   test('self accept', async () => {
     const el = await page.$('.app')
     await untilBrowserLogAfter(
@@ -1098,4 +1099,5 @@ if (!isBuild) {
       await loadPromise
     }, [/connected/, 'a.js'])
   })
+}
 }
