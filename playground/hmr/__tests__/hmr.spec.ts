@@ -67,93 +67,93 @@ if (!isBuild) {
     await untilUpdated(() => el.textContent(), '3')
   })
 
+  test('accept dep', async () => {
+    const el = await page.$('.dep')
+    await untilBrowserLogAfter(
+      () =>
+        editFile('hmrDep.js', (code) =>
+          code.replace('const foo = 1', 'const foo = 2'),
+        ),
+      [
+        '>>> vite:beforeUpdate -- update',
+        '(dep) foo was: 1',
+        '(dep) foo from dispose: 1',
+        '(single dep) foo is now: 2',
+        '(single dep) nested foo is now: 1',
+        '(multi deps) foo is now: 2',
+        '(multi deps) nested foo is now: 1',
+        '[vite] hot updated: /hmrDep.js via /hmr.ts',
+        '>>> vite:afterUpdate -- update',
+      ],
+      true,
+    )
+    await untilUpdated(() => el.textContent(), '2')
+
+    await untilBrowserLogAfter(
+      () =>
+        editFile('hmrDep.js', (code) =>
+          code.replace('const foo = 2', 'const foo = 3'),
+        ),
+      [
+        '>>> vite:beforeUpdate -- update',
+        '(dep) foo was: 2',
+        '(dep) foo from dispose: 2',
+        '(single dep) foo is now: 3',
+        '(single dep) nested foo is now: 1',
+        '(multi deps) foo is now: 3',
+        '(multi deps) nested foo is now: 1',
+        '[vite] hot updated: /hmrDep.js via /hmr.ts',
+        '>>> vite:afterUpdate -- update',
+      ],
+      true,
+    )
+    await untilUpdated(() => el.textContent(), '3')
+  })
+
+  test('nested dep propagation', async () => {
+    const el = await page.$('.nested')
+    await untilBrowserLogAfter(
+      () =>
+        editFile('hmrNestedDep.js', (code) =>
+          code.replace('const foo = 1', 'const foo = 2'),
+        ),
+      [
+        '>>> vite:beforeUpdate -- update',
+        '(dep) foo was: 3',
+        '(dep) foo from dispose: 3',
+        '(single dep) foo is now: 3',
+        '(single dep) nested foo is now: 2',
+        '(multi deps) foo is now: 3',
+        '(multi deps) nested foo is now: 2',
+        '[vite] hot updated: /hmrDep.js via /hmr.ts',
+        '>>> vite:afterUpdate -- update',
+      ],
+      true,
+    )
+    await untilUpdated(() => el.textContent(), '2')
+
+    await untilBrowserLogAfter(
+      () =>
+        editFile('hmrNestedDep.js', (code) =>
+          code.replace('const foo = 2', 'const foo = 3'),
+        ),
+      [
+        '>>> vite:beforeUpdate -- update',
+        '(dep) foo was: 3',
+        '(dep) foo from dispose: 3',
+        '(single dep) foo is now: 3',
+        '(single dep) nested foo is now: 3',
+        '(multi deps) foo is now: 3',
+        '(multi deps) nested foo is now: 3',
+        '[vite] hot updated: /hmrDep.js via /hmr.ts',
+        '>>> vite:afterUpdate -- update',
+      ],
+      true,
+    )
+    await untilUpdated(() => el.textContent(), '3')
+  })
+
   if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
-    test('accept dep', async () => {
-      const el = await page.$('.dep')
-      await untilBrowserLogAfter(
-        () =>
-          editFile('hmrDep.js', (code) =>
-            code.replace('const foo = 1', 'const foo = 2'),
-          ),
-        [
-          '>>> vite:beforeUpdate -- update',
-          '(dep) foo was: 1',
-          '(dep) foo from dispose: 1',
-          '(single dep) foo is now: 2',
-          '(single dep) nested foo is now: 1',
-          '(multi deps) foo is now: 2',
-          '(multi deps) nested foo is now: 1',
-          '[vite] hot updated: /hmrDep.js via /hmr.ts',
-          '>>> vite:afterUpdate -- update',
-        ],
-        true,
-      )
-      await untilUpdated(() => el.textContent(), '2')
-
-      await untilBrowserLogAfter(
-        () =>
-          editFile('hmrDep.js', (code) =>
-            code.replace('const foo = 2', 'const foo = 3'),
-          ),
-        [
-          '>>> vite:beforeUpdate -- update',
-          '(dep) foo was: 2',
-          '(dep) foo from dispose: 2',
-          '(single dep) foo is now: 3',
-          '(single dep) nested foo is now: 1',
-          '(multi deps) foo is now: 3',
-          '(multi deps) nested foo is now: 1',
-          '[vite] hot updated: /hmrDep.js via /hmr.ts',
-          '>>> vite:afterUpdate -- update',
-        ],
-        true,
-      )
-      await untilUpdated(() => el.textContent(), '3')
-    })
-
-    test('nested dep propagation', async () => {
-      const el = await page.$('.nested')
-      await untilBrowserLogAfter(
-        () =>
-          editFile('hmrNestedDep.js', (code) =>
-            code.replace('const foo = 1', 'const foo = 2'),
-          ),
-        [
-          '>>> vite:beforeUpdate -- update',
-          '(dep) foo was: 3',
-          '(dep) foo from dispose: 3',
-          '(single dep) foo is now: 3',
-          '(single dep) nested foo is now: 2',
-          '(multi deps) foo is now: 3',
-          '(multi deps) nested foo is now: 2',
-          '[vite] hot updated: /hmrDep.js via /hmr.ts',
-          '>>> vite:afterUpdate -- update',
-        ],
-        true,
-      )
-      await untilUpdated(() => el.textContent(), '2')
-
-      await untilBrowserLogAfter(
-        () =>
-          editFile('hmrNestedDep.js', (code) =>
-            code.replace('const foo = 2', 'const foo = 3'),
-          ),
-        [
-          '>>> vite:beforeUpdate -- update',
-          '(dep) foo was: 3',
-          '(dep) foo from dispose: 3',
-          '(single dep) foo is now: 3',
-          '(single dep) nested foo is now: 3',
-          '(multi deps) foo is now: 3',
-          '(multi deps) nested foo is now: 3',
-          '[vite] hot updated: /hmrDep.js via /hmr.ts',
-          '>>> vite:afterUpdate -- update',
-        ],
-        true,
-      )
-      await untilUpdated(() => el.textContent(), '3')
-    })
-
     test('invalidate', async () => {
       const el = await page.$('.invalidation-parent')
       await untilBrowserLogAfter(
