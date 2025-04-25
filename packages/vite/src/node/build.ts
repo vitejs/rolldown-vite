@@ -946,7 +946,6 @@ async function buildEnvironment(
 
     if (server) {
       server.watcher.on('change', async (file) => {
-        logger.info(`${colors.green(`${path.relative(root, file)} changed.`)}`)
         const startTime = Date.now()
         const hmrOutput = (await bundle!.generateHmrPatch([file]))!
         // @ts-expect-error Need to upgrade rolldown
