@@ -945,24 +945,24 @@ async function buildEnvironment(
     }
 
     if (server) {
-      server.watcher.on('change', async (file) => {
-        const startTime = Date.now()
-        const hmrOutput = (await bundle!.generateHmrPatch([file]))!
+      async function handleHmrOutput(hmrOutput: any, file: string) {
         // @ts-expect-error Need to upgrade rolldown
         if (hmrOutput.fullReload) {
-          await build()
-          server.ws.send({
+          if (!hmrOutput.firstInvalidatedBy) {
+            await build()
+          }
+          server!.ws.send({
             type: 'full-reload',
           })
           logger.info(colors.green(`page reload `) + colors.dim(file), {
-            clear: true,
+            clear: !hmrOutput.firstInvalidatedBy,
             timestamp: true,
           })
         }
 
         if (hmrOutput.patch) {
           const url = `${Date.now()}.js`
-          server.memoryFiles[url] = hmrOutput.patch
+          server!.memoryFiles[url] = hmrOutput.patch
           const updates = hmrOutput.hmrBoundaries.map((boundary) => {
             return {
               type: 'js-update',
@@ -972,22 +972,53 @@ async function buildEnvironment(
               timestamp: 0,
             }
           }) as Update[]
-          server.ws.send({
+          server!.ws.send({
             type: 'update',
             updates,
           })
           logger.info(
             colors.green(`hmr update `) +
               colors.dim([...new Set(updates.map((u) => u.path))].join(', ')),
-            { clear: true, timestamp: true },
+            { clear: !hmrOutput.firstInvalidatedBy, timestamp: true },
           )
+        }
+      }
 
+      server.watcher.on('change', async (file) => {
+        const startTime = Date.now()
+        const hmrOutput = (await bundle!.generateHmrPatch([file]))!
+        // TODO(underfin): rebuild at first could be work.
+        if (hmrOutput.patch) {
           await build()
           logger.info(
             `${colors.green(`✓ rebuilt in ${displayTime(Date.now() - startTime)}`)}`,
           )
         }
+        await handleHmrOutput(hmrOutput, file)
+
+        // TODO(underfin): The invalidate case is failed because the hmrInvalidate is hang after rebuild at here .
       })
+      server.hot.on(
+        'vite:invalidate',
+        async ({ path: file, message, firstInvalidatedBy }) => {
+          file = path.join(root, file)
+          const hmrOutput = (await bundle!.hmrInvalidate(
+            file,
+            firstInvalidatedBy,
+          ))!
+          if (hmrOutput) {
+            if (hmrOutput.isSelfAccepting) {
+              logger.info(
+                colors.yellow(`hmr invalidate `) +
+                  colors.dim(file) +
+                  (message ? ` ${message}` : ''),
+                { timestamp: true },
+              )
+              await handleHmrOutput(hmrOutput, file)
+            }
+          }
+        },
+      )
     }
 
     return Array.isArray(outputs) ? res : res[0]
