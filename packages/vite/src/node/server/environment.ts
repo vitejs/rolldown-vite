@@ -134,18 +134,21 @@ export class DevEnvironment extends BaseEnvironment {
       },
     })
 
-    this.hot.on(
-      'vite:invalidate',
-      async ({ path, message, firstInvalidatedBy }) => {
-        invalidateModule(this, {
-          path,
-          message,
-          firstInvalidatedBy,
-        })
-      },
-    )
-
     const { optimizeDeps, experimental } = this.config
+
+    if (!experimental.fullBundleMode) {
+      this.hot.on(
+        'vite:invalidate',
+        async ({ path, message, firstInvalidatedBy }) => {
+          invalidateModule(this, {
+            path,
+            message,
+            firstInvalidatedBy,
+          })
+        },
+      )
+    }
+
     if (context.depsOptimizer && !experimental.fullBundleMode) {
       this.depsOptimizer = context.depsOptimizer
     } else if (isDepOptimizationDisabled(optimizeDeps)) {
