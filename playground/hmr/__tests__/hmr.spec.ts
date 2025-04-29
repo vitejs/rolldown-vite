@@ -217,6 +217,9 @@ if (!isBuild) {
     )
   })
 
+  // The file will be transformed twice at rolldown hmr and rebuild.
+  // It is a performance improvement at vite, it should be ignored at rolldown-vite full bundle mode.
+  // Other, not sure why the times is 10, but using the client to check the times is 2.
   if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
     test('soft invalidate', async () => {
       const el = await page.$('.soft-invalidation')
@@ -242,7 +245,9 @@ if (!isBuild) {
         'soft-invalidation/index.js is transformed 2 times. child is now updated?',
       )
     })
+  }
 
+  if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
     test('invalidate in circular dep should not trigger infinite HMR', async () => {
       const el = await page.$('.invalidation-circular-deps')
       await untilUpdated(() => el.textContent(), 'child')
