@@ -153,8 +153,35 @@ if (!isBuild) {
     await untilUpdated(() => el.textContent(), '3')
   })
 
-  if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
-    test('invalidate', async () => {
+  test('invalidate', async () => {
+    const el = await page.$('.invalidation-parent')
+    await untilBrowserLogAfter(
+      () =>
+        editFile('invalidation/child.js', (code) =>
+          code.replace('child', 'child updated'),
+        ),
+      [
+        '>>> vite:beforeUpdate -- update',
+        '>>> vite:invalidate -- /invalidation/child.js',
+        '[vite] invalidate /invalidation/child.js',
+        '[vite] hot updated: /invalidation/child.js',
+        '>>> vite:afterUpdate -- update',
+        '>>> vite:beforeUpdate -- update',
+        '(invalidation) parent is executing',
+        '[vite] hot updated: /invalidation/parent.js',
+        '>>> vite:afterUpdate -- update',
+      ],
+      true,
+    )
+    await untilUpdated(() => el.textContent(), 'child updated')
+  })
+
+  test('invalidate works with multiple tabs', async () => {
+    let page2: Page
+    try {
+      page2 = await browser.newPage()
+      await page2.goto(viteTestUrl)
+
       const el = await page.$('.invalidation-parent')
       await untilBrowserLogAfter(
         () =>
@@ -167,6 +194,7 @@ if (!isBuild) {
           '[vite] invalidate /invalidation/child.js',
           '[vite] hot updated: /invalidation/child.js',
           '>>> vite:afterUpdate -- update',
+          // if invalidate dedupe doesn't work correctly, this beforeUpdate will be called twice
           '>>> vite:beforeUpdate -- update',
           '(invalidation) parent is executing',
           '[vite] hot updated: /invalidation/parent.js',
@@ -175,51 +203,21 @@ if (!isBuild) {
         true,
       )
       await untilUpdated(() => el.textContent(), 'child updated')
-    })
+    } finally {
+      await page2.close()
+    }
+  })
 
-    test('invalidate works with multiple tabs', async () => {
-      let page2: Page
-      try {
-        page2 = await browser.newPage()
-        await page2.goto(viteTestUrl)
+  test('invalidate on root triggers page reload', async () => {
+    editFile('invalidation/root.js', (code) => code.replace('Init', 'Updated'))
+    await page.waitForEvent('load')
+    await untilUpdated(
+      async () => (await page.$('.invalidation-root')).textContent(),
+      'Updated',
+    )
+  })
 
-        const el = await page.$('.invalidation-parent')
-        await untilBrowserLogAfter(
-          () =>
-            editFile('invalidation/child.js', (code) =>
-              code.replace('child', 'child updated'),
-            ),
-          [
-            '>>> vite:beforeUpdate -- update',
-            '>>> vite:invalidate -- /invalidation/child.js',
-            '[vite] invalidate /invalidation/child.js',
-            '[vite] hot updated: /invalidation/child.js',
-            '>>> vite:afterUpdate -- update',
-            // if invalidate dedupe doesn't work correctly, this beforeUpdate will be called twice
-            '>>> vite:beforeUpdate -- update',
-            '(invalidation) parent is executing',
-            '[vite] hot updated: /invalidation/parent.js',
-            '>>> vite:afterUpdate -- update',
-          ],
-          true,
-        )
-        await untilUpdated(() => el.textContent(), 'child updated')
-      } finally {
-        await page2.close()
-      }
-    })
-
-    test('invalidate on root triggers page reload', async () => {
-      editFile('invalidation/root.js', (code) =>
-        code.replace('Init', 'Updated'),
-      )
-      await page.waitForEvent('load')
-      await untilUpdated(
-        async () => (await page.$('.invalidation-root')).textContent(),
-        'Updated',
-      )
-    })
-
+  if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
     test('soft invalidate', async () => {
       const el = await page.$('.soft-invalidation')
       expect(await el.textContent()).toBe(
