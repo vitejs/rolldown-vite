@@ -247,31 +247,31 @@ if (!isBuild) {
     })
   }
 
+  test('invalidate in circular dep should not trigger infinite HMR', async () => {
+    const el = await page.$('.invalidation-circular-deps')
+    await untilUpdated(() => el.textContent(), 'child')
+    editFile(
+      'invalidation-circular-deps/circular-invalidate/child.js',
+      (code) => code.replace('child', 'child updated'),
+    )
+    await page.waitForEvent('load')
+    await untilUpdated(
+      () => page.textContent('.invalidation-circular-deps'),
+      'child updated',
+    )
+  })
+
+  test('invalidate in circular dep should be hot updated if possible', async () => {
+    const el = await page.$('.invalidation-circular-deps-handled')
+    await untilUpdated(() => el.textContent(), 'child')
+    editFile(
+      'invalidation-circular-deps/invalidate-handled-in-circle/child.js',
+      (code) => code.replace('child', 'child updated'),
+    )
+    await untilUpdated(() => el.textContent(), 'child updated')
+  })
+
   if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
-    test('invalidate in circular dep should not trigger infinite HMR', async () => {
-      const el = await page.$('.invalidation-circular-deps')
-      await untilUpdated(() => el.textContent(), 'child')
-      editFile(
-        'invalidation-circular-deps/circular-invalidate/child.js',
-        (code) => code.replace('child', 'child updated'),
-      )
-      await page.waitForEvent('load')
-      await untilUpdated(
-        () => page.textContent('.invalidation-circular-deps'),
-        'child updated',
-      )
-    })
-
-    test('invalidate in circular dep should be hot updated if possible', async () => {
-      const el = await page.$('.invalidation-circular-deps-handled')
-      await untilUpdated(() => el.textContent(), 'child')
-      editFile(
-        'invalidation-circular-deps/invalidate-handled-in-circle/child.js',
-        (code) => code.replace('child', 'child updated'),
-      )
-      await untilUpdated(() => el.textContent(), 'child updated')
-    })
-
     test('plugin hmr handler + custom event', async () => {
       const el = await page.$('.custom')
       editFile('customFile.js', (code) => code.replace('custom', 'edited'))
