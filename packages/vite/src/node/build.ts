@@ -993,6 +993,11 @@ async function buildEnvironment(
       }
 
       server.watcher.on('change', async (file) => {
+        // The playground/hmr test `plugin hmr remove custom events` need to skip the change of unused files.
+        if (!bundle!.watchFiles.includes(file)) {
+          return
+        }
+
         const startTime = Date.now()
         const hmrOutput = (await bundle!.generateHmrPatch([file]))!
         // TODO(underfin): rebuild at first could be work.
