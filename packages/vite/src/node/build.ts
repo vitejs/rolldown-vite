@@ -953,10 +953,17 @@ async function buildEnvironment(
           server!.ws.send({
             type: 'full-reload',
           })
-          logger.info(colors.green(`page reload `) + colors.dim(file), {
-            clear: !hmrOutput.firstInvalidatedBy,
-            timestamp: true,
-          })
+          const reason = hmrOutput.fullReloadReason
+            ? colors.dim(` (${hmrOutput.fullReloadReason})`)
+            : ''
+          logger.info(
+            colors.green(`page reload `) + colors.dim(file) + reason,
+            {
+              clear: !hmrOutput.firstInvalidatedBy,
+              timestamp: true,
+            },
+          )
+          return
         }
 
         if (hmrOutput.patch) {
@@ -968,6 +975,7 @@ async function buildEnvironment(
               url,
               path: boundary.boundary,
               acceptedPath: boundary.acceptedVia,
+              firstInvalidatedBy: hmrOutput.firstInvalidatedBy,
               timestamp: 0,
             }
           }) as Update[]
@@ -1000,9 +1008,8 @@ async function buildEnvironment(
       server.hot.on(
         'vite:invalidate',
         async ({ path: file, message, firstInvalidatedBy }) => {
-          file = path.join(root, file)
           const hmrOutput = (await bundle!.hmrInvalidate(
-            file,
+            path.join(root, file),
             firstInvalidatedBy,
           ))!
           if (hmrOutput) {
