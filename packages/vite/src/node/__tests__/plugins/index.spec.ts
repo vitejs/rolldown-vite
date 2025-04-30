@@ -112,7 +112,7 @@ describe('hook filter with build', async () => {
       {
         name: 'test2',
         transform: {
-          filter: { code: 'import.meta' },
+          filter: { code: /import\.meta/ },
           handler: transformWithCode,
         },
       },
@@ -123,7 +123,7 @@ describe('hook filter with build', async () => {
         },
         load(id) {
           if (id === 'foo.js') {
-            return 'import "foo.ts"\n' + 'import_meta'
+            return 'import_meta'
           }
           if (id === 'foo.ts') {
             return 'import.meta'
