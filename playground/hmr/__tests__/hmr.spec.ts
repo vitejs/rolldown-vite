@@ -271,26 +271,27 @@ if (!isBuild) {
     await untilUpdated(() => el.textContent(), 'child updated')
   })
 
+  test('plugin hmr handler + custom event', async () => {
+    const el = await page.$('.custom')
+    editFile('customFile.js', (code) => code.replace('custom', 'edited'))
+    await untilUpdated(() => el.textContent(), 'edited')
+  })
+
+  test('plugin hmr remove custom events', async () => {
+    const el = await page.$('.toRemove')
+    editFile('customFile.js', (code) => code.replace('custom', 'edited'))
+    await untilUpdated(() => el.textContent(), 'edited')
+    editFile('customFile.js', (code) => code.replace('edited', 'custom'))
+    await untilUpdated(() => el.textContent(), 'edited')
+  })
+
+  test('plugin client-server communication', async () => {
+    const el = await page.$('.custom-communication')
+    await untilUpdated(() => el.textContent(), '3')
+  })
+
+  // BreakChange: The html is not a entry, it couldn't be seen also hasn't hmr.
   if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
-    test('plugin hmr handler + custom event', async () => {
-      const el = await page.$('.custom')
-      editFile('customFile.js', (code) => code.replace('custom', 'edited'))
-      await untilUpdated(() => el.textContent(), 'edited')
-    })
-
-    test('plugin hmr remove custom events', async () => {
-      const el = await page.$('.toRemove')
-      editFile('customFile.js', (code) => code.replace('custom', 'edited'))
-      await untilUpdated(() => el.textContent(), 'edited')
-      editFile('customFile.js', (code) => code.replace('edited', 'custom'))
-      await untilUpdated(() => el.textContent(), 'edited')
-    })
-
-    test('plugin client-server communication', async () => {
-      const el = await page.$('.custom-communication')
-      await untilUpdated(() => el.textContent(), '3')
-    })
-
     test('full-reload encodeURI path', async () => {
       await page.goto(
         viteTestUrl + '/unicode-path/中文-にほんご-한글-🌕🌖🌗/index.html',
@@ -306,7 +307,10 @@ if (!isBuild) {
         'title2',
       )
     })
+  }
 
+  // TODO css hmr
+  if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
     test('CSS update preserves query params', async () => {
       await page.goto(viteTestUrl)
 
@@ -336,7 +340,9 @@ if (!isBuild) {
 
       expect((await page.$$('link')).length).toBe(1)
     })
+  }
 
+  if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
     test('not loaded dynamic import', async () => {
       await page.goto(viteTestUrl + '/counter/index.html', {
         waitUntil: 'load',
