@@ -10,6 +10,7 @@ import colors from 'picocolors'
 import type { Alias, AliasOptions } from 'dep-types/alias'
 import picomatch from 'picomatch'
 import { type OutputChunk, type RolldownOptions, rolldown } from 'rolldown'
+import type { RollupPlugin } from 'types/internal/rollupPlugin'
 import type { AnymatchFn } from '../types/anymatch'
 import { withTrailingSlash } from '../shared/utils'
 import {
@@ -1279,10 +1280,12 @@ export async function resolveConfig(
   mode = inlineConfig.mode || config.mode || mode
   configEnv.mode = mode
 
-  const filterPlugin = (p: Plugin | FalsyPlugin): p is Plugin => {
+  const filterPlugin = (
+    p: Plugin | RollupPlugin | FalsyPlugin,
+  ): p is Plugin => {
     if (!p) {
       return false
-    } else if (!p.apply) {
+    } else if (!('apply' in p) || !p.apply) {
       return true
     } else if (typeof p.apply === 'function') {
       return p.apply({ ...config, mode }, configEnv)

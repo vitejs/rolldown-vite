@@ -99,6 +99,7 @@ export default tseslint.config(
             'vite',
             'esbuild',
             'rolldown',
+            'rollup',
             'less',
             'sass',
             'sass-embedded',
