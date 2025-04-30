@@ -277,6 +277,9 @@ if (!isBuild) {
     await untilUpdated(() => el.textContent(), 'edited')
   })
 
+  // TODO(underfin): the customFile tests maybe make test hang.
+  // The `customFile.js` is not inside module graph, it couldn't be seen also hasn't hmr.
+  // Here only trigger hmr events.
   test('plugin hmr remove custom events', async () => {
     const el = await page.$('.toRemove')
     editFile('customFile.js', (code) => code.replace('custom', 'edited'))
@@ -342,6 +345,7 @@ if (!isBuild) {
     })
   }
 
+  // TODO(underfin): recheck it
   if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
     test('not loaded dynamic import', async () => {
       await page.goto(viteTestUrl + '/counter/index.html', {
@@ -378,33 +382,35 @@ if (!isBuild) {
       btn = await page.$('button')
       expect(await btn.textContent()).toBe('Counter 1')
     })
+  }
 
-    // #2255
-    test('importing reloaded', async () => {
-      await page.goto(viteTestUrl)
-      const outputEle = await page.$('.importing-reloaded')
-      const getOutput = () => {
-        return outputEle.innerHTML()
-      }
+  // #2255
+  test('importing reloaded', async () => {
+    await page.goto(viteTestUrl)
+    const outputEle = await page.$('.importing-reloaded')
+    const getOutput = () => {
+      return outputEle.innerHTML()
+    }
 
-      await untilUpdated(getOutput, ['a.js: a0', 'b.js: b0,a0'].join('<br>'))
+    await untilUpdated(getOutput, ['a.js: a0', 'b.js: b0,a0'].join('<br>'))
 
-      editFile('importing-updated/a.js', (code) => code.replace("'a0'", "'a1'"))
-      await untilUpdated(
-        getOutput,
-        ['a.js: a0', 'b.js: b0,a0', 'a.js: a1'].join('<br>'),
-      )
+    editFile('importing-updated/a.js', (code) => code.replace("'a0'", "'a1'"))
+    await untilUpdated(
+      getOutput,
+      ['a.js: a0', 'b.js: b0,a0', 'a.js: a1'].join('<br>'),
+    )
 
-      editFile('importing-updated/b.js', (code) =>
-        code.replace('`b0,${a}`', '`b1,${a}`'),
-      )
-      // note that "a.js: a1" should not happen twice after "b.js: b0,a0'"
-      await untilUpdated(
-        getOutput,
-        ['a.js: a0', 'b.js: b0,a0', 'a.js: a1', 'b.js: b1,a1'].join('<br>'),
-      )
-    })
+    editFile('importing-updated/b.js', (code) =>
+      code.replace('`b0,${a}`', '`b1,${a}`'),
+    )
+    // note that "a.js: a1" should not happen twice after "b.js: b0,a0'"
+    await untilUpdated(
+      getOutput,
+      ['a.js: a0', 'b.js: b0,a0', 'a.js: a1', 'b.js: b1,a1'].join('<br>'),
+    )
+  })
 
+  if (!process.env.VITE_TEST_FULL_BUNDLE_MODE) {
     describe('acceptExports', () => {
       const HOT_UPDATED = /hot updated/
       const CONNECTED = /connected/
