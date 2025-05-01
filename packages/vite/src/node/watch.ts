@@ -82,8 +82,9 @@ export function convertToNotifyOptions(
   options: WatchOptions | undefined,
 ): WatcherOptions['notify'] {
   if (!options) return
+
   return {
-    pollInterval: options.interval,
+    pollInterval: options.usePolling ? (options.interval ?? 100) : undefined,
   }
 }
 

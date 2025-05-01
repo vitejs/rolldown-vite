@@ -849,8 +849,6 @@ async function buildEnvironment(
         output: normalizedOutputs,
         watch: {
           ...options.watch,
-          // TODO: convert chokidar options more precisely
-          // TODO: support more chokidar options
           notify: convertToNotifyOptions(resolvedChokidarOptions),
         },
       })
