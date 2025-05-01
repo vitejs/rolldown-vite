@@ -836,7 +836,7 @@ async function buildEnvironment(
       logger.info(colors.cyan(`\nwatching for file changes...`))
 
       const resolvedChokidarOptions = resolveChokidarOptions(
-        // @ts-expect-error TODO: chokidar option does not exist in rolldown
+        // @ts-expect-error chokidar option does not exist in rolldown but used for backward compat
         options.watch.chokidar,
         resolvedOutDirs,
         emptyOutDir,
