@@ -21,6 +21,7 @@ import type {
   RollupError,
   RollupLog,
   WarningHandlerWithDefault,
+  WatcherOptions,
 } from 'rolldown'
 import {
   loadFallbackPlugin as nativeLoadFallbackPlugin,
@@ -70,7 +71,6 @@ import { ssrManifestPlugin } from './ssr/ssrManifestPlugin'
 import { buildLoadFallbackPlugin } from './plugins/loadFallback'
 import { findNearestMainPackageData, findNearestPackageData } from './packages'
 import type { PackageCache } from './packages'
-import type { WatcherOptions } from './watch'
 import {
   convertToNotifyOptions,
   getResolvedOutDirs,

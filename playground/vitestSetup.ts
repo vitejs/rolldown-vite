@@ -20,11 +20,13 @@ import {
   preview,
 } from 'vite'
 import type { Browser, Page } from 'playwright-chromium'
-import type { RolldownWatcher, RollupError } from 'rolldown'
+import type {
+  RolldownWatcher,
+  RolldownWatcherEvent,
+  RollupError,
+} from 'rolldown'
 import type { RunnerTestFile } from 'vitest'
 import { beforeAll, inject } from 'vitest'
-
-type RolldownWatcherEvent = any // TODO: export type from rolldown
 
 // #region env
 
@@ -309,11 +311,7 @@ export async function notifyRebuildComplete(
     resolveFn = resolve
   })
 
-  // During tests we edit the files too fast and sometimes chokidar
-  // misses change events, so wait 100ms for consistency
-  await new Promise<void>((resolve) => setTimeout(resolve, 100))
-
-  // TODO: not supported yet
+  // TODO: not supported yet (https://github.com/rolldown/rolldown/issues/4382)
   // return watcher.off('event', callback)
   return watcher
 }
