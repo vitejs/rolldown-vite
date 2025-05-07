@@ -586,7 +586,7 @@ function resolveConfigToBuild(
  **/
 async function buildEnvironment(
   environment: BuildEnvironment,
-  server?: ViteDevServer
+  server?: ViteDevServer,
 ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
   const { root, packageCache, experimental, command } = environment.config
   const options = environment.config.build
@@ -873,6 +873,7 @@ async function buildEnvironment(
         resolvedOutDirs,
         emptyOutDir,
         environment.config.cacheDir,
+        !!experimental.fullBundleMode,
       )
 
       const { watch } = await import('rolldown')
@@ -945,7 +946,6 @@ async function buildEnvironment(
 
     if (server) {
       async function handleHmrOutput(hmrOutput: any, file: string) {
-        // @ts-expect-error Need to upgrade rolldown
         if (hmrOutput.fullReload) {
           if (!hmrOutput.firstInvalidatedBy) {
             await build()
@@ -969,7 +969,7 @@ async function buildEnvironment(
         if (hmrOutput.patch) {
           const url = `${Date.now()}.js`
           server!.memoryFiles[url] = hmrOutput.patch
-          const updates = hmrOutput.hmrBoundaries.map((boundary) => {
+          const updates = hmrOutput.hmrBoundaries.map((boundary: any) => {
             return {
               type: 'js-update',
               url,
@@ -1774,7 +1774,7 @@ export interface ViteBuilder {
   buildApp(server?: ViteDevServer): Promise<void>
   build(
     environment: BuildEnvironment,
-    server?: ViteDevServer
+    server?: ViteDevServer,
   ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher>
 }
 
