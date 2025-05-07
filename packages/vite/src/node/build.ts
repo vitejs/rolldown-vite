@@ -682,6 +682,9 @@ async function buildEnvironment(
           }
         : false,
     },
+    treeshake: experimental.fullBundleMode
+      ? false
+      : options.rollupOptions.treeshake,
   }
 
   /**
