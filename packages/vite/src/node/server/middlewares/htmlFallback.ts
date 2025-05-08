@@ -9,6 +9,8 @@ const debug = createDebugger('vite:html-fallback')
 export function htmlFallbackMiddleware(
   root: string,
   spaFallback: boolean,
+  fullBundleMode: boolean,
+  memoryFiles: Record<string, string | Uint8Array>,
 ): Connect.NextHandleFunction {
   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
   return function viteHtmlFallbackMiddleware(req, _res, next) {
@@ -31,6 +33,12 @@ export function htmlFallbackMiddleware(
     const url = cleanUrl(req.url!)
     const pathname = decodeURIComponent(url)
 
+    function checkFileExists(htmlPathName: string) {
+      return fullBundleMode
+        ? memoryFiles[htmlPathName]
+        : fs.existsSync(path.join(root, htmlPathName))
+    }
+
     // .html files are not handled by serveStaticMiddleware
     // so we need to check if the file exists
     if (pathname.endsWith('.html')) {
@@ -43,8 +51,7 @@ export function htmlFallbackMiddleware(
     }
     // trailing slash should check for fallback index.html
     else if (pathname.endsWith('/')) {
-      const filePath = path.join(root, pathname, 'index.html')
-      if (fs.existsSync(filePath)) {
+      if (checkFileExists(path.join(pathname, 'index.html'))) {
         const newUrl = url + 'index.html'
         debug?.(`Rewriting ${req.method} ${req.url} to ${newUrl}`)
         req.url = newUrl
@@ -53,8 +60,7 @@ export function htmlFallbackMiddleware(
     }
     // non-trailing slash should check for fallback .html
     else {
-      const filePath = path.join(root, pathname + '.html')
-      if (fs.existsSync(filePath)) {
+      if (checkFileExists(pathname + '.html')) {
         const newUrl = url + '.html'
         debug?.(`Rewriting ${req.method} ${req.url} to ${newUrl}`)
         req.url = newUrl
