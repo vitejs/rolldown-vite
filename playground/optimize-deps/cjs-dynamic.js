@@ -1,10 +1,11 @@
 // test dynamic import to cjs deps
 // mostly ensuring consistency between dev server behavior and build behavior
-// of @rollup/plugin-commonjs
+// of rolldown
+// Some imports are inconsistent with `./cjs.js` due to https://github.com/rolldown/rolldown/issues/2031
 ;(async () => {
-  const { useState } = await import('react')
+  const { useState } = (await import('react')).default
   const React = (await import('react')).default
-  const ReactDOM = await import('react-dom/client')
+  const ReactDOM = (await import('react-dom/client')).default
 
   const clip = await import('clipboard')
   if (typeof clip.default === 'function') {
@@ -16,7 +17,8 @@
     text('.cjs-dynamic-phoenix', 'ok')
   }
 
-  const cjsFromESM = await import('@vitejs/test-dep-cjs-compiled-from-esm')
+  const cjsFromESM = (await import('@vitejs/test-dep-cjs-compiled-from-esm'))
+    .default
   console.log('cjsFromESM', cjsFromESM)
   if (typeof cjsFromESM.default === 'function') {
     text('.cjs-dynamic-dep-cjs-compiled-from-esm', 'ok')

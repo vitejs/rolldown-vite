@@ -595,16 +595,19 @@ export function importAnalysisPlugin(config: ResolvedConfig): Plugin {
                     )
                   }
                 } else if (needsInterop) {
-                  debug?.(`${url} needs interop`)
-                  interopNamedImports(
-                    str(),
-                    importSpecifier,
-                    url,
-                    index,
-                    importer,
-                    config,
-                  )
-                  rewriteDone = true
+                  // rolldown does not inject interop for dynamic imports
+                  if (importSpecifier.d < 0) {
+                    debug?.(`${url} needs interop`)
+                    interopNamedImports(
+                      str(),
+                      importSpecifier,
+                      url,
+                      index,
+                      importer,
+                      config,
+                    )
+                    rewriteDone = true
+                  }
                 }
               }
               // If source code imports builtin modules via named imports, the stub proxy export
