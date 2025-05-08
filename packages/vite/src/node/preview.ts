@@ -246,7 +246,9 @@ export async function preview(
 
   // html fallback
   if (config.appType === 'spa' || config.appType === 'mpa') {
-    app.use(htmlFallbackMiddleware(distDir, config.appType === 'spa'))
+    app.use(
+      htmlFallbackMiddleware(distDir, config.appType === 'spa', false, {}),
+    )
   }
 
   // apply post server hooks from plugins
