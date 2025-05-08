@@ -939,7 +939,14 @@ export async function _createServer(
 
   // html fallback
   if (config.appType === 'spa' || config.appType === 'mpa') {
-    middlewares.use(htmlFallbackMiddleware(root, config.appType === 'spa'))
+    middlewares.use(
+      htmlFallbackMiddleware(
+        root,
+        config.appType === 'spa',
+        !!config.experimental.fullBundleMode,
+        server.memoryFiles,
+      ),
+    )
   }
 
   // run post config hooks
