@@ -25,41 +25,9 @@ if (__FULL_BUNDLE_MODE__) {
       //
     }
 
-    registerModule(
-      id: string,
-      esmExportGettersOrCjsExports: Record<string, unknown>,
-      meta: { cjs?: boolean } = {},
-    ) {
-      const exports = {}
-      Object.keys(esmExportGettersOrCjsExports).forEach((key) => {
-        if (
-          Object.prototype.hasOwnProperty.call(
-            esmExportGettersOrCjsExports,
-            key,
-          )
-        ) {
-          if (meta.cjs) {
-            Object.defineProperty(exports, key, {
-              enumerable: true,
-              get: () => esmExportGettersOrCjsExports[key],
-            })
-          } else {
-            Object.defineProperty(exports, key, {
-              enumerable: true,
-              get: esmExportGettersOrCjsExports[key],
-            })
-          }
-        }
-      })
-      if (this.modules[id]) {
-        this.modules[id] = {
-          exports,
-        }
-      } else {
-        // If the module is not in the cache, we need to register it.
-        this.modules[id] = {
-          exports,
-        }
+    registerModule(id: string, exports: Record<string, () => unknown>) {
+      this.modules[id] = {
+        exports,
       }
     }
 
@@ -81,6 +49,12 @@ if (__FULL_BUNDLE_MODE__) {
     createCjsInitializer = (cb, mod) => () => (
       mod || cb((mod = { exports: {} }).exports, mod), mod.exports
     )
+    // @ts-expect-error it is exits
+    __toESM = __toESM
+    // @ts-expect-error it is exits
+    __toCommonJS = __toCommonJS
+    // @ts-expect-error it is exits
+    __export = __export
   }
 
   // @ts-expect-error __rolldown_runtime__
