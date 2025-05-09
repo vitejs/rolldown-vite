@@ -232,10 +232,17 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
           // Force rollup to keep this module from being shared between other entry points if it's an entrypoint.
           // If the resulting chunk is empty, it will be removed in generateBundle.
           moduleSideEffects:
-            config.command === 'build' && this.getModuleInfo(id)?.isEntry
+            (config.command === 'build' ||
+              !!config.experimental.fullBundleMode) &&
+            this.getModuleInfo(id)?.isEntry
               ? 'no-treeshake'
               : false,
-          meta: config.command === 'build' ? { 'vite:asset': true } : undefined,
+          meta:
+            config.command === 'build' || !!config.experimental.fullBundleMode
+              ? {
+                  'vite:asset': true,
+                }
+              : undefined,
           moduleType: 'js', // NOTE: needs to be set to avoid double `export default` in `.txt`s
         }
       },
@@ -290,7 +297,7 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
 
       // do not emit assets for SSR build
       if (
-        config.command === 'build' &&
+        (config.command === 'build' || !!config.experimental.fullBundleMode) &&
         !this.environment.config.build.emitAssets
       ) {
         for (const file in bundle) {
@@ -320,7 +327,10 @@ export async function fileToUrl(
   id: string,
 ): Promise<string> {
   const { environment } = pluginContext
-  if (environment.config.command === 'serve') {
+  if (
+    environment.config.command === 'serve' &&
+    !environment.config.experimental.fullBundleMode
+  ) {
     return fileToDevUrl(environment, id)
   } else {
     return fileToBuiltUrl(pluginContext, id)
@@ -391,7 +401,7 @@ export function publicFileToBuiltUrl(
   url: string,
   config: ResolvedConfig,
 ): string {
-  if (config.command !== 'build') {
+  if (config.command !== 'build' && !config.experimental.fullBundleMode) {
     // We don't need relative base or renderBuiltUrl support during dev
     return joinUrlSegments(config.decodedBase, url)
   }
