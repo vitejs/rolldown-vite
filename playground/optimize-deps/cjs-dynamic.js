@@ -19,13 +19,11 @@
 
   const cjsFromESM = (await import('@vitejs/test-dep-cjs-compiled-from-esm'))
     .default
-  console.log('cjsFromESM', cjsFromESM)
   if (typeof cjsFromESM.default === 'function') {
     text('.cjs-dynamic-dep-cjs-compiled-from-esm', 'ok')
   }
 
   const cjsFromCJS = await import('@vitejs/test-dep-cjs-compiled-from-cjs')
-  console.log('cjsFromCJS', cjsFromCJS)
   if (typeof cjsFromCJS.default === 'function') {
     text('.cjs-dynamic-dep-cjs-compiled-from-cjs', 'ok')
   }
