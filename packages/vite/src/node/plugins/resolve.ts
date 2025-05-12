@@ -793,12 +793,11 @@ export function resolvePlugin(
           }
         }
         if (id.startsWith(optionalPeerDepId)) {
-          if (isProduction) {
-            return `export default {}`
-          } else {
-            const [, peerDep, parentDep] = id.split(':')
-            return `throw new Error(\`Could not resolve "${peerDep}" imported by "${parentDep}". Is it installed?\`)`
-          }
+          const [, peerDep, parentDep] = id.split(':')
+          return (
+            'export default {};' +
+            `throw new Error(\`Could not resolve "${peerDep}" imported by "${parentDep}".${isProduction ? '' : ' Is it installed?'}\`)`
+          )
         }
       },
     },

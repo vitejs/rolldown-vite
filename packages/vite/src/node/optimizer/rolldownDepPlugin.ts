@@ -294,16 +294,12 @@ export function rolldownDepPlugin(
           }
 
           if (id.startsWith(optionalPeerDepNamespace)) {
-            if (isProduction) {
-              return {
-                code: 'module.exports = {}',
-              }
-            } else {
-              const path = id.slice(externalWithConversionNamespace.length)
-              const [, peerDep, parentDep] = path.split(':')
-              return {
-                code: `throw new Error(\`Could not resolve "${peerDep}" imported by "${parentDep}". Is it installed?\`)`,
-              }
+            const path = id.slice(optionalPeerDepNamespace.length)
+            const [, peerDep, parentDep] = path.split(':')
+            return {
+              code:
+                'module.exports = {};' +
+                `throw new Error(\`Could not resolve "${peerDep}" imported by "${parentDep}". Is it installed?\`)`,
             }
           }
         },
