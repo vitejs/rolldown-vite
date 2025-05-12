@@ -25,10 +25,11 @@ if (__FULL_BUNDLE_MODE__) {
       //
     }
 
-    registerModule(id: string, exports: Record<string, () => unknown>) {
-      this.modules[id] = {
-        exports,
-      }
+    registerModule(
+      id: string,
+      module: { exports: Record<string, () => unknown> },
+    ) {
+      this.modules[id] = module
     }
 
     loadExports(id: string) {
