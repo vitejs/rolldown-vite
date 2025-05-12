@@ -1003,16 +1003,15 @@ async function buildEnvironment(
 
         const startTime = Date.now()
         const hmrOutput = (await bundle!.generateHmrPatch([file]))!
-        // TODO(underfin): rebuild at first could be work.
+
+        await handleHmrOutput(hmrOutput, file)
+
         if (hmrOutput.patch) {
           await build()
           logger.info(
             `${colors.green(`✓ rebuilt in ${displayTime(Date.now() - startTime)}`)}`,
           )
         }
-        await handleHmrOutput(hmrOutput, file)
-
-        // TODO(underfin): The invalidate case is failed because the hmrInvalidate is hang after rebuild at here .
       })
       server.hot.on(
         'vite:invalidate',
