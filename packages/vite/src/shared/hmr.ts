@@ -155,13 +155,13 @@ export class HMRContext implements ViteHotContext {
     this.hmrClient.send({ type: 'custom', event, data })
   }
 
-  async getExports(): Promise<unknown> {
+  async getExports(url: string): Promise<unknown> {
     return this.fullBundleMode
       ? Promise.resolve().then(() =>
           // @ts-expect-error __rolldown_runtime__
           __rolldown_runtime__.loadExports(this.ownerPath),
         )
-      : import(this.ownerPath)
+      : import(url)
   }
 
   private acceptDeps(
