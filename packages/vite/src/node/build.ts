@@ -995,27 +995,43 @@ async function buildEnvironment(
         }
       }
 
+      let debouncedBuild: NodeJS.Timeout | undefined
+
+      function debounceBuild() {
+        cancelBuild()
+        debouncedBuild = setTimeout(async () => {
+          const startTime = Date.now()
+          await build()
+          logger.info(
+            `${colors.green(`✓ rebuilt in ${displayTime(Date.now() - startTime)}`)}`,
+          )
+        }, 20)
+      }
+
+      function cancelBuild() {
+        if (debouncedBuild) clearTimeout(debouncedBuild)
+      }
+
       server.watcher.on('change', async (file) => {
         // The playground/hmr test `plugin hmr remove custom events` need to skip the change of unused files.
         if (!bundle!.watchFiles.includes(file)) {
           return
         }
 
-        const startTime = Date.now()
         const hmrOutput = (await bundle!.generateHmrPatch([file]))!
 
         await handleHmrOutput(hmrOutput, file)
 
         if (hmrOutput.patch) {
-          await build()
-          logger.info(
-            `${colors.green(`✓ rebuilt in ${displayTime(Date.now() - startTime)}`)}`,
-          )
+          debounceBuild()
         }
       })
+
       server.hot.on(
         'vite:invalidate',
         async ({ path: file, message, firstInvalidatedBy }) => {
+          // cancel the debounce build util the hmr invalidate is done.
+          cancelBuild()
           const hmrOutput = (await bundle!.hmrInvalidate(
             path.join(root, file),
             firstInvalidatedBy,
@@ -1029,6 +1045,10 @@ async function buildEnvironment(
                 { timestamp: true },
               )
               await handleHmrOutput(hmrOutput, file)
+
+              if (hmrOutput.patch) {
+                debounceBuild()
+              }
             }
           }
         },
