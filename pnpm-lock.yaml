@@ -6,6 +6,7 @@ settings:
 
 overrides:
   vite: workspace:rolldown-vite@*
+  vitest>vite: 6.3.5
 
 packageExtensionsChecksum: sha256-BLDZCgUIohvBXMHo3XFOlGLzGXRyK3sDU0nMBRk9APY=
 
@@ -9746,7 +9747,7 @@ snapshots:
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: link:packages/vite
+      vite: 6.3.5(@types/node@22.13.6)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.29.3)(sass-embedded@1.86.3(source-map-js@1.2.1))(sass@1.86.3)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0)
 
   '@vitest/pretty-format@3.2.3':
     dependencies:
@@ -13429,8 +13430,18 @@ snapshots:
       '@types/debug': 4.1.12
       '@types/node': 22.15.32
     transitivePeerDependencies:
+      - jiti
+      - less
+      - lightningcss
       - msw
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
       - supports-color
+      - terser
+      - tsx
+      - yaml
 
   void-elements@3.1.0: {}
 
