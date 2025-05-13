@@ -1723,9 +1723,7 @@ export async function resolveConfig(
     experimental: {
       importGlobRestoreExtension: false,
       hmrPartialAccept: false,
-      enableNativePlugin: process.env._VITE_TEST_NATIVE_PLUGIN
-        ? 'resolver'
-        : false,
+      enableNativePlugin: process.env._VITE_TEST_NATIVE_PLUGIN ? true : false,
       ...config.experimental,
     },
     future: config.future,
