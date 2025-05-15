@@ -47,13 +47,12 @@ export function jsonPlugin(
     transform: {
       filter: {
         id: { include: jsonExtRE, exclude: SPECIAL_QUERY_RE },
+        // don't transform if the file is already transformed to a different format
+        moduleType: ['json'],
       },
-      handler(json, id, opts) {
+      handler(json, id) {
         // for backward compat this if statement is needed
         if (!jsonExtRE.test(id) || SPECIAL_QUERY_RE.test(id)) return null
-
-        // don't transform if the file is already transformed to a different format
-        if (opts?.moduleType !== 'json') return
 
         if (inlineRE.test(id) || noInlineRE.test(id)) {
           this.warn(

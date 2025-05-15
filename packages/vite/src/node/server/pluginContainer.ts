@@ -495,7 +495,7 @@ class EnvironmentPluginContainer {
         throwClosedServerError()
 
       const filter = getCachedFilterForPlugin(plugin, 'transform')
-      if (filter && !filter(id, code)) continue
+      if (filter && !filter(id, code, optionsWithSSR.moduleType)) continue
 
       ctx._updateActiveInfo(plugin, id, code)
       const start = debugPluginTransform ? performance.now() : 0
