@@ -13,6 +13,18 @@ export default defineConfig({
         return false
       }
     },
+    rollupOptions: {
+      input: [
+        path.resolve(import.meta.dirname, 'accept-exports/dynamic-imports/index.html'),
+        path.resolve(import.meta.dirname, 'accept-exports/export-from/index.html'),
+        path.resolve(import.meta.dirname, 'accept-exports/main-accepted/index.html'),
+        path.resolve(import.meta.dirname, 'accept-exports/main-non-accepted/index.html'),
+        path.resolve(import.meta.dirname, 'accept-exports/side-effects/index.html'),
+        path.resolve(import.meta.dirname, 'accept-exports/star-imports/index.html'),
+        path.resolve(import.meta.dirname, 'accept-exports/unused-exports/index.html'),
+        path.resolve(import.meta.dirname, 'index.html'),
+      ]
+    }
   },
   plugins: [
     {

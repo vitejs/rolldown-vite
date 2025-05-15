@@ -12,7 +12,8 @@ const importMetaEnvMarker = '__vite_import_meta_env__'
 const importMetaEnvKeyReCache = new Map<string, RegExp>()
 
 export function definePlugin(config: ResolvedConfig): Plugin {
-  const isBuild = config.command === 'build'
+  const isBuild =
+    config.command === 'build' || !!config.experimental.fullBundleMode
   const isBuildLib = isBuild && config.build.lib
 
   // ignore replace process.env in lib build
@@ -34,7 +35,10 @@ export function definePlugin(config: ResolvedConfig): Plugin {
   const importMetaEnvKeys: Record<string, string> = {}
   const importMetaFallbackKeys: Record<string, string> = {}
   if (isBuild) {
-    importMetaKeys['import.meta.hot'] = `undefined`
+    // import.meta.hot need to avoid replace undefined at full bundle mode
+    if (!config.experimental.fullBundleMode) {
+      importMetaKeys['import.meta.hot'] = `undefined`
+    }
     for (const key in config.env) {
       const val = JSON.stringify(config.env[key])
       importMetaKeys[`import.meta.env.${key}`] = val
@@ -205,7 +209,8 @@ export async function replaceDefine(
     sourceType: 'module',
     define,
     sourcemap:
-      environment.config.command === 'build'
+      environment.config.command === 'build' ||
+      environment.config.experimental.fullBundleMode
         ? !!environment.config.build.sourcemap
         : true,
   })

@@ -99,7 +99,9 @@ import { transformRequest } from './transformRequest'
 import { searchForPackageRoot, searchForWorkspaceRoot } from './searchRoot'
 import type { DevEnvironment } from './environment'
 import { hostCheckMiddleware } from './middlewares/hostCheck'
+import { memoryFilesMiddleware } from './middlewares/memoryFiles'
 import { rejectInvalidRequestMiddleware } from './middlewares/rejectInvalidRequest'
+import { BuildModuleGraph } from './buildModuleGraph'
 
 export interface ServerOptions extends CommonServerOptions {
   /**
@@ -294,7 +296,7 @@ export interface ViteDevServer {
    * Module graph that tracks the import relationships, url to file mapping
    * and hmr state.
    */
-  moduleGraph: ModuleGraph
+  moduleGraph: ModuleGraph | BuildModuleGraph
   /**
    * The resolved urls Vite prints on the CLI (URL-encoded). Returns `null`
    * in middleware mode or if the server is not listening on any port.
@@ -419,6 +421,10 @@ export interface ViteDevServer {
    * @internal
    */
   _ssrCompatModuleRunner?: ModuleRunner
+  /**
+   * @internal
+   */
+  memoryFiles: Record<string, string | Uint8Array>
 }
 
 export interface ResolvedServerUrls {
@@ -426,21 +432,26 @@ export interface ResolvedServerUrls {
   network: string[]
 }
 
-export function createServer(
+export async function createServer(
   inlineConfig: InlineConfig = {},
 ): Promise<ViteDevServer> {
-  return _createServer(inlineConfig, { listen: true })
+  const config = await resolveConfig(inlineConfig, 'serve')
+  return _createServer(config, { listen: true })
+}
+
+export function createServerWithResolvedConfig(
+  config: ResolvedConfig,
+): Promise<ViteDevServer> {
+  return _createServer(config, { listen: true })
 }
 
 export async function _createServer(
-  inlineConfig: InlineConfig = {},
+  config: ResolvedConfig,
   options: {
     listen: boolean
     previousEnvironments?: Record<string, DevEnvironment>
   },
 ): Promise<ViteDevServer> {
-  const config = await resolveConfig(inlineConfig, 'serve')
-
   const initPublicFilesPromise = initPublicFiles(config)
 
   const { root, server: serverConfig } = config
@@ -465,6 +476,7 @@ export async function _createServer(
     resolvedOutDirs,
     emptyOutDir,
     config.cacheDir,
+    !!config.experimental.fullBundleMode,
   )
 
   const middlewares = connect() as Connect.Server
@@ -520,10 +532,12 @@ export async function _createServer(
 
   // Backward compatibility
 
-  let moduleGraph = new ModuleGraph({
-    client: () => environments.client.moduleGraph,
-    ssr: () => environments.ssr.moduleGraph,
-  })
+  let moduleGraph = config.experimental.fullBundleMode
+    ? new BuildModuleGraph()
+    : new ModuleGraph({
+        client: () => environments.client.moduleGraph,
+        ssr: () => environments.ssr.moduleGraph,
+      })
   const pluginContainer = createPluginContainer(environments)
 
   const closeHttpServer = createServerCloseFn(httpServer)
@@ -553,6 +567,7 @@ export async function _createServer(
   }
 
   let server: ViteDevServer = {
+    memoryFiles: {},
     config,
     middlewares,
     httpServer,
@@ -785,6 +800,7 @@ export async function _createServer(
     }
   }
 
+  // TODO(underfin): handle this
   const onFileAddUnlink = async (file: string, isUnlink: boolean) => {
     file = normalizePath(file)
     reloadOnTsconfigChange(server, file)
@@ -821,8 +837,10 @@ export async function _createServer(
 
   watcher.on('change', async (file) => {
     file = normalizePath(file)
+    // TODO(underfin): handle ts config.json change at full bundle mode
     reloadOnTsconfigChange(server, file)
 
+    // TODO(underfin): watchChange hooks how to migrate at full bundle mode
     await pluginContainer.watchChange(file, { event: 'update' })
     // invalidate module graph cache on file change
     for (const environment of Object.values(server.environments)) {
@@ -874,7 +892,9 @@ export async function _createServer(
     middlewares.use(hostCheckMiddleware(config, false))
   }
 
-  middlewares.use(cachedTransformMiddleware(server))
+  if (!config.experimental.fullBundleMode) {
+    middlewares.use(cachedTransformMiddleware(server))
+  }
 
   // proxy
   const { proxy } = serverConfig
@@ -909,16 +929,28 @@ export async function _createServer(
     middlewares.use(servePublicMiddleware(server, publicFiles))
   }
 
-  // main transform middleware
-  middlewares.use(transformMiddleware(server))
+  if (config.experimental.fullBundleMode) {
+    // serve memory output dist files
+    middlewares.use(memoryFilesMiddleware(server, false))
+  } else {
+    // main transform middleware
+    middlewares.use(transformMiddleware(server))
 
-  // serve static files
-  middlewares.use(serveRawFsMiddleware(server))
-  middlewares.use(serveStaticMiddleware(server))
+    // serve static files
+    middlewares.use(serveRawFsMiddleware(server))
+    middlewares.use(serveStaticMiddleware(server))
+  }
 
   // html fallback
   if (config.appType === 'spa' || config.appType === 'mpa') {
-    middlewares.use(htmlFallbackMiddleware(root, config.appType === 'spa'))
+    middlewares.use(
+      htmlFallbackMiddleware(
+        root,
+        config.appType === 'spa',
+        !!config.experimental.fullBundleMode,
+        server.memoryFiles,
+      ),
+    )
   }
 
   // run post config hooks
@@ -927,8 +959,12 @@ export async function _createServer(
   postHooks.forEach((fn) => fn && fn())
 
   if (config.appType === 'spa' || config.appType === 'mpa') {
-    // transform index.html
-    middlewares.use(indexHtmlMiddleware(root, server))
+    if (config.experimental.fullBundleMode) {
+      middlewares.use(memoryFilesMiddleware(server, true))
+    } else {
+      // transform index.html
+      middlewares.use(indexHtmlMiddleware(root, server))
+    }
 
     // handle 404s
     middlewares.use(notFoundMiddleware())
@@ -950,7 +986,9 @@ export async function _createServer(
       // For backward compatibility, we call buildStart for the client
       // environment when initing the server. For other environments
       // buildStart will be called when the first request is transformed
-      await environments.client.pluginContainer.buildStart()
+      if (!config.experimental.fullBundleMode) {
+        await environments.client.pluginContainer.buildStart()
+      }
 
       // ensure ws server started
       if (onListen || options.listen) {
@@ -1190,7 +1228,8 @@ async function restartServer(server: ViteDevServer) {
     let newServer: ViteDevServer | null = null
     try {
       // delay ws server listen
-      newServer = await _createServer(inlineConfig, {
+      const config = await resolveConfig(inlineConfig, 'serve')
+      newServer = await _createServer(config, {
         listen: false,
         previousEnvironments: server.environments,
       })

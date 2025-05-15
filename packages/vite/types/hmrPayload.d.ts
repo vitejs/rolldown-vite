@@ -24,6 +24,7 @@ export interface UpdatePayload {
 
 export interface Update {
   type: 'js-update' | 'css-update'
+  url?: string // the hmr chunk url, it only exists for full bundle mode
   path: string
   acceptedPath: string
   timestamp: number

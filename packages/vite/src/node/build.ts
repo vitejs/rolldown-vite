@@ -32,6 +32,7 @@ import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
 import type { EsbuildTarget } from 'types/internal/esbuildOptions'
 import type { ChunkMetadata } from 'types/metadata'
+import type { Update } from 'types/hmrPayload'
 import { withTrailingSlash } from '../shared/utils'
 import {
   DEFAULT_ASSETS_INLINE_LIMIT,
@@ -62,6 +63,7 @@ import {
   mergeWithDefaults,
   normalizePath,
   partialEncodeURIPath,
+  setupSIGTERMListener,
   unique,
 } from './utils'
 import { perEnvironmentPlugin, resolveEnvironmentPlugins } from './plugin'
@@ -89,6 +91,9 @@ import {
 import type { Plugin } from './plugin'
 import type { RollupPluginHooks } from './typeUtils'
 import { buildOxcPlugin } from './plugins/oxc'
+import type { ViteDevServer } from './server'
+import { getHmrImplement } from './plugins/clientInjections'
+import { buildModuleGraphPlugin } from './server/buildModuleGraph'
 
 export interface BuildEnvironmentOptions {
   /**
@@ -554,22 +559,23 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
 export async function build(
   inlineConfig: InlineConfig = {},
 ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
-  const builder = await createBuilder(inlineConfig, true)
+  const builder = await createBuilder(inlineConfig, true, 'build')
   const environment = Object.values(builder.environments)[0]
   if (!environment) throw new Error('No environment found')
   return builder.build(environment)
 }
 
 function resolveConfigToBuild(
+  command: 'build' | 'serve',
   inlineConfig: InlineConfig = {},
   patchConfig?: (config: ResolvedConfig) => void,
   patchPlugins?: (resolvedPlugins: Plugin[]) => void,
 ): Promise<ResolvedConfig> {
   return resolveConfig(
     inlineConfig,
-    'build',
-    'production',
-    'production',
+    command,
+    command === 'serve' ? 'development' : 'production',
+    command === 'serve' ? 'development' : 'production',
     false,
     patchConfig,
     patchPlugins,
@@ -581,8 +587,9 @@ function resolveConfigToBuild(
  **/
 async function buildEnvironment(
   environment: BuildEnvironment,
+  server?: ViteDevServer,
 ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
-  const { root, packageCache } = environment.config
+  const { root, packageCache, experimental, command } = environment.config
   const options = environment.config.build
   const libOptions = options.lib
   const { logger } = environment
@@ -641,6 +648,10 @@ async function buildEnvironment(
     injectEnvironmentToHooks(environment, chunkMetadataMap, p),
   )
 
+  if (server) {
+    plugins.push(buildModuleGraphPlugin(server))
+  }
+
   const rollupOptions: RolldownOptions = {
     // preserveEntrySignatures: ssr
     //   ? 'allow-extension'
@@ -648,6 +659,7 @@ async function buildEnvironment(
     //     ? 'strict'
     //     : false,
     // cache: options.watch ? undefined : false,
+    cwd: root,
     ...options.rollupOptions,
     output: options.rollupOptions.output,
     input,
@@ -666,6 +678,17 @@ async function buildEnvironment(
       ...options.rollupOptions.moduleTypes,
       '.css': 'js',
     },
+    experimental: {
+      ...options.rollupOptions.experimental,
+      hmr: server
+        ? {
+            implement: await getHmrImplement(environment.config),
+          }
+        : false,
+    },
+    treeshake: experimental.fullBundleMode
+      ? false
+      : options.rollupOptions.treeshake,
   }
 
   /**
@@ -809,11 +832,13 @@ async function buildEnvironment(
           (isSsrTargetWebworkerEnvironment &&
             (typeof input === 'string' || Object.keys(input).length === 1)),
         minify:
-          options.minify === 'oxc'
-            ? true
-            : options.minify === false
-              ? 'dce-only'
-              : false,
+          experimental.fullBundleMode && command === 'serve'
+            ? false
+            : options.minify === 'oxc'
+              ? true
+              : options.minify === false
+                ? 'dce-only'
+                : false,
         ...output,
       }
     }
@@ -856,6 +881,7 @@ async function buildEnvironment(
         resolvedOutDirs,
         emptyOutDir,
         environment.config.cacheDir,
+        !!experimental.fullBundleMode,
       )
 
       const { watch } = await import('rolldown')
@@ -894,13 +920,145 @@ async function buildEnvironment(
       prepareOutDir(resolvedOutDirs, emptyOutDir, environment)
     }
 
-    const res: RolldownOutput[] = []
-    for (const output of normalizedOutputs) {
-      res.push(await bundle[options.write ? 'write' : 'generate'](output))
-    }
+    const res = await build()
+
     logger.info(
       `${colors.green(`✓ built in ${displayTime(Date.now() - startTime)}`)}`,
     )
+
+    async function build() {
+      const res: RolldownOutput[] = []
+      for (const output of normalizedOutputs) {
+        // TODO(underfin): using the generate at development build could be improve performance.
+        res.push(await bundle![options.write ? 'write' : 'generate'](output))
+      }
+
+      if (server) {
+        // watching the files
+        for (const file of await bundle!.watchFiles) {
+          if (path.isAbsolute(file) && fs.existsSync(file)) {
+            server.watcher.add(file)
+          }
+        }
+
+        // Write the output files to memory
+        for (const output of res) {
+          for (const outputFile of output.output) {
+            server.memoryFiles[outputFile.fileName] =
+              outputFile.type === 'chunk' ? outputFile.code : outputFile.source
+          }
+        }
+      }
+      return res
+    }
+
+    if (server) {
+      async function handleHmrOutput(hmrOutput: any, file: string) {
+        if (hmrOutput.fullReload) {
+          if (!hmrOutput.firstInvalidatedBy) {
+            await build()
+          }
+          server!.ws.send({
+            type: 'full-reload',
+          })
+          const reason = hmrOutput.fullReloadReason
+            ? colors.dim(` (${hmrOutput.fullReloadReason})`)
+            : ''
+          logger.info(
+            colors.green(`page reload `) + colors.dim(file) + reason,
+            {
+              clear: !hmrOutput.firstInvalidatedBy,
+              timestamp: true,
+            },
+          )
+          return
+        }
+
+        if (hmrOutput.patch) {
+          const url = `${Date.now()}.js`
+          server!.memoryFiles[url] = hmrOutput.patch
+          const updates = hmrOutput.hmrBoundaries.map((boundary: any) => {
+            return {
+              type: 'js-update',
+              url,
+              path: boundary.boundary,
+              acceptedPath: boundary.acceptedVia,
+              firstInvalidatedBy: hmrOutput.firstInvalidatedBy,
+              timestamp: 0,
+            }
+          }) as Update[]
+          server!.ws.send({
+            type: 'update',
+            updates,
+          })
+          logger.info(
+            colors.green(`hmr update `) +
+              colors.dim([...new Set(updates.map((u) => u.path))].join(', ')),
+            { clear: !hmrOutput.firstInvalidatedBy, timestamp: true },
+          )
+        }
+      }
+
+      let debouncedBuild: NodeJS.Timeout | undefined
+
+      function debounceBuild() {
+        cancelBuild()
+        debouncedBuild = setTimeout(async () => {
+          const startTime = Date.now()
+          await build()
+          logger.info(
+            `${colors.green(`✓ rebuilt in ${displayTime(Date.now() - startTime)}`)}`,
+          )
+        }, 20)
+      }
+
+      function cancelBuild() {
+        if (debouncedBuild) clearTimeout(debouncedBuild)
+      }
+
+      server.watcher.on('change', async (file) => {
+        // The playground/hmr test `plugin hmr remove custom events` need to skip the change of unused files.
+        if (!(await bundle!.watchFiles).includes(file)) {
+          return
+        }
+
+        const hmrOutput = (await bundle!.generateHmrPatch([file]))!
+
+        await handleHmrOutput(hmrOutput, file)
+
+        if (hmrOutput.patch) {
+          debounceBuild()
+        }
+      })
+
+      server.hot.on(
+        'vite:invalidate',
+        async ({ path: file, message, firstInvalidatedBy }) => {
+          // cancel the debounce build util the hmr invalidate is done.
+          cancelBuild()
+          const hmrOutput = (await bundle!.hmrInvalidate(
+            path.join(root, file),
+            firstInvalidatedBy,
+          ))!
+          if (hmrOutput) {
+            if (hmrOutput.isSelfAccepting) {
+              logger.info(
+                colors.yellow(`hmr invalidate `) +
+                  colors.dim(file) +
+                  (message ? ` ${message}` : ''),
+                { timestamp: true },
+              )
+              await handleHmrOutput(hmrOutput, file)
+
+              if (hmrOutput.patch) {
+                debounceBuild()
+              }
+            }
+          }
+        },
+      )
+    }
+
     return Array.isArray(outputs) ? res : res[0]
   } catch (e) {
     enhanceRollupError(e)
@@ -913,7 +1071,20 @@ async function buildEnvironment(
     }
     throw e
   } finally {
-    if (bundle) await bundle.close()
+    // Note: close the bundle will make the rolldown hmr invalid, so dev build need to disable it.
+    if (server) {
+      const closeBundleAndExit = async (_: unknown, exitCode?: number) => {
+        try {
+          if (bundle) await bundle.close()
+        } finally {
+          process.exitCode ??= exitCode ? 128 + exitCode : undefined
+          process.exit()
+        }
+      }
+      setupSIGTERMListener(closeBundleAndExit)
+    } else {
+      if (bundle) await bundle.close()
+    }
   }
 }
 
@@ -1627,9 +1798,10 @@ export class BuildEnvironment extends BaseEnvironment {
 export interface ViteBuilder {
   environments: Record<string, BuildEnvironment>
   config: ResolvedConfig
-  buildApp(): Promise<void>
+  buildApp(server?: ViteDevServer): Promise<void>
   build(
     environment: BuildEnvironment,
+    server?: ViteDevServer,
   ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher>
 }
 
@@ -1648,12 +1820,15 @@ export interface BuilderOptions {
    * @experimental
    */
   sharedPlugins?: boolean
-  buildApp?: (builder: ViteBuilder) => Promise<void>
+  buildApp?: (builder: ViteBuilder, server?: ViteDevServer) => Promise<void>
 }
 
-async function defaultBuildApp(builder: ViteBuilder): Promise<void> {
+async function defaultBuildApp(
+  builder: ViteBuilder,
+  server?: ViteDevServer,
+): Promise<void> {
   for (const environment of Object.values(builder.environments)) {
-    await builder.build(environment)
+    await builder.build(environment, server)
   }
 }
 
@@ -1682,6 +1857,7 @@ export type ResolvedBuilderOptions = Required<BuilderOptions>
 export async function createBuilder(
   inlineConfig: InlineConfig = {},
   useLegacyBuilder: null | boolean = false,
+  command: 'build' | 'serve' = 'build',
 ): Promise<ViteBuilder> {
   const patchConfig = (resolved: ResolvedConfig) => {
     if (!(useLegacyBuilder ?? !resolved.builder)) return
@@ -1695,7 +1871,7 @@ export async function createBuilder(
       ...resolved.environments[environmentName].build,
     }
   }
-  const config = await resolveConfigToBuild(inlineConfig, patchConfig)
+  const config = await resolveConfigToBuild(command, inlineConfig, patchConfig)
   useLegacyBuilder ??= !config.builder
   const configBuilder = config.builder ?? resolveBuilderOptions({})!
 
@@ -1704,11 +1880,11 @@ export async function createBuilder(
   const builder: ViteBuilder = {
     environments,
     config,
-    async buildApp() {
-      return configBuilder.buildApp(builder)
+    async buildApp(server?: ViteDevServer) {
+      return configBuilder.buildApp(builder, server)
     },
-    async build(environment: BuildEnvironment) {
-      return buildEnvironment(environment)
+    async build(environment: BuildEnvironment, server?: ViteDevServer) {
+      return buildEnvironment(environment, server)
     },
   }
 
@@ -1758,6 +1934,7 @@ export async function createBuilder(
           }
         }
         environmentConfig = await resolveConfigToBuild(
+          command,
           inlineConfig,
           patchConfig,
           patchPlugins,

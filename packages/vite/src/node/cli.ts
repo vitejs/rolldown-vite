@@ -32,6 +32,7 @@ interface GlobalCLIOptions {
   mode?: string
   force?: boolean
   w?: boolean
+  fullBundleMode?: boolean
 }
 
 interface BuilderCLIOptions {
@@ -97,6 +98,7 @@ function cleanGlobalCLIOptions<Options extends GlobalCLIOptions>(
   delete ret.mode
   delete ret.force
   delete ret.w
+  delete ret.fullBundleMode
 
   // convert the sourcemap option to a boolean if necessary
   if ('sourcemap' in ret) {
@@ -176,46 +178,97 @@ cli
     '--force',
     `[boolean] force the optimizer to ignore the cache and re-bundle`,
   )
-  .action(async (root: string, options: ServerOptions & GlobalCLIOptions) => {
-    filterDuplicateOptions(options)
-    // output structure is preserved even after bundling so require()
-    // is ok here
-    const { createServer } = await import('./server')
-    try {
-      const server = await createServer({
-        root,
-        base: options.base,
-        mode: options.mode,
-        configFile: options.config,
-        configLoader: options.configLoader,
-        logLevel: options.logLevel,
-        clearScreen: options.clearScreen,
-        server: cleanGlobalCLIOptions(options),
-        forceOptimizeDeps: options.force,
-      })
+  .option(
+    '--fullBundleMode',
+    `[boolean] Enable bundle at dev to instead of esm dev server`,
+  )
+  // TODO(underfin): Consider how to merge the build option into dev command.
+  .action(
+    async (
+      root: string,
+      options: BuildEnvironmentOptions &
+        BuilderCLIOptions &
+        ServerOptions &
+        GlobalCLIOptions,
+    ) => {
+      filterDuplicateOptions(options)
+      // output structure is preserved even after bundling so require()
+      // is ok here
+      async function createServerWithFullBundleMode() {
+        const { createServerWithResolvedConfig } = await import('./server')
 
-      if (!server.httpServer) {
-        throw new Error('HTTP server not available')
+        const { createBuilder } = await import('./build')
+
+        const buildOptions: BuildEnvironmentOptions =
+          cleanBuilderCLIOptions(options)
+
+        const inlineConfig: InlineConfig = {
+          root,
+          base: options.base,
+          mode: options.mode,
+          configFile: options.config,
+          configLoader: options.configLoader,
+          logLevel: options.logLevel,
+          clearScreen: options.clearScreen,
+          build: buildOptions,
+          experimental: {
+            fullBundleMode: true,
+          },
+          ...(options.app ? { builder: {} } : {}),
+        }
+        const builder = await createBuilder(inlineConfig, null, 'serve')
+
+        const server = await createServerWithResolvedConfig(builder.config)
+
+        if (!server.httpServer) {
+          throw new Error('HTTP server not available')
+        }
+        // Need to make sure the server port and then start build.
+        await server.listen()
+
+        await builder.buildApp(server)
+
+        return server
       }
 
-      await server.listen()
+      async function createServer() {
+        const { createServer } = await import('./server')
+        const server = await createServer({
+          root,
+          base: options.base,
+          mode: options.mode,
+          configFile: options.config,
+          configLoader: options.configLoader,
+          logLevel: options.logLevel,
+          clearScreen: options.clearScreen,
+          server: cleanGlobalCLIOptions(options),
+          forceOptimizeDeps: options.force,
+        })
+        await server.listen()
+        return server
+      }
 
-      const info = server.config.logger.info
+      try {
+        const server = options.fullBundleMode
+          ? await createServerWithFullBundleMode()
+          : await createServer()
 
-      const modeString =
-        options.mode && options.mode !== 'development'
-          ? `  ${colors.bgGreen(` ${colors.bold(options.mode)} `)}`
+        const info = server.config.logger.info
+
+        const modeString =
+          options.mode && options.mode !== 'development'
+            ? `  ${colors.bgGreen(` ${colors.bold(options.mode)} `)}`
+            : ''
+        const viteStartTime = global.__vite_start_time ?? false
+        const startupDurationString = viteStartTime
+          ? colors.dim(
+              `ready in ${colors.reset(
+                colors.bold(Math.ceil(performance.now() - viteStartTime)),
+              )} ms`,
+            )
           : ''
-      const viteStartTime = global.__vite_start_time ?? false
-      const startupDurationString = viteStartTime
-        ? colors.dim(
-            `ready in ${colors.reset(
-              colors.bold(Math.ceil(performance.now() - viteStartTime)),
-            )} ms`,
-          )
-        : ''
-      const hasExistingLogs =
-        process.stdout.bytesWritten > 0 || process.stderr.bytesWritten > 0
+        const hasExistingLogs =
+          process.stdout.bytesWritten > 0 || process.stderr.bytesWritten > 0
 
       info(
         `\n  ${colors.green(
@@ -226,43 +279,47 @@ cli
         },
       )
 
-      server.printUrls()
-      const customShortcuts: CLIShortcut<typeof server>[] = []
-      if (profileSession) {
-        customShortcuts.push({
-          key: 'p',
-          description: 'start/stop the profiler',
-          async action(server) {
-            if (profileSession) {
-              await stopProfiler(server.config.logger.info)
-            } else {
-              const inspector = await import('node:inspector').then(
-                (r) => r.default,
-              )
-              await new Promise<void>((res) => {
-                profileSession = new inspector.Session()
-                profileSession.connect()
-                profileSession.post('Profiler.enable', () => {
-                  profileSession!.post('Profiler.start', () => {
-                    server.config.logger.info('Profiler started')
-                    res()
+        server.printUrls()
+        const customShortcuts: CLIShortcut<typeof server>[] = []
+        if (profileSession) {
+          customShortcuts.push({
+            key: 'p',
+            description: 'start/stop the profiler',
+            async action(server) {
+              if (profileSession) {
+                await stopProfiler(server.config.logger.info)
+              } else {
+                const inspector = await import('node:inspector').then(
+                  (r) => r.default,
+                )
+                await new Promise<void>((res) => {
+                  profileSession = new inspector.Session()
+                  profileSession.connect()
+                  profileSession.post('Profiler.enable', () => {
+                    profileSession!.post('Profiler.start', () => {
+                      server.config.logger.info('Profiler started')
+                      res()
+                    })
                   })
                 })
-              })
-            }
+              }
+            },
+          })
+        }
+        server.bindCLIShortcuts({ print: true, customShortcuts })
+      } catch (e) {
+        const logger = createLogger(options.logLevel)
+        logger.error(
+          colors.red(`error when starting dev server:\n${e.stack}`),
+          {
+            error: e,
           },
-        })
+        )
+        stopProfiler(logger.info)
+        process.exit(1)
       }
-      server.bindCLIShortcuts({ print: true, customShortcuts })
-    } catch (e) {
-      const logger = createLogger(options.logLevel)
-      logger.error(colors.red(`error when starting dev server:\n${e.stack}`), {
-        error: e,
-      })
-      stopProfiler(logger.info)
-      process.exit(1)
-    }
-  })
+    },
+  )
 
 // build
 cli
@@ -322,7 +379,7 @@ cli
           build: buildOptions,
           ...(options.app ? { builder: {} } : {}),
         }
-        const builder = await createBuilder(inlineConfig, null)
+        const builder = await createBuilder(inlineConfig, null, 'build')
         await builder.buildApp()
       } catch (e) {
         createLogger(options.logLevel).error(
