@@ -27,6 +27,7 @@ import type { EnvironmentModuleNode } from './moduleGraph'
 import type { ModuleNode } from './mixedModuleGraph'
 import type { DevEnvironment } from './environment'
 import { prepareError } from './middlewares/error'
+import type { BuildModuleNode } from './buildModuleGraph'
 import type { HttpServer } from '.'
 import { restartServerWithUrls } from '.'
 
@@ -64,7 +65,7 @@ export interface HotUpdateOptions {
 export interface HmrContext {
   file: string
   timestamp: number
-  modules: Array<ModuleNode>
+  modules: Array<ModuleNode | BuildModuleNode>
   read: () => string | Promise<string>
   server: ViteDevServer
 }
@@ -453,7 +454,9 @@ export async function handleHMRUpdate(
     hotMap.set(environment, { options })
   }
 
-  const mixedMods = new Set(mixedModuleGraph.getModulesByFile(file))
+  const mixedMods = new Set<BuildModuleNode | ModuleNode>(
+    mixedModuleGraph.getModulesByFile(file),
+  )
 
   const mixedHmrContext: HmrContext = {
     ...contextMeta,
