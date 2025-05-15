@@ -101,6 +101,7 @@ import type { DevEnvironment } from './environment'
 import { hostCheckMiddleware } from './middlewares/hostCheck'
 import { memoryFilesMiddleware } from './middlewares/memoryFiles'
 import { rejectInvalidRequestMiddleware } from './middlewares/rejectInvalidRequest'
+import { BuildModuleGraph } from './buildModuleGraph'
 
 export interface ServerOptions extends CommonServerOptions {
   /**
@@ -295,7 +296,7 @@ export interface ViteDevServer {
    * Module graph that tracks the import relationships, url to file mapping
    * and hmr state.
    */
-  moduleGraph: ModuleGraph
+  moduleGraph: ModuleGraph | BuildModuleGraph
   /**
    * The resolved urls Vite prints on the CLI (URL-encoded). Returns `null`
    * in middleware mode or if the server is not listening on any port.
@@ -531,10 +532,12 @@ export async function _createServer(
 
   // Backward compatibility
 
-  let moduleGraph = new ModuleGraph({
-    client: () => environments.client.moduleGraph,
-    ssr: () => environments.ssr.moduleGraph,
-  })
+  let moduleGraph = config.experimental.fullBundleMode
+    ? new BuildModuleGraph()
+    : new ModuleGraph({
+        client: () => environments.client.moduleGraph,
+        ssr: () => environments.ssr.moduleGraph,
+      })
   const pluginContainer = createPluginContainer(environments)
 
   const closeHttpServer = createServerCloseFn(httpServer)
@@ -797,6 +800,7 @@ export async function _createServer(
     }
   }
 
+  // TODO(underfin): handle this
   const onFileAddUnlink = async (file: string, isUnlink: boolean) => {
     file = normalizePath(file)
     reloadOnTsconfigChange(server, file)
