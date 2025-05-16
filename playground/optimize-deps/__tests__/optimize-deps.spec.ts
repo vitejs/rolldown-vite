@@ -43,7 +43,7 @@ test('default import from cjs (cjs-dep-cjs-compiled-from-cjs)', async () => {
 })
 
 // NOTE: rolldown behaves differently from @rollup/plugin-commonjs https://github.com/rolldown/rolldown/issues/2031
-test.skip('dynamic imports from cjs dep (react)', async () => {
+test('dynamic imports from cjs dep (react)', async () => {
   await expectWithRetry(() => page.textContent('.cjs-dynamic button')).toBe(
     'count is 0',
   )
@@ -66,7 +66,7 @@ test('dynamic default import from webpacked cjs (clipboard)', async () => {
 })
 
 // NOTE: rolldown behaves differently from @rollup/plugin-commonjs https://github.com/rolldown/rolldown/issues/2031
-test.skip('dynamic default import from cjs (cjs-dynamic-dep-cjs-compiled-from-esm)', async () => {
+test('dynamic default import from cjs (cjs-dynamic-dep-cjs-compiled-from-esm)', async () => {
   await expectWithRetry(() =>
     page.textContent('.cjs-dynamic-dep-cjs-compiled-from-esm'),
   ).toBe('ok')
