@@ -975,13 +975,16 @@ async function buildEnvironment(
           return
         }
 
-        if (hmrOutput.patch) {
-          const url = `${Date.now()}.js`
-          server!.memoryFiles[url] = hmrOutput.patch
+        if (hmrOutput.code) {
+          server!.memoryFiles[hmrOutput.filename] = hmrOutput.code
+          if (hmrOutput.sourcemap) {
+            server!.memoryFiles[hmrOutput.sourcemapFilename] =
+              hmrOutput.sourcemap
+          }
           const updates = hmrOutput.hmrBoundaries.map((boundary: any) => {
             return {
               type: 'js-update',
-              url,
+              url: hmrOutput.filename,
               path: boundary.boundary,
               acceptedPath: boundary.acceptedVia,
               firstInvalidatedBy: hmrOutput.firstInvalidatedBy,
@@ -1027,7 +1030,7 @@ async function buildEnvironment(
 
         await handleHmrOutput(hmrOutput, file)
 
-        if (hmrOutput.patch) {
+        if (hmrOutput.code) {
           debounceBuild()
         }
       })
@@ -1051,7 +1054,7 @@ async function buildEnvironment(
               )
               await handleHmrOutput(hmrOutput, file)
 
-              if (hmrOutput.patch) {
+              if (hmrOutput.code) {
                 debounceBuild()
               }
             }
