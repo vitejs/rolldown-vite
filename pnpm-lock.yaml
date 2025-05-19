@@ -138,7 +138,7 @@ importers:
         version: link:packages/vite
       vitest:
         specifier: ^3.1.3
-        version: 3.1.3(@types/debug@4.1.12)(@types/node@22.15.18)
+        version: 3.1.3(@types/debug@4.1.12)(@types/node@22.15.18)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.30.1)(sass-embedded@1.89.0(source-map-js@1.2.1))(sass@1.89.0)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.4)(yaml@2.8.0)
 
   docs:
     devDependencies:
@@ -7534,11 +7534,51 @@ packages:
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
 
+  vite@6.2.6:
+    resolution: {integrity: sha512-9xpjNl3kR4rVDZgPNdTL0/c6ao4km69a/2ihNQbcANz8RuCOK3hQBmLSJf3bRKVQjVMda+YvizNE8AwvogcPbw==}
+    engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
+    hasBin: true
+    peerDependencies:
+      '@types/node': ^18.0.0 || ^20.0.0 || >=22.0.0
+      jiti: '>=1.21.0'
+      less: '*'
+      lightningcss: ^1.21.0
+      sass: '*'
+      sass-embedded: '*'
+      stylus: '*'
+      sugarss: '*'
+      terser: ^5.16.0
+      tsx: ^4.8.1
+      yaml: ^2.4.2
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      jiti:
+        optional: true
+      less:
+        optional: true
+      lightningcss:
+        optional: true
+      sass:
+        optional: true
+      sass-embedded:
+        optional: true
+      stylus:
+        optional: true
+      sugarss:
+        optional: true
+      terser:
+        optional: true
+      tsx:
+        optional: true
+      yaml:
+        optional: true
+
   vitepress-plugin-group-icons@1.5.2:
     resolution: {integrity: sha512-zen07KxZ83y3eecou4EraaEgwIriwHaB5Q0cHAmS4yO1UZEQvbljTylHPqiJ7LNkV39U8VehfcyquAJXg/26LA==}
 
-  vitepress-plugin-llms@1.1.0:
-    resolution: {integrity: sha512-nb7bG/lBDihlcFTzqxRxQIyzeBWQW9F6OwuUWQ7PFUNK5kVbybxXGISU4wvAV8osQmfrD9xNIGJQfuOLj5CzHg==}
+  vitepress-plugin-llms@1.1.4:
+    resolution: {integrity: sha512-/+xrVWpd03B5bGsWN+R+TN0P3kqM/jaDWiddmpFxPuw7vJdoE9mAqAZx1ywzhHEeBCepDMt069l1VRyitmEU6A==}
 
   vitepress@1.6.3:
     resolution: {integrity: sha512-fCkfdOk8yRZT8GD9BFqusW3+GggWYZ/rYncOfmgcDtP3ualNHCAg+Robxp2/6xfH1WwPHtGpPwv7mbA3qomtBw==}
@@ -9927,17 +9967,13 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
-<<<<<<< HEAD
-  '@vitest/mocker@3.1.1(vite@packages+vite)':
-=======
-  '@vitest/mocker@3.0.8(vite@6.2.6(@types/node@22.13.6)(jiti@2.4.2)(less@4.2.2)(lightningcss@1.29.3)(sass-embedded@1.85.1(source-map-js@1.2.1))(sass@1.85.1)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))':
->>>>>>> a2d094f19 (chore: make test work, avoid overrides vitest vite)
+  '@vitest/mocker@3.1.3(vite@6.2.6(@types/node@22.15.18)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.30.1)(sass-embedded@1.89.0(source-map-js@1.2.1))(sass@1.89.0)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.4)(yaml@2.8.0))':
     dependencies:
       '@vitest/spy': 3.1.3
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: 6.2.6(@types/node@22.13.6)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.29.3)(sass-embedded@1.86.3(source-map-js@1.2.1))(sass@1.86.3)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0)
+      vite: 6.2.6(@types/node@22.15.18)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.30.1)(sass-embedded@1.89.0(source-map-js@1.2.1))(sass@1.89.0)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.4)(yaml@2.8.0)
 
   '@vitest/pretty-format@3.1.3':
     dependencies:
@@ -13849,24 +13885,24 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vite@6.2.6(@types/node@22.13.6)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.29.3)(sass-embedded@1.86.3(source-map-js@1.2.1))(sass@1.86.3)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0):
+  vite@6.2.6(@types/node@22.15.18)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.30.1)(sass-embedded@1.89.0(source-map-js@1.2.1))(sass@1.89.0)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.4)(yaml@2.8.0):
     dependencies:
       esbuild: 0.25.0
       postcss: 8.5.3
       rollup: 4.34.9
     optionalDependencies:
-      '@types/node': 22.13.6
+      '@types/node': 22.15.18
       fsevents: 2.3.3
       jiti: 2.4.2
       less: 4.3.0
-      lightningcss: 1.29.3
-      sass: 1.86.3
-      sass-embedded: 1.86.3(source-map-js@1.2.1)
+      lightningcss: 1.30.1
+      sass: 1.89.0
+      sass-embedded: 1.89.0(source-map-js@1.2.1)
       stylus: 0.64.0
       sugarss: 5.0.0(postcss@8.5.3)
       terser: 5.39.0
-      tsx: 4.19.3
-      yaml: 2.7.0
+      tsx: 4.19.4
+      yaml: 2.8.0
 
   vitepress-plugin-group-icons@1.5.2:
     dependencies:
@@ -13933,16 +13969,15 @@ snapshots:
       - typescript
       - universal-cookie
 
-<<<<<<< HEAD
-  vitest@3.1.1(@types/debug@4.1.12)(@types/node@22.13.6):
+  vitest@3.1.3(@types/debug@4.1.12)(@types/node@22.15.18)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.30.1)(sass-embedded@1.89.0(source-map-js@1.2.1))(sass@1.89.0)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.4)(yaml@2.8.0):
     dependencies:
-      '@vitest/expect': 3.1.1
-      '@vitest/mocker': 3.1.1(vite@6.2.6(@types/node@22.13.6)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.29.3)(sass-embedded@1.86.3(source-map-js@1.2.1))(sass@1.86.3)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
-      '@vitest/pretty-format': 3.1.1
-      '@vitest/runner': 3.1.1
-      '@vitest/snapshot': 3.1.1
-      '@vitest/spy': 3.1.1
-      '@vitest/utils': 3.1.1
+      '@vitest/expect': 3.1.3
+      '@vitest/mocker': 3.1.3(vite@6.2.6(@types/node@22.15.18)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.30.1)(sass-embedded@1.89.0(source-map-js@1.2.1))(sass@1.89.0)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.4)(yaml@2.8.0))
+      '@vitest/pretty-format': 3.1.3
+      '@vitest/runner': 3.1.3
+      '@vitest/snapshot': 3.1.3
+      '@vitest/spy': 3.1.3
+      '@vitest/utils': 3.1.3
       chai: 5.2.0
       debug: 4.4.0
       expect-type: 1.2.1
@@ -13954,8 +13989,8 @@ snapshots:
       tinyglobby: 0.2.13
       tinypool: 1.0.2
       tinyrainbow: 2.0.0
-      vite: 6.2.6(@types/node@22.13.6)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.29.3)(sass-embedded@1.86.3(source-map-js@1.2.1))(sass@1.86.3)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0)
-      vite-node: 3.1.1
+      vite: 6.2.6(@types/node@22.15.18)(jiti@2.4.2)(less@4.3.0)(lightningcss@1.30.1)(sass-embedded@1.89.0(source-map-js@1.2.1))(sass@1.89.0)(stylus@0.64.0)(sugarss@5.0.0(postcss@8.5.3))(terser@5.39.0)(tsx@4.19.4)(yaml@2.8.0)
+      vite-node: 3.1.3
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/debug': 4.1.12
