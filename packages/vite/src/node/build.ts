@@ -93,7 +93,7 @@ import type { RollupPluginHooks } from './typeUtils'
 import { buildOxcPlugin } from './plugins/oxc'
 import type { ViteDevServer } from './server'
 import { getHmrImplement } from './plugins/clientInjections'
-import { buildModuleGraphPlugin } from './server/buildModuleGraph'
+// import { buildModuleGraphPlugin } from './server/buildModuleGraph'
 
 export interface BuildEnvironmentOptions {
   /**
@@ -649,9 +649,9 @@ async function buildEnvironment(
     injectEnvironmentToHooks(environment, chunkMetadataMap, p),
   )
 
-  if (server) {
-    plugins.push(buildModuleGraphPlugin(server))
-  }
+  // if (server) {
+  //   plugins.push(buildModuleGraphPlugin(server))
+  // }
 
   const rollupOptions: RolldownOptions = {
     // preserveEntrySignatures: ssr

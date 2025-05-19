@@ -101,7 +101,7 @@ import type { DevEnvironment } from './environment'
 import { hostCheckMiddleware } from './middlewares/hostCheck'
 import { memoryFilesMiddleware } from './middlewares/memoryFiles'
 import { rejectInvalidRequestMiddleware } from './middlewares/rejectInvalidRequest'
-import { BuildModuleGraph } from './buildModuleGraph'
+import type { BuildModuleGraph } from './buildModuleGraph'
 
 export interface ServerOptions extends CommonServerOptions {
   /**
@@ -532,12 +532,14 @@ export async function _createServer(
 
   // Backward compatibility
 
-  let moduleGraph = config.experimental.fullBundleMode
-    ? new BuildModuleGraph()
-    : new ModuleGraph({
-        client: () => environments.client.moduleGraph,
-        ssr: () => environments.ssr.moduleGraph,
-      })
+  let moduleGraph =
+    // config.experimental.fullBundleMode
+    //   ? new BuildModuleGraph()
+    //   :
+    new ModuleGraph({
+      client: () => environments.client.moduleGraph,
+      ssr: () => environments.ssr.moduleGraph,
+    })
   const pluginContainer = createPluginContainer(environments)
 
   const closeHttpServer = createServerCloseFn(httpServer)
