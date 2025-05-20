@@ -487,6 +487,7 @@ export function resolveOxcTranspileOptions(
     sourceType: format === 'es' ? 'module' : 'script',
     target: target || undefined,
     sourcemap: !!config.build.sourcemap,
+    jsx: undefined,
   }
 }
 
