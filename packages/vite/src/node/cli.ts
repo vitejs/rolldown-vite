@@ -270,14 +270,14 @@ cli
         const hasExistingLogs =
           process.stdout.bytesWritten > 0 || process.stderr.bytesWritten > 0
 
-      info(
-        `\n  ${colors.green(
-          `${colors.bold('ROLLDOWN-VITE')} v${VERSION}`,
-        )}${modeString}  ${startupDurationString}\n`,
-        {
-          clear: !hasExistingLogs,
-        },
-      )
+        info(
+          `\n  ${colors.green(
+            `${colors.bold('ROLLDOWN-VITE')} v${VERSION}`,
+          )}${modeString}  ${startupDurationString}\n`,
+          {
+            clear: !hasExistingLogs,
+          },
+        )
 
         server.printUrls()
         const customShortcuts: CLIShortcut<typeof server>[] = []
