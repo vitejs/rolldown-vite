@@ -26,7 +26,7 @@ import type {
 import {
   loadFallbackPlugin as nativeLoadFallbackPlugin,
   manifestPlugin as nativeManifestPlugin,
-  reportPlugin as nativeReportPlugin,
+  reporterPlugin as nativeReporterPlugin,
 } from 'rolldown/experimental'
 import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
@@ -524,14 +524,15 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
               : manifestPlugin(),
             ssrManifestPlugin(),
             enableNativePlugin === true
-              ? perEnvironmentPlugin('vite:modules-reporter', (env) => {
+              ? perEnvironmentPlugin('native:reporter', (env) => {
                   const tty = process.stdout.isTTY && !process.env.CI
                   const shouldLogInfo =
                     LogLevels[config.logLevel || 'info'] >= LogLevels.info
-                  return nativeReportPlugin({
+                  const assetsDir = path.join(env.config.build.assetsDir, '/')
+                  return nativeReporterPlugin({
                     isTty: !!tty,
                     isLib: !!env.config.build.lib,
-                    assetsDir: env.config.build.assetsDir,
+                    assetsDir,
                     chunkLimit: env.config.build.chunkSizeWarningLimit,
                     shouldLogInfo,
                     reportCompressedSize: env.config.build.reportCompressedSize,
