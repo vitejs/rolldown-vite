@@ -88,10 +88,7 @@ export async function resolvePlugins(
         ? perEnvironmentPlugin(
             'native:modulepreload-polyfill',
             (environment) => {
-              if (
-                config.command !== 'build' ||
-                environment.config.consumer !== 'client'
-              )
+              if (!isBuild || environment.config.consumer !== 'client')
                 return false
               return nativeModulePreloadPolyfillPlugin()
             },
