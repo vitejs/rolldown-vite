@@ -124,6 +124,9 @@ jobs:
       - name: Test serve
         run: pnpm run test-serve
 
+      - name: Test full bundle mode serve
+        run: pnpm run test-full-bundle-mode
+
       - name: Test build
         run: pnpm run test-build
 
