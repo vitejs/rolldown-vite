@@ -15,16 +15,41 @@ export default defineConfig({
     },
     rollupOptions: {
       input: [
-        path.resolve(import.meta.dirname, 'accept-exports/dynamic-imports/index.html'),
-        path.resolve(import.meta.dirname, 'accept-exports/export-from/index.html'),
-        path.resolve(import.meta.dirname, 'accept-exports/main-accepted/index.html'),
-        path.resolve(import.meta.dirname, 'accept-exports/main-non-accepted/index.html'),
-        path.resolve(import.meta.dirname, 'accept-exports/side-effects/index.html'),
-        path.resolve(import.meta.dirname, 'accept-exports/star-imports/index.html'),
-        path.resolve(import.meta.dirname, 'accept-exports/unused-exports/index.html'),
+        path.resolve(
+          import.meta.dirname,
+          'accept-exports/dynamic-imports/index.html',
+        ),
+        path.resolve(
+          import.meta.dirname,
+          'accept-exports/export-from/index.html',
+        ),
+        path.resolve(
+          import.meta.dirname,
+          'accept-exports/main-accepted/index.html',
+        ),
+        path.resolve(
+          import.meta.dirname,
+          'accept-exports/main-non-accepted/index.html',
+        ),
+        path.resolve(
+          import.meta.dirname,
+          'accept-exports/side-effects/index.html',
+        ),
+        path.resolve(
+          import.meta.dirname,
+          'accept-exports/star-imports/index.html',
+        ),
+        path.resolve(
+          import.meta.dirname,
+          'accept-exports/unused-exports/index.html',
+        ),
         path.resolve(import.meta.dirname, 'index.html'),
-      ]
-    }
+      ],
+      // TODO(underfin): find a nice way
+      // The vite root not using `cwd` option call rolldown, the rolldown register module is base on process.cwd to calculate path.
+      // make full bundle mode print the hmr path base on the dirname
+      cwd: import.meta.dirname,
+    },
   },
   plugins: [
     {
