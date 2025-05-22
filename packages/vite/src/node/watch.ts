@@ -53,6 +53,7 @@ export function resolveChokidarOptions(
   resolvedOutDirs: Set<string>,
   emptyOutDir: boolean,
   cacheDir: string,
+  fullBundleMode: boolean,
 ): WatchOptions {
   const { ignored: ignoredList, ...otherOptions } = options ?? {}
   const ignored: WatchOptions['ignored'] = [
@@ -62,7 +63,8 @@ export function resolveChokidarOptions(
     escapePath(cacheDir) + '/**',
     ...arraify(ignoredList || []),
   ]
-  if (emptyOutDir) {
+  // TODO(underfin): revert it if the dev build only write output to memory at full bundle mode.
+  if (emptyOutDir || fullBundleMode) {
     ignored.push(
       ...[...resolvedOutDirs].map((outDir) => escapePath(outDir) + '/**'),
     )

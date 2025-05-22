@@ -27,6 +27,7 @@ export class HMRContext implements ViteHotContext {
   constructor(
     private hmrClient: HMRClient,
     private ownerPath: string,
+    private fullBundleMode: boolean,
   ) {
     if (!hmrClient.dataMap.has(ownerPath)) {
       hmrClient.dataMap.set(ownerPath, {})
@@ -99,18 +100,21 @@ export class HMRContext implements ViteHotContext {
   invalidate(message: string): void {
     const firstInvalidatedBy =
       this.hmrClient.currentFirstInvalidatedBy ?? this.ownerPath
+    const ownerPath = this.fullBundleMode
+      ? `/${this.ownerPath}`
+      : this.ownerPath
     this.hmrClient.notifyListeners('vite:invalidate', {
-      path: this.ownerPath,
+      path: ownerPath,
       message,
       firstInvalidatedBy,
     })
     this.send('vite:invalidate', {
-      path: this.ownerPath,
+      path: ownerPath,
       message,
       firstInvalidatedBy,
     })
     this.hmrClient.logger.debug(
-      `invalidate ${this.ownerPath}${message ? `: ${message}` : ''}`,
+      `invalidate ${ownerPath}${message ? `: ${message}` : ''}`,
     )
   }
 
@@ -151,6 +155,15 @@ export class HMRContext implements ViteHotContext {
     this.hmrClient.send({ type: 'custom', event, data })
   }
 
+  async getExports(url: string): Promise<unknown> {
+    return this.fullBundleMode
+      ? Promise.resolve().then(() =>
+          // @ts-expect-error __rolldown_runtime__
+          __rolldown_runtime__.loadExports(this.ownerPath),
+        )
+      : import(url)
+  }
+
   private acceptDeps(
     deps: string[],
     callback: HotCallback['fn'] = () => {},
@@ -181,6 +194,7 @@ export class HMRClient {
     private transport: NormalizedModuleRunnerTransport,
     // This allows implementing reloading via different methods depending on the environment
     private importUpdatedModule: (update: Update) => Promise<ModuleNamespace>,
+    private fullBundleMode: boolean,
   ) {}
 
   public async notifyListeners<T extends string>(
@@ -296,7 +310,13 @@ export class HMRClient {
             ),
           )
         }
-        const loggedPath = isSelfUpdate ? path : `${acceptedPath} via ${path}`
+        const loggedPath = this.fullBundleMode
+          ? isSelfUpdate
+            ? `/${path}`
+            : `/${acceptedPath} via /${path}`
+          : isSelfUpdate
+            ? path
+            : `${acceptedPath} via ${path}`
         this.logger.debug(`hot updated: ${loggedPath}`)
       } finally {
         this.currentFirstInvalidatedBy = undefined
