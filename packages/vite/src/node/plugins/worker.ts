@@ -242,10 +242,7 @@ export async function workerFileToUrl(
 }
 
 export function webWorkerPostPlugin(config: ResolvedConfig): Plugin {
-  if (
-    config.experimental.enableNativePlugin === true &&
-    config.command === 'build'
-  ) {
+  if (config.experimental.enableNativePlugin === true && config.isBundled) {
     return perEnvironmentPlugin(
       'native:web-worker-post-plugin',
       (environment) => {
