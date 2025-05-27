@@ -117,6 +117,7 @@ import {
   BasicMinimalPluginContext,
   basePluginContextMeta,
 } from './server/pluginContainer'
+import { FullBundleDevEnvironment } from './server/environments/fullBundleEnvironment'
 
 const debug = createDebugger('vite:config', { depth: 10 })
 const promisifiedRealpath = promisify(fs.realpath)
@@ -230,6 +231,13 @@ function defaultCreateClientDevEnvironment(
   config: ResolvedConfig,
   context: CreateDevEnvironmentContext,
 ) {
+  if (config.experimental.fullBundleMode) {
+    return new FullBundleDevEnvironment(name, config, {
+      hot: true,
+      transport: context.ws,
+    })
+  }
+
   return new DevEnvironment(name, config, {
     hot: true,
     transport: context.ws,
