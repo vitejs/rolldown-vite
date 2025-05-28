@@ -58,22 +58,19 @@ async function getLinks() {
 }
 
 baseOptions.forEach(({ base, label }) => {
-  // https://github.com/rolldown/rolldown/issues/4682
-  test
-    .runIf(isBuild)
-    .skip(
-      `doesn't duplicate dynamically imported css files when built with ${label} base`,
-      async () => {
-        await withBuild(base, async () => {
-          await page.waitForSelector('.loaded', { state: 'attached' })
+  test.runIf(isBuild)(
+    `doesn't duplicate dynamically imported css files when built with ${label} base`,
+    async () => {
+      await withBuild(base, async () => {
+        await page.waitForSelector('.loaded', { state: 'attached' })
 
-          expect(await getColor('.css-dynamic-import')).toBe('green')
-          const linkUrls = (await getLinks()).map((link) => link.pathname)
-          const uniqueLinkUrls = [...new Set(linkUrls)]
-          expect(linkUrls).toStrictEqual(uniqueLinkUrls)
-        })
-      },
-    )
+        expect(await getColor('.css-dynamic-import')).toBe('green')
+        const linkUrls = (await getLinks()).map((link) => link.pathname)
+        const uniqueLinkUrls = [...new Set(linkUrls)]
+        expect(linkUrls).toStrictEqual(uniqueLinkUrls)
+      })
+    },
+  )
 
   test.runIf(isServe)(
     `doesn't duplicate dynamically imported css files when served with ${label} base`,
