@@ -105,6 +105,7 @@ import { runnerImport } from './ssr/runnerImport'
 import { getAdditionalAllowedHosts } from './server/middlewares/hostCheck'
 import { convertEsbuildPluginToRolldownPlugin } from './optimizer/pluginConverter'
 import { type OxcOptions, convertEsbuildConfigToOxcConfig } from './plugins/oxc'
+import { FullBundleDevEnvironment } from './server/environments/fullBundleEnvironment'
 
 const debug = createDebugger('vite:config', { depth: 10 })
 const promisifiedRealpath = promisify(fs.realpath)
@@ -217,6 +218,13 @@ function defaultCreateClientDevEnvironment(
   config: ResolvedConfig,
   context: CreateDevEnvironmentContext,
 ) {
+  if (config.experimental.fullBundleMode) {
+    return new FullBundleDevEnvironment(name, config, {
+      hot: true,
+      transport: context.ws,
+    })
+  }
+
   return new DevEnvironment(name, config, {
     hot: true,
     transport: context.ws,
@@ -525,6 +533,13 @@ export interface ExperimentalOptions {
    * @default false
    */
   enableNativePlugin?: boolean | 'resolver'
+  /**
+   * Enable full bundle mode in dev.
+   *
+   * @experimental
+   * @default false
+   */
+  fullBundleMode?: boolean
 }
 
 export interface LegacyOptions {
@@ -597,6 +612,8 @@ export interface ResolvedConfig
       cacheDir: string
       command: 'build' | 'serve'
       mode: string
+      /** `true` when build or full-bundle mode dev */
+      isBundled: boolean
       isWorker: boolean
       // in nested worker bundle to find the main config
       /** @internal */
@@ -727,6 +744,7 @@ export const configDefaults = Object.freeze({
     enableNativePlugin: process.env._VITE_TEST_NATIVE_PLUGIN
       ? 'resolver'
       : false,
+    fullBundleMode: false,
   },
   future: {
     removePluginHookHandleHotUpdate: undefined,
@@ -1675,6 +1693,7 @@ export async function resolveConfig(
     cacheDir,
     command,
     mode,
+    isBundled: config.experimental?.fullBundleMode || isBuild,
     isWorker: false,
     mainConfig: null,
     bundleChain: [],
@@ -1728,6 +1747,7 @@ export async function resolveConfig(
       enableNativePlugin: process.env._VITE_TEST_NATIVE_PLUGIN
         ? 'resolver'
         : false,
+      fullBundleMode: false,
       ...config.experimental,
     },
     future: config.future,

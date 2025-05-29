@@ -3,13 +3,22 @@ import fs from 'node:fs'
 import type { Connect } from 'dep-types/connect'
 import { createDebugger } from '../../utils'
 import { cleanUrl } from '../../../shared/utils'
+import type { DevEnvironment } from '../environment'
+import { FullBundleDevEnvironment } from '../environments/fullBundleEnvironment'
 
 const debug = createDebugger('vite:html-fallback')
 
 export function htmlFallbackMiddleware(
   root: string,
   spaFallback: boolean,
+  clientEnvironment: DevEnvironment,
 ): Connect.NextHandleFunction {
+  const _memoryFiles =
+    clientEnvironment instanceof FullBundleDevEnvironment
+      ? clientEnvironment.memoryFiles
+      : undefined
+  // TODO: use memoryFiles
+
   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
   return function viteHtmlFallbackMiddleware(req, _res, next) {
     if (
