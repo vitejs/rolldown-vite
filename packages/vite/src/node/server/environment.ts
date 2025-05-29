@@ -134,19 +134,22 @@ export class DevEnvironment extends BaseEnvironment {
       },
     })
 
-    this.hot.on(
-      'vite:invalidate',
-      async ({ path, message, firstInvalidatedBy }) => {
-        invalidateModule(this, {
-          path,
-          message,
-          firstInvalidatedBy,
-        })
-      },
-    )
+    const { optimizeDeps, experimental } = this.config
 
-    const { optimizeDeps } = this.config
-    if (context.depsOptimizer) {
+    if (!experimental.fullBundleMode) {
+      this.hot.on(
+        'vite:invalidate',
+        async ({ path, message, firstInvalidatedBy }) => {
+          invalidateModule(this, {
+            path,
+            message,
+            firstInvalidatedBy,
+          })
+        },
+      )
+    }
+
+    if (context.depsOptimizer && !experimental.fullBundleMode) {
       this.depsOptimizer = context.depsOptimizer
     } else if (isDepOptimizationDisabled(optimizeDeps)) {
       this.depsOptimizer = undefined
@@ -188,8 +191,10 @@ export class DevEnvironment extends BaseEnvironment {
    */
   async listen(server: ViteDevServer): Promise<void> {
     this.hot.listen()
-    await this.depsOptimizer?.init()
-    warmupFiles(server, this)
+    if (!this.config.experimental.fullBundleMode) {
+      await this.depsOptimizer?.init()
+      warmupFiles(server, this)
+    }
   }
 
   fetchModule(
