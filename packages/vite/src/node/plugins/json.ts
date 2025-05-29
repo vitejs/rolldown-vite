@@ -45,9 +45,14 @@ export function jsonPlugin(
     name: 'vite:json',
 
     transform: {
+      filter: {
+        id: { include: jsonExtRE, exclude: SPECIAL_QUERY_RE },
+        // don't transform if the file is already transformed to a different format
+        moduleType: ['json'],
+      },
       handler(json, id) {
-        if (!jsonExtRE.test(id)) return null
-        if (SPECIAL_QUERY_RE.test(id)) return null
+        // for backward compat this if statement is needed
+        if (!jsonExtRE.test(id) || SPECIAL_QUERY_RE.test(id)) return null
 
         if (inlineRE.test(id) || noInlineRE.test(id)) {
           this.warn(
@@ -81,6 +86,7 @@ export function jsonPlugin(
               return {
                 code,
                 map: { mappings: '' },
+                moduleType: 'js',
               }
             }
 
@@ -99,6 +105,7 @@ export function jsonPlugin(
               return {
                 code: `export default /* #__PURE__ */ JSON.parse(${JSON.stringify(json)})`,
                 map: { mappings: '' },
+                moduleType: 'js',
               }
             }
           }
@@ -109,6 +116,7 @@ export function jsonPlugin(
               namedExports: options.namedExports,
             }),
             map: { mappings: '' },
+            moduleType: 'js',
           }
         } catch (e) {
           const position = extractJsonErrorPosition(e.message, json.length)
@@ -123,8 +131,10 @@ export function jsonPlugin(
 
   // backward compat
   const handler = plugin.transform.handler
+  const filter = plugin.transform.filter
   ;(plugin as any).transform = handler
   ;(plugin as any).transform.handler = handler
+  ;(plugin as any).transform.filter = filter
 
   return plugin
 }

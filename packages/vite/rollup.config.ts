@@ -115,15 +115,22 @@ const nodeConfig = defineConfig({
     constants: path.resolve(__dirname, 'src/node/constants.ts'),
   },
   external: [
-    /^vite\//,
     'fsevents',
-    'rollup/parseAst',
+    /^rolldown\//,
     /^tsx\//,
     /^#/,
     ...Object.keys(pkg.dependencies),
     ...Object.keys(pkg.peerDependencies),
   ],
   plugins: [
+    {
+      name: 'externalize-vite',
+      resolveId(id) {
+        if (id.startsWith('vite/')) {
+          return { id: id.replace(/^vite\//, 'rolldown-vite/'), external: true }
+        }
+      },
+    },
     // Some deps have try...catch require of optional deps, but rollup will
     // generate code that force require them upfront for side effects.
     // Shim them with eval() so rollup can skip these calls.
@@ -197,7 +204,7 @@ const moduleRunnerConfig = defineConfig({
   external: [
     'fsevents',
     'lightningcss',
-    'rollup/parseAst',
+    /^rolldown\//,
     ...Object.keys(pkg.dependencies),
   ],
   plugins: [
