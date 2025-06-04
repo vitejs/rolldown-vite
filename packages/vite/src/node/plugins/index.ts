@@ -159,8 +159,8 @@ export async function resolvePlugins(
         : oxcPlugin(config)
       : null,
     enableNativePlugin === true
-      ? nativeJsonPlugin({ ...config.json, minify: isBuild })
-      : jsonPlugin(config.json, isBuild),
+      ? nativeJsonPlugin({ ...config.json, minify: config.isProduction })
+      : jsonPlugin(config.json, config.isProduction),
     enableNativePlugin === true ? nativeWasmHelperPlugin() : wasmHelperPlugin(),
     webWorkerPlugin(config),
     assetPlugin(config),
