@@ -11,10 +11,12 @@ import { DevEnvironment, type DevEnvironmentContext } from '../environment'
 import type { ResolvedConfig } from '../../config'
 import type { ViteDevServer } from '../../server'
 import { arraify, createDebugger } from '../../utils'
+import { prepareError } from '../middlewares/error'
 
 const debug = createDebugger('vite:full-bundle-mode')
 
 export class FullBundleDevEnvironment extends DevEnvironment {
+  private rolldownOptions: RolldownOptions | undefined
   private bundle: RolldownBuild | undefined
   watchFiles = new Set<string>()
   memoryFiles = new Map<string, string | Uint8Array>()
@@ -39,69 +41,76 @@ export class FullBundleDevEnvironment extends DevEnvironment {
     debug?.('setup bundle options')
     const rollupOptions = await this.getRolldownOptions()
     const { rolldown } = await import('rolldown')
+    this.rolldownOptions = rollupOptions
     this.bundle = await rolldown(rollupOptions)
     debug?.('bundle created')
 
     this.triggerGenerateInitialBundle(rollupOptions.output)
+  }
 
-    const handleHmrOutput = async (hmrOutput: any, file: string) => {
-      debug?.(`handle hmr output for ${file}`, hmrOutput)
-      if (hmrOutput.fullReload) {
-        // TODO: error handling
-        if (!hmrOutput.firstInvalidatedBy) {
-          await this.generateBundle(rollupOptions.output)
-        }
-        server!.ws.send({ type: 'full-reload' })
-        const reason = hmrOutput.fullReloadReason
-          ? colors.dim(` (${hmrOutput.fullReloadReason})`)
-          : ''
-        this.logger.info(
-          colors.green(`page reload `) + colors.dim(file) + reason,
-          {
-            clear: !hmrOutput.firstInvalidatedBy,
-            timestamp: true,
-          },
-        )
+  async onFileChange(
+    _type: 'create' | 'update' | 'delete',
+    file: string,
+    server: ViteDevServer,
+  ): Promise<void> {
+    // TODO: handle the case when the initial bundle is not generated yet
+
+    debug?.(`file update detected ${file}, generating hmr patch`)
+    // NOTE: only single outputOptions is supported here
+    const hmrOutput = (await this.bundle!.generateHmrPatch([file]))!
+
+    debug?.(`handle hmr output for ${file}`, {
+      ...hmrOutput,
+      code: typeof hmrOutput.code === 'string' ? '[code]' : hmrOutput.code,
+    })
+    if (hmrOutput.fullReload) {
+      try {
+        await this.generateBundle(this.rolldownOptions!.output)
+      } catch (e) {
+        // TODO: support multiple errors
+        server.ws.send({ type: 'error', err: prepareError(e.errors[0]) })
         return
       }
 
-      if (hmrOutput.code) {
-        this.memoryFiles.set(hmrOutput.filename, hmrOutput.code)
-        if (hmrOutput.sourcemap) {
-          this.memoryFiles.set(hmrOutput.sourcemapFilename, hmrOutput.sourcemap)
-        }
-        const updates: Update[] = hmrOutput.hmrBoundaries.map(
-          (boundary: any) => {
-            return {
-              type: 'js-update',
-              url: hmrOutput.filename,
-              path: boundary.boundary,
-              acceptedPath: boundary.acceptedVia,
-              firstInvalidatedBy: hmrOutput.firstInvalidatedBy,
-              timestamp: 0,
-            }
-          },
-        )
-        server!.ws.send({
-          type: 'update',
-          updates,
-        })
-        this.logger.info(
-          colors.green(`hmr update `) +
-            colors.dim([...new Set(updates.map((u) => u.path))].join(', ')),
-          { clear: !hmrOutput.firstInvalidatedBy, timestamp: true },
-        )
-      }
+      server.ws.send({ type: 'full-reload' })
+      const reason = hmrOutput.fullReloadReason
+        ? colors.dim(` (${hmrOutput.fullReloadReason})`)
+        : ''
+      this.logger.info(
+        colors.green(`page reload `) + colors.dim(file) + reason,
+        {
+          clear: !hmrOutput.firstInvalidatedBy,
+          timestamp: true,
+        },
+      )
+      return
     }
 
-    server.watcher.on('change', async (file) => {
-      // TODO: handle the case when the initial bundle is not generated yet
-
-      debug?.(`file update detected ${file}, generating hmr patch`)
-      // NOTE: only single outputOptions is supported here
-      const hmrOutput = (await this.bundle!.generateHmrPatch([file]))!
-      await handleHmrOutput(hmrOutput, file)
-    })
+    if (hmrOutput.code) {
+      this.memoryFiles.set(hmrOutput.filename, hmrOutput.code)
+      if (hmrOutput.sourcemapFilename && hmrOutput.sourcemap) {
+        this.memoryFiles.set(hmrOutput.sourcemapFilename, hmrOutput.sourcemap)
+      }
+      const updates: Update[] = hmrOutput.hmrBoundaries.map((boundary: any) => {
+        return {
+          type: 'js-update',
+          url: hmrOutput.filename,
+          path: boundary.boundary,
+          acceptedPath: boundary.acceptedVia,
+          firstInvalidatedBy: hmrOutput.firstInvalidatedBy,
+          timestamp: 0,
+        }
+      })
+      server!.ws.send({
+        type: 'update',
+        updates,
+      })
+      this.logger.info(
+        colors.green(`hmr update `) +
+          colors.dim([...new Set(updates.map((u) => u.path))].join(', ')),
+        { clear: !hmrOutput.firstInvalidatedBy, timestamp: true },
+      )
+    }
   }
 
   override async close(): Promise<void> {
