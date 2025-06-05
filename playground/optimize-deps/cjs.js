@@ -1,6 +1,6 @@
 // test importing both default and named exports from a CommonJS module
 // React is the ultimate test of this because its dynamic exports assignments
-// are not statically detectable by @rollup/plugin-commonjs.
+// are not statically detectable by rolldown.
 import React, { useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { Socket } from 'phoenix'
