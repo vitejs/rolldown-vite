@@ -96,12 +96,8 @@ export async function createModuleRunnerTester(
   })
 
   afterEach<TestClient>(async (t) => {
-    try {
-      await t.runner.close()
-      await t.server.close()
-    } catch (e) {
-      console.error(e)
-    }
+    await t.runner.close()
+    await t.server.close()
   })
 
   return test as TestAPI<TestClient>
@@ -111,6 +107,7 @@ const originalFiles = new Map<string, string>()
 const createdFiles = new Set<string>()
 afterEach(() => {
   originalFiles.forEach((content, file) => {
+    console.log('restore', file)
     fs.writeFileSync(file, content, 'utf-8')
   })
   createdFiles.forEach((file) => {
@@ -130,6 +127,7 @@ export function editFile(
   file: string,
   callback: (content: string) => string,
 ): void {
+  console.log('edit', file)
   const content = fs.readFileSync(file, 'utf-8')
   if (!originalFiles.has(file)) originalFiles.set(file, content)
   fs.writeFileSync(file, callback(content), 'utf-8')
