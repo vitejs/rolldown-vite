@@ -96,8 +96,12 @@ export async function createModuleRunnerTester(
   })
 
   afterEach<TestClient>(async (t) => {
-    await t.runner.close()
-    await t.server.close()
+    try {
+      await t.runner.close()
+      await t.server.close()
+    } catch (e) {
+      console.error(e)
+    }
   })
 
   return test as TestAPI<TestClient>
