@@ -45,8 +45,7 @@ test('string', async () => {
   expect(await page.textContent('.no-property')).toBe(String(true))
   // html wouldn't need to define replacement
   expect(await page.textContent('.exp-define')).toBe('__EXP__')
-  // FIXME: https://github.com/rolldown/rolldown/issues/4818
-  // expect(await page.textContent('.import-json')).toBe('__EXP__')
+  expect(await page.textContent('.import-json')).toBe('__EXP__')
   expect(await page.textContent('.define-in-dep')).toBe(
     defines.__STRINGIFIED_OBJ__,
   )

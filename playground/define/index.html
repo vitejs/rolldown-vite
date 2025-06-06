@@ -105,9 +105,8 @@
   window[`${'_'}_EXP__SUBSTR__`] = true
   text('.no-identifier-substring', __EXP__SUBSTR__)
 
-  // FIXME: https://github.com/rolldown/rolldown/issues/4818
-  // import dataJson from './data.json'
-  // text('.import-json', dataJson.foo)
+  import dataJson from './data.json'
+  text('.import-json', dataJson.foo)
 
   function text(el, text) {
     document.querySelector(el).textContent = text
