@@ -39,7 +39,7 @@ export const isJSONRequest = (request: string): boolean =>
 
 export function jsonPlugin(
   options: Required<JsonOptions>,
-  isBuild: boolean,
+  minify: boolean,
 ): Plugin {
   const plugin = {
     name: 'vite:json',
@@ -98,7 +98,7 @@ export function jsonPlugin(
             ) {
               // during build, parse then double-stringify to remove all
               // unnecessary whitespaces to reduce bundle size.
-              if (isBuild) {
+              if (minify) {
                 json = JSON.stringify(JSON.parse(json))
               }
 
