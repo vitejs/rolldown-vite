@@ -239,7 +239,7 @@ export class DevEnvironment extends BaseEnvironment {
     }
   }
 
-  private invalidateModule(m: {
+  protected invalidateModule(m: {
     path: string
     message?: string
     firstInvalidatedBy: string
