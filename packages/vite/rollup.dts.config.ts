@@ -15,8 +15,7 @@ const pkg = JSON.parse(
 
 const external = [
   /^node:*/,
-  /^vite\//,
-  'rollup/parseAst',
+  /^rolldown\//,
   ...Object.keys(pkg.dependencies),
   ...Object.keys(pkg.peerDependencies),
   ...Object.keys(pkg.devDependencies),
@@ -32,7 +31,18 @@ export default defineConfig({
     format: 'esm',
   },
   external,
-  plugins: [patchTypes(), dts({ respectExternal: true })],
+  plugins: [
+    {
+      name: 'externalize-vite',
+      resolveId(id) {
+        if (id.startsWith('vite/')) {
+          return { id: id.replace(/^vite\//, 'rolldown-vite/'), external: true }
+        }
+      },
+    },
+    patchTypes(),
+    dts({ respectExternal: true }),
+  ],
 })
 
 // Taken from https://stackoverflow.com/a/36328890
@@ -46,16 +56,15 @@ const identifierWithTrailingDollarRE = /\b(\w+)\$\d+\b/g
  * the module that imports the identifier as a named import alias
  */
 const identifierReplacements: Record<string, Record<string, string>> = {
-  rollup: {
-    Plugin$1: 'rollup.Plugin',
-    PluginContext$1: 'rollup.PluginContext',
-    MinimalPluginContext$1: 'rollup.MinimalPluginContext',
-    TransformResult$1: 'rollup.TransformResult',
+  rolldown: {
+    Plugin$1: 'rolldown.Plugin',
+    PluginContext$1: 'rolldown.PluginContext',
+    MinimalPluginContext$1: 'rolldown.MinimalPluginContext',
+    TransformResult$1: 'rolldown.TransformResult',
   },
-  esbuild: {
-    TransformResult$2: 'esbuild_TransformResult',
-    TransformOptions$1: 'esbuild_TransformOptions',
-    BuildOptions$1: 'esbuild_BuildOptions',
+  'rolldown/experimental': {
+    TransformOptions$1: 'rolldown_experimental_TransformOptions',
+    TransformResult$2: 'rolldown_experimental_TransformResult',
   },
   'node:https': {
     Server$1: 'HttpsServer',
@@ -141,7 +150,7 @@ function validateChunkImports(this: PluginContext, chunk: RenderedChunk) {
       !id.startsWith('../') &&
       !id.startsWith('node:') &&
       !id.startsWith('types.d') &&
-      !id.startsWith('vite/') &&
+      !id.startsWith('rolldown-vite/') &&
       // index and moduleRunner have a common chunk "moduleRunnerTransport"
       !id.startsWith('moduleRunnerTransport.d') &&
       !deps.includes(id) &&
