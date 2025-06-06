@@ -504,6 +504,10 @@ if (isFullBundleMode) {
         updateStyle,
         removeStyle,
       }
+      // @ts-expect-error TODO: support this function (used by plugin-react)
+      ctx.getExports = async () =>
+        // @ts-expect-error __rolldown_runtime__ / ctx.ownerPath
+        __rolldown_runtime__.loadExports(ctx.ownerPath)
       return ctx
     }
 

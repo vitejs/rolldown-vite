@@ -66,7 +66,6 @@ export class FullBundleDevEnvironment extends DevEnvironment {
       debug?.(
         `BUNDLING: file update detected ${file}, retriggering bundle generation`,
       )
-      this.state.abortController.abort()
       this.triggerGenerateBundle(this.state)
       return
     }
@@ -94,6 +93,7 @@ export class FullBundleDevEnvironment extends DevEnvironment {
         type: 'generating-hmr-patch',
         options: this.state.options,
         bundle: this.state.bundle,
+        patched: this.state.patched,
       }
 
       let hmrOutput: HmrOutput
@@ -108,6 +108,7 @@ export class FullBundleDevEnvironment extends DevEnvironment {
           type: 'bundled',
           options: this.state.options,
           bundle: this.state.bundle,
+          patched: this.state.patched,
         }
         return
       }
@@ -118,9 +119,31 @@ export class FullBundleDevEnvironment extends DevEnvironment {
       })
 
       this.handleHmrOutput(file, hmrOutput, this.state)
+
+      this.state = {
+        type: 'bundled',
+        options: this.state.options,
+        bundle: this.state.bundle,
+        patched: true,
+      }
       return
     }
     this.state satisfies never // exhaustive check
+  }
+
+  triggerBundleRegenerationIfStale(): boolean {
+    if (
+      (this.state.type === 'bundled' ||
+        this.state.type === 'generating-hmr-patch') &&
+      this.state.patched
+    ) {
+      this.triggerGenerateBundle(this.state)
+      debug?.(
+        `${this.state.type.toUpperCase()}: access to stale bundle, triggered bundle re-generation`,
+      )
+      return true
+    }
+    return false
   }
 
   override async close(): Promise<void> {
@@ -159,6 +182,10 @@ export class FullBundleDevEnvironment extends DevEnvironment {
     options,
     bundle,
   }: BundleStateCommonProperties) {
+    if (this.state.type === 'bundling') {
+      this.state.abortController.abort()
+    }
+
     const controller = new AbortController()
     const promise = this.generateBundle(
       options.output,
@@ -209,6 +236,7 @@ export class FullBundleDevEnvironment extends DevEnvironment {
         type: 'bundled',
         bundle: this.state.bundle,
         options: this.state.options,
+        patched: false,
       }
       debug?.('BUNDLED: bundle generated')
 
@@ -294,12 +322,26 @@ type BundleStateBundling = {
   promise: Promise<void>
   abortController: AbortController
 } & BundleStateCommonProperties
-type BundleStateBundled = { type: 'bundled' } & BundleStateCommonProperties
+type BundleStateBundled = {
+  type: 'bundled'
+  /**
+   * Whether a hmr patch was generated.
+   *
+   * In other words, whether the bundle is stale.
+   */
+  patched: boolean
+} & BundleStateCommonProperties
 type BundleStateBundleError = {
   type: 'bundle-error'
 } & BundleStateCommonProperties
 type BundleStateGeneratingHmrPatch = {
   type: 'generating-hmr-patch'
+  /**
+   * Whether a hmr patch was generated.
+   *
+   * In other words, whether the bundle is stale.
+   */
+  patched: boolean
 } & BundleStateCommonProperties
 
 type BundleStateCommonProperties = {
