@@ -53,7 +53,8 @@ export async function resolvePlugins(
   normalPlugins: Plugin[],
   postPlugins: Plugin[],
 ): Promise<Plugin[]> {
-  const isBuild = config.command === 'build'
+  const isBuild =
+    config.command === 'build' || !!config.experimental.fullBundleMode
   const isWorker = config.isWorker
   const buildPlugins = isBuild
     ? await (await import('../build')).resolveBuildPlugins(config)
@@ -87,10 +88,7 @@ export async function resolvePlugins(
         ? perEnvironmentPlugin(
             'native:modulepreload-polyfill',
             (environment) => {
-              if (
-                config.command !== 'build' ||
-                environment.config.consumer !== 'client'
-              )
+              if (!isBuild || environment.config.consumer !== 'client')
                 return false
               return nativeModulePreloadPolyfillPlugin()
             },
@@ -190,7 +188,7 @@ export async function resolvePlugins(
 
     ...buildPlugins.post,
 
-    // internal server-only plugins are always applied after everything else
+    // // internal server-only plugins are always applied after everything else
     ...(isBuild
       ? []
       : [

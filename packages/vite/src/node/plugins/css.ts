@@ -287,7 +287,7 @@ const postcssConfigCache = new WeakMap<
 >()
 
 function encodePublicUrlsInCSS(config: ResolvedConfig) {
-  return config.command === 'build'
+  return config.command === 'build' || config.experimental.fullBundleMode
 }
 
 const cssUrlAssetRE = /__VITE_CSS_URL__([\da-f]+)__/g
@@ -296,7 +296,9 @@ const cssUrlAssetRE = /__VITE_CSS_URL__([\da-f]+)__/g
  * Plugin applied before user plugins
  */
 export function cssPlugin(config: ResolvedConfig): Plugin {
-  const isBuild = config.command === 'build'
+  const isBuild = config.experimental.fullBundleMode
+    ? config.mode === 'production'
+    : config.command === 'build'
   let moduleCache: Map<string, Record<string, string>>
 
   const idResolver = createBackCompatIdResolver(config, {
@@ -403,7 +405,7 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
           if (fragment) resolved += '#' + fragment
           return [await fileToUrl(this, resolved), resolved]
         }
-        if (config.command === 'build') {
+        if (config.command === 'build' || config.experimental.fullBundleMode) {
           const isExternal = config.build.rollupOptions.external
             ? resolveUserExternal(
                 config.build.rollupOptions.external,
@@ -578,7 +580,8 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
           !inlined &&
           dataToEsm(modules, { namedExports: true, preferConst: true })
 
-        if (config.command === 'serve') {
+        // TODO(underfin): full bundle mode css hmr
+        if (config.command === 'serve' && !config.experimental.fullBundleMode) {
           const getContentWithSourcemap = async (content: string) => {
             if (config.css.devSourcemap) {
               const sourcemap = this.getCombinedSourcemap()
@@ -3514,7 +3517,7 @@ async function compileLightningCSS(
           },
           minify: config.isProduction && !!config.build.cssMinify,
           sourceMap:
-            config.command === 'build'
+            config.command === 'build' || config.experimental.fullBundleMode
               ? !!config.build.sourcemap
               : config.css.devSourcemap,
           analyzeDependencies: true,
