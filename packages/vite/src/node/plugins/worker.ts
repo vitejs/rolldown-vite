@@ -252,6 +252,7 @@ export function webWorkerPostPlugin(config: ResolvedConfig): Plugin {
       },
     )
   }
+
   return {
     name: 'vite:worker-post',
     transform: {

@@ -46,6 +46,7 @@ export function jsonPlugin(
   if (enableNativePlugin) {
     return nativeJsonPlugin({ ...options, minify: isBuild })
   }
+
   const plugin = {
     name: 'vite:json',
 
