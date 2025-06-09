@@ -11,7 +11,6 @@ import { jsonPlugin as nativeJsonPlugin } from 'rolldown/experimental'
 import { SPECIAL_QUERY_RE } from '../constants'
 import type { Plugin } from '../plugin'
 import { stripBomTag } from '../utils'
-import type { ResolvedConfig } from '..'
 import { inlineRE, noInlineRE } from './asset'
 
 export interface JsonOptions {
@@ -39,9 +38,12 @@ const jsonLangRE = new RegExp(jsonLangs)
 export const isJSONRequest = (request: string): boolean =>
   jsonLangRE.test(request)
 
-export function jsonPlugin(config: ResolvedConfig, isBuild: boolean): Plugin {
-  const options = config.json
-  if (config.experimental.enableNativePlugin === true) {
+export function jsonPlugin(
+  options: Required<JsonOptions>,
+  isBuild: boolean,
+  enableNativePlugin: boolean,
+): Plugin {
+  if (enableNativePlugin) {
     return nativeJsonPlugin({ ...options, minify: isBuild })
   }
   const plugin = {
