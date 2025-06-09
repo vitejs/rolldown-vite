@@ -11,7 +11,7 @@ export {
 } from './config'
 export { perEnvironmentPlugin } from './plugin'
 export { perEnvironmentState } from './environment'
-export { createServer } from './server'
+export { createServer, createServerWithResolvedConfig } from './server'
 export { preview } from './preview'
 export { build, createBuilder } from './build'
 

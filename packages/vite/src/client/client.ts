@@ -7,6 +7,7 @@ import {
 } from '../shared/moduleRunnerTransport'
 import { createHMRHandler } from '../shared/hmrHandler'
 import { ErrorOverlay, overlayId } from './overlay'
+import './hmrModuleRunner'
 import '@vite/env'
 
 // injected by the hmr plugin when served
@@ -20,6 +21,7 @@ declare const __HMR_BASE__: string
 declare const __HMR_TIMEOUT__: number
 declare const __HMR_ENABLE_OVERLAY__: boolean
 declare const __WS_TOKEN__: string
+declare const __FULL_BUNDLE_MODE__: boolean
 
 console.debug('[vite] connecting...')
 
@@ -140,20 +142,36 @@ const hmrClient = new HMRClient(
   },
   transport,
   async function importUpdatedModule({
+    url,
     acceptedPath,
     timestamp,
     explicitImportRequired,
     isWithinCircularImport,
   }) {
-    const [acceptedPathWithoutQuery, query] = acceptedPath.split(`?`)
-    const importPromise = import(
-      /* @vite-ignore */
-      base +
-        acceptedPathWithoutQuery.slice(1) +
-        `?${explicitImportRequired ? 'import&' : ''}t=${timestamp}${
-          query ? `&${query}` : ''
-        }`
-    )
+    function importModuleWithFullBundleMode() {
+      const importPromise = import(base + url)
+      return importPromise.then(() =>
+        // @ts-expect-error globalThis.__rolldown_runtime__
+        globalThis.__rolldown_runtime__.loadExports(acceptedPath),
+      )
+    }
+
+    function importModule() {
+      const [acceptedPathWithoutQuery, query] = acceptedPath.split(`?`)
+      const importPromise = import(
+        /* @vite-ignore */
+        base +
+          acceptedPathWithoutQuery.slice(1) +
+          `?${explicitImportRequired ? 'import&' : ''}t=${timestamp}${
+            query ? `&${query}` : ''
+          }`
+      )
+      return importPromise
+    }
+
+    const importPromise = __FULL_BUNDLE_MODE__
+      ? importModuleWithFullBundleMode()
+      : importModule()
     if (isWithinCircularImport) {
       importPromise.catch(() => {
         console.info(
@@ -165,6 +183,7 @@ const hmrClient = new HMRClient(
     }
     return await importPromise
   },
+  __FULL_BUNDLE_MODE__,
 )
 transport.connect!(createHMRHandler(handleMessage))
 
@@ -436,7 +455,7 @@ export function removeStyle(id: string): void {
 }
 
 export function createHotContext(ownerPath: string): ViteHotContext {
-  return new HMRContext(hmrClient, ownerPath)
+  return new HMRContext(hmrClient, ownerPath, __FULL_BUNDLE_MODE__)
 }
 
 /**
