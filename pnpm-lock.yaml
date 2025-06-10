@@ -813,6 +813,8 @@ importers:
 
   playground/hmr: {}
 
+  playground/hmr-full-bundle-mode: {}
+
   playground/hmr-ssr: {}
 
   playground/html: {}
