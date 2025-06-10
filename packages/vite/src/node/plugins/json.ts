@@ -43,7 +43,7 @@ export function jsonPlugin(
   isBuild: boolean,
   enableNativePlugin: boolean,
 ): Plugin {
-  if (enableNativePlugin) {
+  if (enableNativePlugin && isBuild) {
     return nativeJsonPlugin({ ...options, minify: isBuild })
   }
 
