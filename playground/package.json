@@ -10,6 +10,6 @@
     "convert-source-map": "^2.0.0",
     "css-color-names": "^1.0.1",
     "kill-port": "^1.6.1",
-    "rolldown": "https://pkg.pr.new/rolldown@baedab7"
+    "rolldown": "https://pkg.pr.new/rolldown@f77dae0"
   }
 }
