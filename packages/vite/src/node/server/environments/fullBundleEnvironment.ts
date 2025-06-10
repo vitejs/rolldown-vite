@@ -70,10 +70,17 @@ export class FullBundleDevEnvironment extends DevEnvironment {
       return
     }
     if (this.state.type === 'bundle-error') {
-      debug?.(
-        `BUNDLE-ERROR: file update detected ${file}, retriggering bundle generation`,
-      )
-      this.triggerGenerateBundle(this.state)
+      const files = await this.state.bundle.watchFiles
+      if (files.includes(file)) {
+        debug?.(
+          `BUNDLE-ERROR: file update detected ${file}, retriggering bundle generation`,
+        )
+        this.triggerGenerateBundle(this.state)
+      } else {
+        debug?.(
+          `BUNDLE-ERROR: file update detected ${file}, but ignored as it is not a dependency`,
+        )
+      }
       return
     }
 
@@ -112,11 +119,6 @@ export class FullBundleDevEnvironment extends DevEnvironment {
         }
         return
       }
-
-      debug?.(`handle hmr output for ${file}`, {
-        ...hmrOutput,
-        code: typeof hmrOutput.code === 'string' ? '[code]' : hmrOutput.code,
-      })
 
       this.handleHmrOutput(file, hmrOutput, this.state)
 
@@ -260,7 +262,7 @@ export class FullBundleDevEnvironment extends DevEnvironment {
     }
   }
 
-  private async handleHmrOutput(
+  private handleHmrOutput(
     file: string,
     hmrOutput: HmrOutput,
     { options, bundle }: BundleStateCommonProperties,
@@ -281,7 +283,16 @@ export class FullBundleDevEnvironment extends DevEnvironment {
       return
     }
 
-    if (hmrOutput.code) {
+    // TODO: handle `No corresponding module found for changed file path`
+    if (
+      hmrOutput.code &&
+      hmrOutput.code !== '__rolldown_runtime__.applyUpdates([]);'
+    ) {
+      debug?.(`handle hmr output for ${file}`, {
+        ...hmrOutput,
+        code: typeof hmrOutput.code === 'string' ? '[code]' : hmrOutput.code,
+      })
+
       this.memoryFiles.set(hmrOutput.filename, hmrOutput.code)
       if (hmrOutput.sourcemapFilename && hmrOutput.sourcemap) {
         this.memoryFiles.set(hmrOutput.sourcemapFilename, hmrOutput.sourcemap)
@@ -305,7 +316,10 @@ export class FullBundleDevEnvironment extends DevEnvironment {
           colors.dim([...new Set(updates.map((u) => u.path))].join(', ')),
         { clear: !hmrOutput.firstInvalidatedBy, timestamp: true },
       )
+      return
     }
+
+    debug?.(`ignored file change for ${file}`)
   }
 }
 
