@@ -41,7 +41,7 @@ import {
   urlToBuiltUrl,
 } from './asset'
 import { cssBundleNameCache, isCSSRequest } from './css'
-import { modulePreloadPolyfillId } from './modulePreloadPolyfill'
+// import { modulePreloadPolyfillId } from './modulePreloadPolyfill'
 
 interface ScriptAssetsUrl {
   start: number
@@ -715,15 +715,16 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
 
         processedHtml(this).set(id, s.toString())
 
+        // FIXME: https://github.com/rolldown/rolldown/pull/4884
         // inject module preload polyfill only when configured and needed
-        const { modulePreload } = this.environment.config.build
-        if (
-          modulePreload !== false &&
-          modulePreload.polyfill &&
-          (someScriptsAreAsync || someScriptsAreDefer)
-        ) {
-          js = `import "${modulePreloadPolyfillId}";\n${js}`
-        }
+        // const { modulePreload } = this.environment.config.build
+        // if (
+        //   modulePreload !== false &&
+        //   modulePreload.polyfill &&
+        //   (someScriptsAreAsync || someScriptsAreDefer)
+        // ) {
+        //   js = `import "${modulePreloadPolyfillId}";\n${js}`
+        // }
 
         await Promise.all(setModuleSideEffectPromises)
 
