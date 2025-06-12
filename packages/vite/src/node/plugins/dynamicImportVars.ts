@@ -169,7 +169,7 @@ export async function transformDynamicImport(
 export function dynamicImportVarsPlugin(config: ResolvedConfig): Plugin {
   if (
     config.experimental.enableNativePlugin === true &&
-    config.command === 'build'
+    config.isBundled
   ) {
     return nativeDynamicImportVarsPlugin()
   }

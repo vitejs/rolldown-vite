@@ -105,6 +105,7 @@ import { runnerImport } from './ssr/runnerImport'
 import { getAdditionalAllowedHosts } from './server/middlewares/hostCheck'
 import { convertEsbuildPluginToRolldownPlugin } from './optimizer/pluginConverter'
 import { type OxcOptions, convertEsbuildConfigToOxcConfig } from './plugins/oxc'
+import { FullBundleDevEnvironment } from './server/environments/fullBundleEnvironment'
 
 const debug = createDebugger('vite:config', { depth: 10 })
 const promisifiedRealpath = promisify(fs.realpath)
@@ -217,6 +218,13 @@ function defaultCreateClientDevEnvironment(
   config: ResolvedConfig,
   context: CreateDevEnvironmentContext,
 ) {
+  if (config.experimental.fullBundleMode) {
+    return new FullBundleDevEnvironment(name, config, {
+      hot: true,
+      transport: context.ws,
+    })
+  }
+
   return new DevEnvironment(name, config, {
     hot: true,
     transport: context.ws,
@@ -525,6 +533,13 @@ export interface ExperimentalOptions {
    * @default false
    */
   enableNativePlugin?: boolean | 'resolver'
+  /**
+   * Enable full bundle mode in dev.
+   *
+   * @experimental
+   * @default false
+   */
+  fullBundleMode?: boolean
 }
 
 export interface LegacyOptions {
@@ -597,6 +612,8 @@ export interface ResolvedConfig
       cacheDir: string
       command: 'build' | 'serve'
       mode: string
+      /** `true` when build or full-bundle mode dev */
+      isBundled: boolean
       isWorker: boolean
       // in nested worker bundle to find the main config
       /** @internal */
@@ -727,6 +744,7 @@ export const configDefaults = Object.freeze({
     enableNativePlugin: process.env._VITE_TEST_NATIVE_PLUGIN
       ? 'resolver'
       : false,
+    fullBundleMode: false,
   },
   future: {
     removePluginHookHandleHotUpdate: undefined,
@@ -812,6 +830,7 @@ function resolveEnvironmentOptions(
   preserveSymlinks: boolean,
   forceOptimizeDeps: boolean | undefined,
   logger: Logger,
+  isProduction: boolean,
   environmentName: string,
   // Backward compatibility
   skipSsrTransform?: boolean,
@@ -877,6 +896,7 @@ function resolveEnvironmentOptions(
       options.build ?? {},
       logger,
       consumer,
+      isProduction,
     ),
     // will be set by `setOptimizeDepsPluginNames` later
     optimizeDepsPluginNames: undefined!,
@@ -1435,66 +1455,6 @@ export async function resolveConfig(
     config.ssr?.target === 'webworker',
   )
 
-  // Backward compatibility: merge config.environments.client.resolve back into config.resolve
-  config.resolve ??= {}
-  config.resolve.conditions = config.environments.client.resolve?.conditions
-  config.resolve.mainFields = config.environments.client.resolve?.mainFields
-
-  const resolvedDefaultResolve = resolveResolveOptions(config.resolve, logger)
-
-  const resolvedEnvironments: Record<string, ResolvedEnvironmentOptions> = {}
-  for (const environmentName of Object.keys(config.environments)) {
-    resolvedEnvironments[environmentName] = resolveEnvironmentOptions(
-      config.environments[environmentName],
-      resolvedDefaultResolve.alias,
-      resolvedDefaultResolve.preserveSymlinks,
-      inlineConfig.forceOptimizeDeps,
-      logger,
-      environmentName,
-      config.experimental?.skipSsrTransform,
-      config.ssr?.target === 'webworker',
-      config.server?.preTransformRequests,
-    )
-  }
-
-  // Backward compatibility: merge environments.client.optimizeDeps back into optimizeDeps
-  // The same object is assigned back for backward compatibility. The ecosystem is modifying
-  // optimizeDeps in the ResolvedConfig hook, so these changes will be reflected on the
-  // client environment.
-  const backwardCompatibleOptimizeDeps =
-    resolvedEnvironments.client.optimizeDeps
-
-  const resolvedDevEnvironmentOptions = resolveDevEnvironmentOptions(
-    config.dev,
-    // default environment options
-    undefined,
-    undefined,
-  )
-
-  const resolvedBuildOptions = resolveBuildEnvironmentOptions(
-    config.build ?? {},
-    logger,
-    undefined,
-  )
-
-  // Backward compatibility: merge config.environments.ssr back into config.ssr
-  // so ecosystem SSR plugins continue to work if only environments.ssr is configured
-  const patchedConfigSsr = {
-    ...config.ssr,
-    external: resolvedEnvironments.ssr?.resolve.external,
-    noExternal: resolvedEnvironments.ssr?.resolve.noExternal,
-    optimizeDeps: resolvedEnvironments.ssr?.optimizeDeps,
-    resolve: {
-      ...config.ssr?.resolve,
-      conditions: resolvedEnvironments.ssr?.resolve.conditions,
-      externalConditions: resolvedEnvironments.ssr?.resolve.externalConditions,
-    },
-  }
-  const ssr = resolveSSROptions(
-    patchedConfigSsr,
-    resolvedDefaultResolve.preserveSymlinks,
-  )
-
   // load .env files
   // Backward compatibility: set envDir to false when envFile is false
   let envDir = config.envFile === false ? false : config.envDir
@@ -1524,6 +1484,68 @@ export async function resolveConfig(
   }
 
   const isProduction = process.env.NODE_ENV === 'production'
+
+  // Backward compatibility: merge config.environments.client.resolve back into config.resolve
+  config.resolve ??= {}
+  config.resolve.conditions = config.environments.client.resolve?.conditions
+  config.resolve.mainFields = config.environments.client.resolve?.mainFields
+
+  const resolvedDefaultResolve = resolveResolveOptions(config.resolve, logger)
+
+  const resolvedEnvironments: Record<string, ResolvedEnvironmentOptions> = {}
+  for (const environmentName of Object.keys(config.environments)) {
+    resolvedEnvironments[environmentName] = resolveEnvironmentOptions(
+      config.environments[environmentName],
+      resolvedDefaultResolve.alias,
+      resolvedDefaultResolve.preserveSymlinks,
+      inlineConfig.forceOptimizeDeps,
+      logger,
+      isProduction,
+      environmentName,
+      config.experimental?.skipSsrTransform,
+      config.ssr?.target === 'webworker',
+      config.server?.preTransformRequests,
+    )
+  }
+
+  // Backward compatibility: merge environments.client.optimizeDeps back into optimizeDeps
+  // The same object is assigned back for backward compatibility. The ecosystem is modifying
+  // optimizeDeps in the ResolvedConfig hook, so these changes will be reflected on the
+  // client environment.
+  const backwardCompatibleOptimizeDeps =
+    resolvedEnvironments.client.optimizeDeps
+
+  const resolvedDevEnvironmentOptions = resolveDevEnvironmentOptions(
+    config.dev,
+    // default environment options
+    undefined,
+    undefined,
+  )
+
+  const resolvedBuildOptions = resolveBuildEnvironmentOptions(
+    config.build ?? {},
+    logger,
+    undefined,
+    isProduction,
+  )
+
+  // Backward compatibility: merge config.environments.ssr back into config.ssr
+  // so ecosystem SSR plugins continue to work if only environments.ssr is configured
+  const patchedConfigSsr = {
+    ...config.ssr,
+    external: resolvedEnvironments.ssr?.resolve.external,
+    noExternal: resolvedEnvironments.ssr?.resolve.noExternal,
+    optimizeDeps: resolvedEnvironments.ssr?.optimizeDeps,
+    resolve: {
+      ...config.ssr?.resolve,
+      conditions: resolvedEnvironments.ssr?.resolve.conditions,
+      externalConditions: resolvedEnvironments.ssr?.resolve.externalConditions,
+    },
+  }
+  const ssr = resolveSSROptions(
+    patchedConfigSsr,
+    resolvedDefaultResolve.preserveSymlinks,
+  )
 
   // resolve public base url
   const relativeBaseShortcut = config.base === '' || config.base === './'
@@ -1676,6 +1698,7 @@ export async function resolveConfig(
     cacheDir,
     command,
     mode,
+    isBundled: config.experimental?.fullBundleMode || isBuild,
     isWorker: false,
     mainConfig: null,
     bundleChain: [],
@@ -1729,6 +1752,7 @@ export async function resolveConfig(
       enableNativePlugin: process.env._VITE_TEST_NATIVE_PLUGIN
         ? 'resolver'
         : false,
+      fullBundleMode: false,
       ...config.experimental,
     },
     future: config.future,
