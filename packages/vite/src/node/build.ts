@@ -9,21 +9,25 @@ import type {
   LogOrStringHandler,
   MinimalPluginContext,
   ModuleFormat,
+  OutputBundle,
+  OutputChunk,
   OutputOptions,
   PluginContext,
-  RollupBuild,
+  RenderedChunk,
+  RolldownBuild,
+  RolldownOptions,
+  RolldownOutput,
+  RolldownWatcher,
   RollupError,
   RollupLog,
-  RollupOptions,
-  RollupOutput,
-  RollupWatcher,
   WarningHandlerWithDefault,
   WatcherOptions,
-} from 'rollup'
-import commonjsPlugin from '@rollup/plugin-commonjs'
+} from 'rolldown'
+import { loadFallbackPlugin as nativeLoadFallbackPlugin } from 'rolldown/experimental'
 import type { RollupCommonJSOptions } from 'dep-types/commonjs'
 import type { RollupDynamicImportVarsOptions } from 'dep-types/dynamicImportVars'
-import type { TransformOptions } from 'esbuild'
+import type { EsbuildTarget } from 'types/internal/esbuildOptions'
+import type { ChunkMetadata } from 'types/metadata'
 import { withTrailingSlash } from '../shared/utils'
 import {
   DEFAULT_ASSETS_INLINE_LIMIT,
@@ -54,17 +58,17 @@ import {
   mergeWithDefaults,
   normalizePath,
   partialEncodeURIPath,
+  unique,
 } from './utils'
 import { perEnvironmentPlugin, resolveEnvironmentPlugins } from './plugin'
 import { manifestPlugin } from './plugins/manifest'
-import type { Logger } from './logger'
-import { dataURIPlugin } from './plugins/dataUri'
+import { type Logger } from './logger'
 import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
 import { ssrManifestPlugin } from './ssr/ssrManifestPlugin'
-import { buildLoadFallbackPlugin } from './plugins/loadFallback'
 import { findNearestMainPackageData, findNearestPackageData } from './packages'
 import type { PackageCache } from './packages'
 import {
+  convertToNotifyOptions,
   getResolvedOutDirs,
   resolveChokidarOptions,
   resolveEmptyOutDir,
@@ -79,10 +83,7 @@ import {
 } from './baseEnvironment'
 import type { Plugin } from './plugin'
 import type { RollupPluginHooks } from './typeUtils'
-import {
-  createFilterForTransform,
-  createIdFilter,
-} from './plugins/pluginFilter'
+import { buildOxcPlugin } from './plugins/oxc'
 
 export interface BuildEnvironmentOptions {
   /**
@@ -101,7 +102,7 @@ export interface BuildEnvironmentOptions {
    * https://esbuild.github.io/content-types/#javascript for more details.
    * @default 'modules'
    */
-  target?: 'modules' | TransformOptions['target'] | false
+  target?: 'modules' | EsbuildTarget | false
   /**
    * whether to inject module preload polyfill.
    * Note: does not apply to library mode.
@@ -154,13 +155,13 @@ export interface BuildEnvironmentOptions {
    * doesn't support the #RGBA syntax.
    * @default target
    */
-  cssTarget?: TransformOptions['target'] | false
+  cssTarget?: EsbuildTarget | false
   /**
    * Override CSS minification specifically instead of defaulting to `build.minify`,
    * so you can configure minification for JS and CSS separately.
-   * @default 'esbuild'
+   * @default 'lightningcss'
    */
-  cssMinify?: boolean | 'esbuild' | 'lightningcss'
+  cssMinify?: boolean | 'lightningcss' | 'esbuild'
   /**
    * If `true`, a separate sourcemap file will be created. If 'inline', the
    * sourcemap will be appended to the resulting output file as data URI.
@@ -171,10 +172,10 @@ export interface BuildEnvironmentOptions {
   sourcemap?: boolean | 'inline' | 'hidden'
   /**
    * Set to `false` to disable minification, or specify the minifier to use.
-   * Available options are 'terser' or 'esbuild'.
-   * @default 'esbuild'
+   * Available options are 'oxc' or 'terser' or 'esbuild'.
+   * @default 'oxc'
    */
-  minify?: boolean | 'terser' | 'esbuild'
+  minify?: boolean | 'oxc' | 'terser' | 'esbuild'
   /**
    * Options for terser
    * https://terser.org/docs/api-reference#minify-options
@@ -187,7 +188,7 @@ export interface BuildEnvironmentOptions {
    * Will be merged with internal rollup options.
    * https://rollupjs.org/configuration-options/
    */
-  rollupOptions?: RollupOptions
+  rollupOptions?: RolldownOptions
   /**
    * Options to pass on to `@rollup/plugin-commonjs`
    */
@@ -317,7 +318,7 @@ export interface LibraryOptions {
   cssFileName?: string
 }
 
-export type LibraryFormats = 'es' | 'cjs' | 'umd' | 'iife' | 'system'
+export type LibraryFormats = 'es' | 'cjs' | 'umd' | 'iife' // | 'system'
 
 export interface ModulePreloadOptions {
   /**
@@ -418,7 +419,10 @@ export function resolveBuildEnvironmentOptions(
     {
       ...buildEnvironmentOptionsDefaults,
       cssCodeSplit: !raw.lib,
-      minify: consumer === 'server' ? false : 'esbuild',
+      minify: consumer === 'server' ? false : 'oxc',
+      rollupOptions: {
+        platform: consumer === 'server' ? 'node' : 'browser',
+      },
       ssr: consumer === 'server',
       emitAssets: consumer === 'client',
       createEnvironment: (name, config) => new BuildEnvironment(name, config),
@@ -430,12 +434,17 @@ export function resolveBuildEnvironmentOptions(
   if (merged.target === 'modules') {
     merged.target = ESBUILD_MODULES_TARGET
   }
+  // dedupe target
+  if (Array.isArray(merged.target)) {
+    // esbuild allowed duplicate targets but oxc does not
+    merged.target = unique(merged.target)
+  }
 
   // normalize false string into actual false
   if ((merged.minify as string) === 'false') {
     merged.minify = false
   } else if (merged.minify === true) {
-    merged.minify = 'esbuild'
+    merged.minify = 'oxc'
   }
 
   const defaultModulePreload = {
@@ -446,7 +455,8 @@ export function resolveBuildEnvironmentOptions(
     ...merged,
     cssTarget: merged.cssTarget ?? merged.target,
     cssMinify:
-      merged.cssMinify ?? (consumer === 'server' ? 'esbuild' : !!merged.minify),
+      merged.cssMinify ??
+      (consumer === 'server' ? 'lightningcss' : !!merged.minify),
     // Resolve to false | object
     modulePreload:
       merged.modulePreload === false
@@ -469,14 +479,6 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   return {
     pre: [
       completeSystemWrapPlugin(),
-      perEnvironmentPlugin('commonjs', (environment) => {
-        const { commonjsOptions } = environment.config.build
-        const usePluginCommonjs =
-          !Array.isArray(commonjsOptions.include) ||
-          commonjsOptions.include.length !== 0
-        return usePluginCommonjs ? commonjsPlugin(commonjsOptions) : false
-      }),
-      dataURIPlugin(),
       perEnvironmentPlugin(
         'vite:rollup-options-plugins',
         async (environment) =>
@@ -486,16 +488,27 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
             )
           ).filter(Boolean) as Plugin[],
       ),
-      ...(config.isWorker ? [webWorkerPostPlugin()] : []),
+      ...(config.isWorker ? [webWorkerPostPlugin(config)] : []),
     ],
     post: [
-      buildImportAnalysisPlugin(config),
-      buildEsbuildPlugin(),
+      ...buildImportAnalysisPlugin(config),
+      ...(config.experimental.enableNativePlugin !== true
+        ? [
+            buildOxcPlugin(),
+            ...(config.build.minify === 'esbuild'
+              ? [buildEsbuildPlugin()]
+              : []),
+          ]
+        : []),
       terserPlugin(config),
       ...(!config.isWorker
-        ? [manifestPlugin(), ssrManifestPlugin(), buildReporterPlugin(config)]
+        ? [
+            manifestPlugin(config),
+            ssrManifestPlugin(),
+            buildReporterPlugin(config),
+          ]
         : []),
-      buildLoadFallbackPlugin(),
+      nativeLoadFallbackPlugin(),
     ],
   }
 }
@@ -506,7 +519,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
  */
 export async function build(
   inlineConfig: InlineConfig = {},
-): Promise<RollupOutput | RollupOutput[] | RollupWatcher> {
+): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
   const builder = await createBuilder(inlineConfig, true)
   const environment = Object.values(builder.environments)[0]
   if (!environment) throw new Error('No environment found')
@@ -534,7 +547,7 @@ function resolveConfigToBuild(
  **/
 async function buildEnvironment(
   environment: BuildEnvironment,
-): Promise<RollupOutput | RollupOutput[] | RollupWatcher> {
+): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
   const { root, packageCache } = environment.config
   const options = environment.config.build
   const libOptions = options.lib
@@ -543,7 +556,7 @@ async function buildEnvironment(
 
   logger.info(
     colors.cyan(
-      `vite v${VERSION} ${colors.green(
+      `rolldown-vite v${VERSION} ${colors.green(
         `building ${ssr ? `SSR bundle ` : ``}for ${environment.config.mode}...`,
       )}`,
     ),
@@ -589,17 +602,18 @@ async function buildEnvironment(
   const outDir = resolve(options.outDir)
 
   // inject environment and ssr arg to plugin load/transform hooks
+  const chunkMetadataMap = new Map<string, ChunkMetadata>()
   const plugins = environment.plugins.map((p) =>
-    injectEnvironmentAndFilterToHooks(environment, p),
+    injectEnvironmentToHooks(environment, chunkMetadataMap, p),
   )
 
-  const rollupOptions: RollupOptions = {
+  const rollupOptions: RolldownOptions = {
     preserveEntrySignatures: ssr
       ? 'allow-extension'
       : libOptions
         ? 'strict'
         : false,
-    cache: options.watch ? undefined : false,
+    // cache: options.watch ? undefined : false,
     ...options.rollupOptions,
     output: options.rollupOptions.output,
     input,
@@ -607,6 +621,16 @@ async function buildEnvironment(
     external: options.rollupOptions.external,
     onLog(level, log) {
       onRollupLog(level, log, environment)
+    },
+    define: {
+      ...options.rollupOptions.define,
+      // disable builtin process.env.NODE_ENV replacement as it is handled by the define plugin
+      'process.env.NODE_ENV': 'process.env.NODE_ENV',
+    },
+    // TODO: remove this and enable rolldown's CSS support later
+    moduleTypes: {
+      ...options.rollupOptions.moduleTypes,
+      '.css': 'js',
     },
   }
 
@@ -679,7 +703,7 @@ async function buildEnvironment(
     environment.name === 'ssr' &&
     environment.getTopLevelConfig().ssr?.target === 'webworker'
 
-  let bundle: RollupBuild | undefined
+  let bundle: RolldownBuild | undefined
   let startTime: number | undefined
   try {
     const buildOutputOptions = (output: OutputOptions = {}): OutputOptions => {
@@ -721,11 +745,11 @@ async function buildEnvironment(
         exports: 'auto',
         sourcemap: options.sourcemap,
         name: libOptions ? libOptions.name : undefined,
-        hoistTransitiveImports: libOptions ? false : undefined,
+        // hoistTransitiveImports: libOptions ? false : undefined,
         // es2015 enables `generatedCode.symbols`
         // - #764 add `Symbol.toStringTag` when build es module into cjs chunk
         // - #1048 add `Symbol.toStringTag` for module default export
-        generatedCode: 'es2015',
+        // generatedCode: 'es2015',
         entryFileNames: ssr
           ? `[name].${jsExt}`
           : libOptions
@@ -750,6 +774,12 @@ async function buildEnvironment(
           output.format === 'iife' ||
           (isSsrTargetWebworkerEnvironment &&
             (typeof input === 'string' || Object.keys(input).length === 1)),
+        minify:
+          options.minify === 'oxc'
+            ? true
+            : options.minify === false
+              ? 'dce-only'
+              : false,
         ...output,
       }
     }
@@ -787,19 +817,20 @@ async function buildEnvironment(
       logger.info(colors.cyan(`\nwatching for file changes...`))
 
       const resolvedChokidarOptions = resolveChokidarOptions(
+        // @ts-expect-error chokidar option does not exist in rolldown but used for backward compat
         options.watch.chokidar,
         resolvedOutDirs,
         emptyOutDir,
         environment.config.cacheDir,
       )
 
-      const { watch } = await import('rollup')
+      const { watch } = await import('rolldown')
       const watcher = watch({
         ...rollupOptions,
         output: normalizedOutputs,
         watch: {
           ...options.watch,
-          chokidar: resolvedChokidarOptions,
+          notify: convertToNotifyOptions(resolvedChokidarOptions),
         },
       })
 
@@ -820,16 +851,16 @@ async function buildEnvironment(
       return watcher
     }
 
-    // write or generate files with rollup
-    const { rollup } = await import('rollup')
+    // write or generate files with rolldown
+    const { rolldown } = await import('rolldown')
     startTime = Date.now()
-    bundle = await rollup(rollupOptions)
+    bundle = await rolldown(rollupOptions)
 
     if (options.write) {
       prepareOutDir(resolvedOutDirs, emptyOutDir, environment)
     }
 
-    const res: RollupOutput[] = []
+    const res: RolldownOutput[] = []
     for (const output of normalizedOutputs) {
       res.push(await bundle[options.write ? 'write' : 'generate'](output))
     }
@@ -1054,23 +1085,29 @@ export function onRollupLog(
       }
     }
 
+    // append plugin name to align with Rollup's behavior
+    let message = logging.message
+    if (logging.plugin) {
+      message = `[plugin ${logging.plugin}] ${message}`
+    }
+
     switch (logLeveling) {
       case 'info':
-        environment.logger.info(logging.message)
+        environment.logger.info(message)
         return
       case 'warn':
-        environment.logger.warn(colors.yellow(logging.message))
+        environment.logger.warn(colors.yellow(message))
         return
       case 'error':
-        environment.logger.error(colors.red(logging.message))
+        environment.logger.error(colors.red(message))
         return
       case 'debug':
-        debugLogger?.(logging.message)
+        debugLogger?.(message)
         return
       default:
         logLeveling satisfies never
         // fallback to info if a unknown log level is passed
-        environment.logger.info(logging.message)
+        environment.logger.info(message)
         return
     }
   }
@@ -1134,28 +1171,38 @@ function isExternal(id: string, test: string | RegExp) {
   }
 }
 
-export function injectEnvironmentAndFilterToHooks(
+export function injectEnvironmentToHooks(
   environment: BuildEnvironment,
+  chunkMetadataMap: Map<string, ChunkMetadata>,
   plugin: Plugin,
 ): Plugin {
   const { resolveId, load, transform } = plugin
 
-  const clone = { ...plugin }
+  // the plugin can be a class instance (e.g. native plugins)
+  const clone: Plugin = Object.assign(
+    Object.create(Object.getPrototypeOf(plugin)),
+    plugin,
+  )
 
   for (const hook of Object.keys(clone) as RollupPluginHooks[]) {
     switch (hook) {
       case 'resolveId':
-        clone[hook] = wrapEnvironmentAndFilterResolveId(environment, resolveId)
+        clone[hook] = wrapEnvironmentResolveId(environment, resolveId)
         break
       case 'load':
-        clone[hook] = wrapEnvironmentAndFilterLoad(environment, load)
+        clone[hook] = wrapEnvironmentLoad(environment, load)
         break
       case 'transform':
-        clone[hook] = wrapEnvironmentAndFilterTransform(environment, transform)
+        clone[hook] = wrapEnvironmentTransform(environment, transform)
         break
       default:
         if (ROLLUP_HOOKS.includes(hook)) {
-          ;(clone as any)[hook] = wrapEnvironmentHook(environment, clone[hook])
+          ;(clone as any)[hook] = wrapEnvironmentHook(
+            environment,
+            chunkMetadataMap,
+            plugin,
+            hook,
+          )
         }
         break
     }
@@ -1164,20 +1211,14 @@ export function injectEnvironmentAndFilterToHooks(
   return clone
 }
 
-function wrapEnvironmentAndFilterResolveId(
+function wrapEnvironmentResolveId(
   environment: BuildEnvironment,
   hook?: Plugin['resolveId'],
 ): Plugin['resolveId'] {
   if (!hook) return
 
-  const rawIdFilter = typeof hook === 'object' ? hook.filter?.id : undefined
-  const idFilter = rawIdFilter ? createIdFilter(rawIdFilter) : undefined
-
   const fn = getHookHandler(hook)
   const handler: Plugin['resolveId'] = function (id, importer, options) {
-    if (idFilter && !idFilter(id)) {
-      return
-    }
     return fn.call(
       injectEnvironmentInContext(this, environment),
       id,
@@ -1196,20 +1237,14 @@ function wrapEnvironmentAndFilterResolveId(
   }
 }
 
-function wrapEnvironmentAndFilterLoad(
+function wrapEnvironmentLoad(
   environment: BuildEnvironment,
   hook?: Plugin['load'],
 ): Plugin['load'] {
   if (!hook) return
 
-  const rawIdFilter = typeof hook === 'object' ? hook.filter?.id : undefined
-  const idFilter = rawIdFilter ? createIdFilter(rawIdFilter) : undefined
-
   const fn = getHookHandler(hook)
   const handler: Plugin['load'] = function (id, ...args) {
-    if (idFilter && !idFilter(id)) {
-      return
-    }
     return fn.call(
       injectEnvironmentInContext(this, environment),
       id,
@@ -1227,22 +1262,14 @@ function wrapEnvironmentAndFilterLoad(
   }
 }
 
-function wrapEnvironmentAndFilterTransform(
+function wrapEnvironmentTransform(
   environment: BuildEnvironment,
   hook?: Plugin['transform'],
 ): Plugin['transform'] {
   if (!hook) return
 
-  const filters = typeof hook === 'object' ? hook.filter : undefined
-  const filter = filters
-    ? createFilterForTransform(filters.id, filters.code)
-    : undefined
-
   const fn = getHookHandler(hook)
   const handler: Plugin['transform'] = function (code, importer, ...args) {
-    if (filter && !filter(importer, code)) {
-      return
-    }
     return fn.call(
       injectEnvironmentInContext(this, environment),
       code,
@@ -1263,8 +1290,11 @@ function wrapEnvironmentAndFilterTransform(
 
 function wrapEnvironmentHook<HookName extends keyof Plugin>(
   environment: BuildEnvironment,
-  hook?: Plugin[HookName],
+  chunkMetadataMap: Map<string, ChunkMetadata>,
+  plugin: Plugin,
+  hookName: HookName,
 ): Plugin[HookName] {
+  const hook = plugin[hookName]
   if (!hook) return
 
   const fn = getHookHandler(hook)
@@ -1274,6 +1304,20 @@ function wrapEnvironmentHook<HookName extends keyof Plugin>(
     this: PluginContext,
     ...args: any[]
   ) {
+    if (hookName === 'renderChunk') {
+      injectChunkMetadata(chunkMetadataMap, args[1])
+    }
+    if (hookName === 'augmentChunkHash') {
+      injectChunkMetadata(chunkMetadataMap, args[0])
+    }
+    if (hookName === 'generateBundle') {
+      const bundle = args[1] as OutputBundle
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type === 'chunk') {
+          injectChunkMetadata(chunkMetadataMap, chunk)
+        }
+      }
+    }
     return fn.call(injectEnvironmentInContext(this, environment), ...args)
   }
 
@@ -1285,6 +1329,34 @@ function wrapEnvironmentHook<HookName extends keyof Plugin>(
   } else {
     return handler
   }
+}
+
+function injectChunkMetadata(
+  chunkMetadataMap: Map<string, ChunkMetadata>,
+  chunk: RenderedChunk | OutputChunk,
+) {
+  const key =
+    'preliminaryFileName' in chunk ? chunk.preliminaryFileName : chunk.fileName
+  if (!chunkMetadataMap.has(key)) {
+    chunkMetadataMap.set(key, {
+      importedAssets: new Set(),
+      importedCss: new Set(),
+      // NOTE: adding this as a workaround for now ideally we'd want to remove this workaround
+      // use shared `chunk.modules` object
+      // to allow mutation on js side plugins
+      __modules: chunk.modules,
+    })
+  }
+  // define instead of assign to avoid detected as a change
+  // https://github.com/rolldown/rolldown/blob/f4c5ff27799f2b0152c689c398e61bc7d30429ff/packages/rolldown/src/utils/transform-to-rollup-output.ts#L87
+  Object.defineProperty(chunk, 'viteMetadata', {
+    value: chunkMetadataMap.get(key),
+  })
+  Object.defineProperty(chunk, 'modules', {
+    get() {
+      return chunk.viteMetadata!.__modules
+    },
+  })
 }
 
 function injectEnvironmentInContext<Context extends MinimalPluginContext>(
@@ -1344,12 +1416,12 @@ const relativeUrlMechanisms: Record<
   InternalModuleFormat,
   (relativePath: string) => string
 > = {
-  amd: (relativePath) => {
-    if (relativePath[0] !== '.') relativePath = './' + relativePath
-    return getResolveUrl(
-      `require.toUrl('${escapeId(relativePath)}'), document.baseURI`,
-    )
-  },
+  // amd: (relativePath) => {
+  //   if (relativePath[0] !== '.') relativePath = './' + relativePath
+  //   return getResolveUrl(
+  //     `require.toUrl('${escapeId(relativePath)}'), document.baseURI`,
+  //   )
+  // },
   cjs: (relativePath) =>
     `(typeof document === 'undefined' ? ${getFileUrlFromRelativePath(
       relativePath,
@@ -1360,10 +1432,10 @@ const relativeUrlMechanisms: Record<
     ),
   iife: (relativePath) => getRelativeUrlFromDocument(relativePath),
   // NOTE: make sure rollup generate `module` params
-  system: (relativePath) =>
-    getResolveUrl(
-      `'${escapeId(partialEncodeURIPath(relativePath))}', module.meta.url`,
-    ),
+  // system: (relativePath) =>
+  //   getResolveUrl(
+  //     `'${escapeId(partialEncodeURIPath(relativePath))}', module.meta.url`,
+  //   ),
   umd: (relativePath) =>
     `(typeof document === 'undefined' && typeof location === 'undefined' ? ${getFileUrlFromRelativePath(
       relativePath,
@@ -1527,7 +1599,7 @@ export interface ViteBuilder {
   buildApp(): Promise<void>
   build(
     environment: BuildEnvironment,
-  ): Promise<RollupOutput | RollupOutput[] | RollupWatcher>
+  ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher>
 }
 
 export interface BuilderOptions {

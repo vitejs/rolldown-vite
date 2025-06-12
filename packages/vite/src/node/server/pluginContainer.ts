@@ -32,16 +32,19 @@ SOFTWARE.
 import fs from 'node:fs'
 import { join } from 'node:path'
 import { performance } from 'node:perf_hooks'
-import { parseAst as rollupParseAst } from 'rollup/parseAst'
+import { parseAst as rolldownParseAst } from 'rolldown/parseAst'
+import type { Program } from '@oxc-project/types'
 import type {
   AsyncPluginHooks,
   CustomPluginOptions,
   EmittedFile,
   FunctionPluginHooks,
+  ImportKind,
   InputOptions,
   LoadResult,
   ModuleInfo,
   ModuleOptions,
+  ModuleType,
   NormalizedInputOptions,
   OutputOptions,
   ParallelPluginHooks,
@@ -57,7 +60,7 @@ import type {
   SourceDescription,
   SourceMap,
   TransformResult,
-} from 'rollup'
+} from 'rolldown'
 import type { RawSourceMap } from '@ampproject/remapping'
 import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping'
 import MagicString from 'magic-string'
@@ -74,6 +77,7 @@ import {
   normalizePath,
   numberToPos,
   prettifyUrl,
+  rolldownVersion,
   rollupVersion,
   timeFrom,
 } from '../utils'
@@ -193,7 +197,7 @@ class EnvironmentPluginContainer {
   ) {
     this._started = !autoStart
     this.minimalContext = new MinimalPluginContext(
-      { rollupVersion, watchMode: true },
+      { rollupVersion, rolldownVersion, watchMode: true },
       environment,
     )
     const utils = createPluginHookUtils(plugins)
@@ -343,6 +347,7 @@ class EnvironmentPluginContainer {
       'index.html',
     ),
     options?: {
+      kind?: ImportKind
       attributes?: Record<string, string>
       custom?: CustomPluginOptions
       /** @deprecated use `skipCalls` instead */
@@ -389,6 +394,7 @@ class EnvironmentPluginContainer {
       const handler = getHookHandler(plugin.resolveId)
       const result = await this.handleHookPromise(
         handler.call(ctx as any, rawId, importer, {
+          kind: options?.kind,
           attributes: options?.attributes ?? {},
           custom: options?.custom,
           isEntry: !!options?.isEntry,
@@ -469,10 +475,17 @@ class EnvironmentPluginContainer {
     id: string,
     options?: {
       inMap?: SourceDescription['map']
+      moduleType?: string
     },
-  ): Promise<{ code: string; map: SourceMap | { mappings: '' } | null }> {
+  ): Promise<{
+    code: string
+    map: SourceMap | { mappings: '' } | null
+    moduleType?: ModuleType
+  }> {
     const ssr = this.environment.config.consumer === 'server'
-    const optionsWithSSR = options ? { ...options, ssr } : { ssr }
+    const optionsWithSSR = options
+      ? { ...options, ssr, moduleType: options.moduleType ?? 'js' }
+      : { ssr, moduleType: 'js' }
     const inMap = options?.inMap
 
     const ctx = new TransformPluginContext(this, id, code, inMap as SourceMap)
@@ -483,7 +496,7 @@ class EnvironmentPluginContainer {
         throwClosedServerError()
 
       const filter = getCachedFilterForPlugin(plugin, 'transform')
-      if (filter && !filter(id, code)) continue
+      if (filter && !filter(id, code, optionsWithSSR.moduleType)) continue
 
       ctx._updateActiveInfo(plugin, id, code)
       const start = debugPluginTransform ? performance.now() : 0
@@ -513,6 +526,9 @@ class EnvironmentPluginContainer {
             ctx.sourcemapChain.push(result.map)
           }
         }
+        if (result.moduleType !== undefined) {
+          optionsWithSSR.moduleType = result.moduleType
+        }
         ctx._updateModuleInfo(id, result)
       } else {
         code = result
@@ -521,6 +537,7 @@ class EnvironmentPluginContainer {
     return {
       code,
       map: ctx._getCombinedSourcemap(),
+      moduleType: optionsWithSSR.moduleType,
     }
   }
 
@@ -562,6 +579,12 @@ class MinimalPluginContext implements RollupMinimalPluginContext {
     public meta: PluginContextMeta,
     public environment: Environment,
   ) {}
+
+  // FIXME: properly support this later
+  // eslint-disable-next-line @typescript-eslint/class-literal-property-style
+  get pluginName() {
+    return ''
+  }
 
   debug(rawLog: string | RollupLog | (() => string | RollupLog)): void {
     const log = this._normalizeRawLog(rawLog)
@@ -609,6 +632,10 @@ class PluginContext
   _resolveSkips?: Set<Plugin>
   _resolveSkipCalls?: readonly SkipInformation[]
 
+  override get pluginName() {
+    return this._plugin.name
+  }
+
   constructor(
     public _plugin: Plugin,
     public _container: EnvironmentPluginContainer,
@@ -616,8 +643,8 @@ class PluginContext
     super(_container.minimalContext.meta, _container.environment)
   }
 
-  parse(code: string, opts: any) {
-    return rollupParseAst(code, opts)
+  parse(code: string, opts: any): Program {
+    return rolldownParseAst(code, opts)
   }
 
   async resolve(
@@ -1011,7 +1038,7 @@ class TransformPluginContext
         includeContent: true,
         hires: 'boundary',
         source: cleanUrl(this.filename),
-      })
+      }) as SourceMap
     }
     return map
   }

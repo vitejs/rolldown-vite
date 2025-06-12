@@ -4,10 +4,12 @@ import type {
   OutputAsset,
   OutputChunk,
   RenderedChunk,
-} from 'rollup'
+} from 'rolldown'
+import { manifestPlugin as nativeManifestPlugin } from 'rolldown/experimental'
 import type { Plugin } from '../plugin'
 import { normalizePath, sortObjectKeys } from '../utils'
 import { perEnvironmentState } from '../environment'
+import { type ResolvedConfig, perEnvironmentPlugin } from '..'
 import { cssEntriesMap } from './asset'
 
 const endsWithJSRE = /\.[cm]?js$/
@@ -26,7 +28,24 @@ export interface ManifestChunk {
   dynamicImports?: string[]
 }
 
-export function manifestPlugin(): Plugin {
+export function manifestPlugin(config: ResolvedConfig): Plugin {
+  if (
+    config.build.manifest &&
+    config.experimental.enableNativePlugin === true
+  ) {
+    return perEnvironmentPlugin('native:manifest', (environment) => {
+      if (!environment.config.build.manifest) return false
+
+      return nativeManifestPlugin({
+        root: environment.config.root,
+        outPath:
+          environment.config.build.manifest === true
+            ? '.vite/manifest.json'
+            : environment.config.build.manifest,
+      })
+    })
+  }
+
   const getState = perEnvironmentState(() => {
     return {
       manifest: {} as Manifest,
@@ -196,6 +215,7 @@ export function getChunkOriginalFileName(
 ): string | undefined {
   if (chunk.facadeModuleId) {
     let name = normalizePath(path.relative(root, chunk.facadeModuleId))
+    // @ts-expect-error TODO: system format is not supported
     if (format === 'system' && !chunk.name.includes('-legacy')) {
       const ext = path.extname(name)
       const endPos = ext.length !== 0 ? -ext.length : undefined
