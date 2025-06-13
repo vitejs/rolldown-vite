@@ -138,7 +138,7 @@ export class DevEnvironment extends BaseEnvironment {
     this.hot.on(
       'vite:invalidate',
       async ({ path, message, firstInvalidatedBy }) => {
-        invalidateModule(this, {
+        this.invalidateModule({
           path,
           message,
           firstInvalidatedBy,
@@ -239,6 +239,36 @@ export class DevEnvironment extends BaseEnvironment {
     }
   }
 
+  private invalidateModule(m: {
+    path: string
+    message?: string
+    firstInvalidatedBy: string
+  }): void {
+    const mod = this.moduleGraph.urlToModuleMap.get(m.path)
+    if (
+      mod &&
+      mod.isSelfAccepting &&
+      mod.lastHMRTimestamp > 0 &&
+      !mod.lastHMRInvalidationReceived
+    ) {
+      mod.lastHMRInvalidationReceived = true
+      this.logger.info(
+        colors.yellow(`hmr invalidate `) +
+          colors.dim(m.path) +
+          (m.message ? ` ${m.message}` : ''),
+        { timestamp: true },
+      )
+      const file = getShortName(mod.file!, this.config.root)
+      updateModules(
+        this,
+        file,
+        [...mod.importers],
+        mod.lastHMRTimestamp,
+        m.firstInvalidatedBy,
+      )
+    }
+  }
+
   async close(): Promise<void> {
     this._closing = true
 
@@ -277,39 +307,6 @@ export class DevEnvironment extends BaseEnvironment {
    */
   _registerRequestProcessing(id: string, done: () => Promise<unknown>): void {
     this._crawlEndFinder.registerRequestProcessing(id, done)
-  }
-}
-
-function invalidateModule(
-  environment: DevEnvironment,
-  m: {
-    path: string
-    message?: string
-    firstInvalidatedBy: string
-  },
-) {
-  const mod = environment.moduleGraph.urlToModuleMap.get(m.path)
-  if (
-    mod &&
-    mod.isSelfAccepting &&
-    mod.lastHMRTimestamp > 0 &&
-    !mod.lastHMRInvalidationReceived
-  ) {
-    mod.lastHMRInvalidationReceived = true
-    environment.logger.info(
-      colors.yellow(`hmr invalidate `) +
-        colors.dim(m.path) +
-        (m.message ? ` ${m.message}` : ''),
-      { timestamp: true },
-    )
-    const file = getShortName(mod.file!, environment.config.root)
-    updateModules(
-      environment,
-      file,
-      [...mod.importers],
-      mod.lastHMRTimestamp,
-      m.firstInvalidatedBy,
-    )
   }
 }
 
