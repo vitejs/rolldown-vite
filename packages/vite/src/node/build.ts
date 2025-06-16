@@ -495,7 +495,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
       ...(config.isWorker ? [webWorkerPostPlugin(config)] : []),
     ],
     post: [
-      ...buildImportAnalysisPlugin(config),
+      ...(isBuild ? buildImportAnalysisPlugin(config) : []),
       ...(config.experimental.enableNativePlugin !== true
         ? [
             buildOxcPlugin(),
