@@ -823,6 +823,7 @@ function resolveEnvironmentOptions(
   forceOptimizeDeps: boolean | undefined,
   logger: Logger,
   environmentName: string,
+  isFullBundledDev: boolean,
   // Backward compatibility
   skipSsrTransform?: boolean,
   isSsrTargetWebworkerSet?: boolean,
@@ -887,6 +888,7 @@ function resolveEnvironmentOptions(
       options.build ?? {},
       logger,
       consumer,
+      isFullBundledDev,
     ),
     // will be set by `setOptimizeDepsPluginNames` later
     optimizeDepsPluginNames: undefined!,
@@ -1445,6 +1447,9 @@ export async function resolveConfig(
     config.ssr?.target === 'webworker',
   )
 
+  const isFullBundledDev =
+    command === 'serve' && !!config.experimental?.fullBundleMode
+
   // Backward compatibility: merge config.environments.client.resolve back into config.resolve
   config.resolve ??= {}
   config.resolve.conditions = config.environments.client.resolve?.conditions
@@ -1461,6 +1466,7 @@ export async function resolveConfig(
       inlineConfig.forceOptimizeDeps,
       logger,
       environmentName,
+      isFullBundledDev,
       config.experimental?.skipSsrTransform,
       config.ssr?.target === 'webworker',
       config.server?.preTransformRequests,
@@ -1485,6 +1491,7 @@ export async function resolveConfig(
     config.build ?? {},
     logger,
     undefined,
+    isFullBundledDev,
   )
 
   // Backward compatibility: merge config.environments.ssr back into config.ssr
