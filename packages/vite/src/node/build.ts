@@ -501,6 +501,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
   pre: Plugin[]
   post: Plugin[]
 }> {
+  const isBuild = config.command === 'build'
   return {
     pre: [
       completeAmdWrapPlugin(),
@@ -518,7 +519,7 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
       ...(config.isWorker ? [webWorkerPostPlugin(config)] : []),
     ],
     post: [
-      ...buildImportAnalysisPlugin(config),
+      ...(isBuild ? buildImportAnalysisPlugin(config) : []),
       ...(config.nativePluginEnabledLevel >= 1 ? [] : [buildOxcPlugin()]),
       ...(config.build.minify === 'esbuild' ? [buildEsbuildPlugin()] : []),
       terserPlugin(config),
