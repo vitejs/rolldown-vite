@@ -407,7 +407,6 @@ export function resolveBuildEnvironmentOptions(
   raw: BuildEnvironmentOptions,
   logger: Logger,
   consumer: 'client' | 'server' | undefined,
-  isProduction: boolean,
 ): ResolvedBuildEnvironmentOptions {
   const deprecatedPolyfillModulePreload = raw.polyfillModulePreload
   const { polyfillModulePreload, ...rest } = raw
@@ -428,7 +427,7 @@ export function resolveBuildEnvironmentOptions(
     {
       ...buildEnvironmentOptionsDefaults,
       cssCodeSplit: !raw.lib,
-      minify: !isProduction || consumer === 'server' ? false : 'oxc',
+      minify: consumer === 'server' ? false : 'oxc',
       rollupOptions: {},
       rolldownOptions: undefined,
       ssr: consumer === 'server',
