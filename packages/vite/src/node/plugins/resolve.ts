@@ -37,7 +37,7 @@ import {
 } from '../utils'
 import { optimizedDepInfoFromFile, optimizedDepInfoFromId } from '../optimizer'
 import type { DepsOptimizer } from '../optimizer'
-import { type Environment, type SSROptions, perEnvironmentPlugin } from '..'
+import { type Environment, perEnvironmentPlugin } from '..'
 import type { PackageCache, PackageData } from '../packages'
 import { canExternalizeFile, shouldExternalize } from '../external'
 import {
@@ -127,8 +127,6 @@ interface ResolvePluginOptions {
   tryPrefix?: string
   preferRelative?: boolean
   isRequire?: boolean
-  /** @deprecated */
-  isFromTsImporter?: boolean
   // True when resolving during the scan phase to discover dependencies
   scan?: boolean
   /**
@@ -150,30 +148,11 @@ interface ResolvePluginOptions {
   externalize?: boolean
 
   /**
-   * Previous deps optimizer logic
-   * @internal
-   * @deprecated
-   */
-  getDepsOptimizer?: (ssr: boolean) => DepsOptimizer | undefined
-
-  /**
-   * Externalize logic for SSR builds
-   * @internal
-   * @deprecated
-   */
-  shouldExternalize?: (id: string, importer?: string) => boolean | undefined
-
-  /**
    * Set by createResolver, we only care about the resolved id. moduleSideEffects
    * and other fields are discarded so we can avoid computing them.
    * @internal
    */
   idOnly?: boolean
-
-  /**
-   * @deprecated environment.config are used instead
-   */
-  ssrConfig?: SSROptions
 }
 
 export interface InternalResolveOptions
@@ -793,12 +772,18 @@ export function resolvePlugin(
           }
         }
         if (id.startsWith(optionalPeerDepId)) {
-          if (isProduction) {
-            return `export default {}`
-          } else {
-            const [, peerDep, parentDep] = id.split(':')
-            return `throw new Error(\`Could not resolve "${peerDep}" imported by "${parentDep}". Is it installed?\`)`
+          const [, peerDep, parentDep, isRequire] = id.split(':')
+          // rollup + @rollup/plugin-commonjs hoists dynamic `require`s by default
+          // If we add a `throw` statement, it will be injected to the top-level and break the whole bundle
+          // Instead, we mock the module for now
+          // This can be fixed when we migrate to rolldown
+          if (isRequire === 'true' && isProduction) {
+            return 'export default {}'
           }
+          return (
+            'export default {};' +
+            `throw new Error(\`Could not resolve "${peerDep}" imported by "${parentDep}".${isProduction ? '' : ' Is it installed?'}\`)`
+          )
         }
       },
     },
@@ -1063,7 +1048,7 @@ export function tryNodeResolve(
           mainPkg.peerDependenciesMeta?.[pkgName]?.optional
         ) {
           return {
-            id: `${optionalPeerDepId}:${id}:${mainPkg.name}`,
+            id: `${optionalPeerDepId}:${id}:${mainPkg.name}:${!!options.isRequire}`,
           }
         }
       }

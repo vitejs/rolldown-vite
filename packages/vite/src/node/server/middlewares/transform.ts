@@ -9,6 +9,7 @@ import {
   createDebugger,
   fsPathFromId,
   injectQuery,
+  isCSSRequest,
   isImportRequest,
   isJSRequest,
   normalizePath,
@@ -30,11 +31,7 @@ import {
   ERR_OPTIMIZE_DEPS_PROCESSING_ERROR,
   FS_PREFIX,
 } from '../../constants'
-import {
-  isCSSRequest,
-  isDirectCSSRequest,
-  isDirectRequest,
-} from '../../plugins/css'
+import { isDirectCSSRequest, isDirectRequest } from '../../plugins/css'
 import { ERR_CLOSED_SERVER } from '../pluginContainer'
 import { cleanUrl, unwrapId, withTrailingSlash } from '../../../shared/utils'
 import {
@@ -216,6 +213,7 @@ export function transformMiddleware(
         '',
       )
       if (
+        !url.startsWith('/@id/\0') &&
         deniedServingAccessForTransform(
           urlWithoutTrailingQuerySeparators,
           server,
@@ -267,7 +265,10 @@ export function transformMiddleware(
         const result = await transformRequest(environment, url, {
           html: req.headers.accept?.includes('text/html'),
           allowId(id) {
-            return !deniedServingAccessForTransform(id, server, res, next)
+            return (
+              id.startsWith('\0') ||
+              !deniedServingAccessForTransform(id, server, res, next)
+            )
           },
         })
         if (result) {

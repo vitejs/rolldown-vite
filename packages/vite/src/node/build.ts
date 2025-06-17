@@ -31,7 +31,7 @@ import type { ChunkMetadata } from 'types/metadata'
 import { withTrailingSlash } from '../shared/utils'
 import {
   DEFAULT_ASSETS_INLINE_LIMIT,
-  ESBUILD_MODULES_TARGET,
+  ESBUILD_BASELINE_WIDELY_AVAILABLE_TARGET,
   ROLLUP_HOOKS,
   VERSION,
 } from './constants'
@@ -55,12 +55,13 @@ import {
   emptyDir,
   getPkgName,
   joinUrlSegments,
+  mergeConfig,
   mergeWithDefaults,
   normalizePath,
   partialEncodeURIPath,
   unique,
 } from './utils'
-import { perEnvironmentPlugin, resolveEnvironmentPlugins } from './plugin'
+import { perEnvironmentPlugin } from './plugin'
 import { manifestPlugin } from './plugins/manifest'
 import { type Logger } from './logger'
 import { buildImportAnalysisPlugin } from './plugins/importAnalysisBuild'
@@ -74,16 +75,16 @@ import {
   resolveEmptyOutDir,
 } from './watch'
 import { completeSystemWrapPlugin } from './plugins/completeSystemWrap'
-import { mergeConfig } from './publicUtils'
 import { webWorkerPostPlugin } from './plugins/worker'
 import { getHookHandler } from './plugins'
-import {
-  BaseEnvironment,
-  getDefaultResolvedEnvironmentOptions,
-} from './baseEnvironment'
-import type { Plugin } from './plugin'
+import { BaseEnvironment } from './baseEnvironment'
+import type { MinimalPluginContextWithoutEnvironment, Plugin } from './plugin'
 import type { RollupPluginHooks } from './typeUtils'
 import { buildOxcPlugin } from './plugins/oxc'
+import {
+  BasicMinimalPluginContext,
+  basePluginContextMeta,
+} from './server/pluginContainer'
 
 export interface BuildEnvironmentOptions {
   /**
@@ -91,18 +92,18 @@ export interface BuildEnvironmentOptions {
    * and the lowest supported target is es2015. Note this only handles
    * syntax transformation and does not cover polyfills
    *
-   * Default: 'modules' - transpile targeting browsers that natively support
-   * dynamic es module imports and `import.meta`
-   * (Chrome 87+, Firefox 78+, Safari 14+, Edge 88+).
+   * Default: 'baseline-widely-available' - transpile targeting browsers that
+   * are included in the Baseline Widely Available on 2025-05-01.
+   * (Chrome 107+, Edge 107+, Firefox 104+, Safari 16+).
    *
    * Another special value is 'esnext' - which only performs minimal transpiling
    * (for minification compat).
    *
    * For custom targets, see https://esbuild.github.io/api/#target and
    * https://esbuild.github.io/content-types/#javascript for more details.
-   * @default 'modules'
+   * @default 'baseline-widely-available'
    */
-  target?: 'modules' | EsbuildTarget | false
+  target?: 'baseline-widely-available' | EsbuildTarget | false
   /**
    * whether to inject module preload polyfill.
    * Note: does not apply to library mode.
@@ -358,7 +359,7 @@ export interface ResolvedBuildOptions
 }
 
 export const buildEnvironmentOptionsDefaults = Object.freeze({
-  target: 'modules',
+  target: 'baseline-widely-available',
   /** @deprecated */
   polyfillModulePreload: true,
   modulePreload: true,
@@ -431,8 +432,8 @@ export function resolveBuildEnvironmentOptions(
   )
 
   // handle special build targets
-  if (merged.target === 'modules') {
-    merged.target = ESBUILD_MODULES_TARGET
+  if (merged.target === 'baseline-widely-available') {
+    merged.target = ESBUILD_BASELINE_WIDELY_AVAILABLE_TARGET
   }
   // dedupe target
   if (Array.isArray(merged.target)) {
@@ -548,8 +549,7 @@ function resolveConfigToBuild(
 async function buildEnvironment(
   environment: BuildEnvironment,
 ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
-  const { root, packageCache } = environment.config
-  const options = environment.config.build
+  const { root, packageCache, build: options } = environment.config
   const libOptions = options.lib
   const { logger } = environment
   const ssr = environment.config.consumer === 'server'
@@ -863,6 +863,13 @@ async function buildEnvironment(
     const res: RolldownOutput[] = []
     for (const output of normalizedOutputs) {
       res.push(await bundle[options.write ? 'write' : 'generate'](output))
+    }
+    for (const output of res) {
+      for (const chunk of output.output) {
+        if (chunk.type === 'chunk') {
+          injectChunkMetadata(chunkMetadataMap, chunk)
+        }
+      }
     }
     logger.info(
       `${colors.green(`✓ built in ${displayTime(Date.now() - startTime)}`)}`,
@@ -1351,11 +1358,13 @@ function injectChunkMetadata(
   // https://github.com/rolldown/rolldown/blob/f4c5ff27799f2b0152c689c398e61bc7d30429ff/packages/rolldown/src/utils/transform-to-rollup-output.ts#L87
   Object.defineProperty(chunk, 'viteMetadata', {
     value: chunkMetadataMap.get(key),
+    enumerable: true,
   })
   Object.defineProperty(chunk, 'modules', {
     get() {
       return chunk.viteMetadata!.__modules
     },
+    enumerable: true,
   })
 }
 
@@ -1363,6 +1372,7 @@ function injectEnvironmentInContext<Context extends MinimalPluginContext>(
   context: Context,
   environment: BuildEnvironment,
 ) {
+  context.meta.viteVersion ??= VERSION
   context.environment ??= environment
   return context
 }
@@ -1566,6 +1576,7 @@ function areSeparateFolders(a: string, b: string) {
 export class BuildEnvironment extends BaseEnvironment {
   mode = 'build' as const
 
+  isBuilt = false
   constructor(
     name: string,
     config: ResolvedConfig,
@@ -1573,8 +1584,10 @@ export class BuildEnvironment extends BaseEnvironment {
       options?: EnvironmentOptions
     },
   ) {
-    let options =
-      config.environments[name] ?? getDefaultResolvedEnvironmentOptions(config)
+    let options = config.environments[name]
+    if (!options) {
+      throw new Error(`Environment "${name}" is not defined in the config.`)
+    }
     if (setup?.options) {
       options = mergeConfig(
         options,
@@ -1589,7 +1602,6 @@ export class BuildEnvironment extends BaseEnvironment {
       return
     }
     this._initiated = true
-    this._plugins = await resolveEnvironmentPlugins(this)
   }
 }
 
@@ -1620,12 +1632,6 @@ export interface BuilderOptions {
   buildApp?: (builder: ViteBuilder) => Promise<void>
 }
 
-async function defaultBuildApp(builder: ViteBuilder): Promise<void> {
-  for (const environment of Object.values(builder.environments)) {
-    await builder.build(environment)
-  }
-}
-
 export const builderOptionsDefaults = Object.freeze({
   sharedConfigBuild: false,
   sharedPlugins: false,
@@ -1637,7 +1643,7 @@ export function resolveBuilderOptions(
 ): ResolvedBuilderOptions | undefined {
   if (!options) return
   return mergeWithDefaults(
-    { ...builderOptionsDefaults, buildApp: defaultBuildApp },
+    { ...builderOptionsDefaults, buildApp: async () => {} },
     options,
   )
 }
@@ -1674,10 +1680,46 @@ export async function createBuilder(
     environments,
     config,
     async buildApp() {
-      return configBuilder.buildApp(builder)
+      const pluginContext = new BasicMinimalPluginContext(
+        { ...basePluginContextMeta, watchMode: false },
+        config.logger,
+      )
+
+      // order 'pre' and 'normal' hooks are run first, then config.builder.buildApp, then 'post' hooks
+      let configBuilderBuildAppCalled = false
+      for (const p of config.getSortedPlugins('buildApp')) {
+        const hook = p.buildApp
+        if (
+          !configBuilderBuildAppCalled &&
+          typeof hook === 'object' &&
+          hook.order === 'post'
+        ) {
+          configBuilderBuildAppCalled = true
+          await configBuilder.buildApp(builder)
+        }
+        const handler = getHookHandler(hook)
+        await handler.call(pluginContext, builder)
+      }
+      if (!configBuilderBuildAppCalled) {
+        await configBuilder.buildApp(builder)
+      }
+      // fallback to building all environments if no environments have been built
+      if (
+        Object.values(builder.environments).every(
+          (environment) => !environment.isBuilt,
+        )
+      ) {
+        for (const environment of Object.values(builder.environments)) {
+          await builder.build(environment)
+        }
+      }
     },
-    async build(environment: BuildEnvironment) {
-      return buildEnvironment(environment)
+    async build(
+      environment: BuildEnvironment,
+    ): Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher> {
+      const output = await buildEnvironment(environment)
+      environment.isBuilt = true
+      return output
     },
   }
 
@@ -1739,3 +1781,8 @@ export async function createBuilder(
 
   return builder
 }
+
+export type BuildAppHook = (
+  this: MinimalPluginContextWithoutEnvironment,
+  builder: ViteBuilder,
+) => Promise<void>

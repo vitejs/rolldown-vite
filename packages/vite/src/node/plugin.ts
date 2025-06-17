@@ -2,10 +2,12 @@ import type {
   CustomPluginOptions,
   ImportKind,
   LoadResult,
+  MinimalPluginContext,
   ModuleType,
   ModuleTypeFilter,
   ObjectHook,
   PluginContext,
+  PluginContextMeta,
   ResolveIdResult,
   Plugin as RolldownPlugin,
   TransformPluginContext,
@@ -18,6 +20,7 @@ import type {
   UserConfig,
 } from './config'
 import type { ServerHook } from './server'
+import type { BuildAppHook } from './build'
 import type { IndexHtmlTransform } from './plugins/html'
 import type { EnvironmentModuleNode } from './server/moduleGraph'
 import type { ModuleNode } from './server/mixedModuleGraph'
@@ -63,13 +66,22 @@ export interface PluginContextExtension {
   environment: Environment
 }
 
-export interface HotUpdatePluginContext {
-  environment: DevEnvironment
+export interface PluginContextMetaExtension {
+  viteVersion: string
 }
+
+export interface ConfigPluginContext
+  extends Omit<MinimalPluginContext, 'meta' | 'environment'> {
+  meta: Omit<PluginContextMeta, 'watchMode'>
+}
+
+export interface MinimalPluginContextWithoutEnvironment
+  extends Omit<MinimalPluginContext, 'environment'> {}
 
 // Augment Rolldown types to have the PluginContextExtension
 declare module 'rolldown' {
   export interface MinimalPluginContext extends PluginContextExtension {}
+  export interface PluginContextMeta extends PluginContextMetaExtension {}
 }
 
 /**
@@ -100,7 +112,7 @@ export interface Plugin<A = any> extends RolldownPlugin<A> {
    */
   hotUpdate?: ObjectHook<
     (
-      this: HotUpdatePluginContext,
+      this: MinimalPluginContext & { environment: DevEnvironment },
       options: HotUpdateOptions,
     ) =>
       | Array<EnvironmentModuleNode>
@@ -217,7 +229,7 @@ export interface Plugin<A = any> extends RolldownPlugin<A> {
    */
   config?: ObjectHook<
     (
-      this: void,
+      this: ConfigPluginContext,
       config: UserConfig,
       env: ConfigEnv,
     ) =>
@@ -238,7 +250,7 @@ export interface Plugin<A = any> extends RolldownPlugin<A> {
    */
   configEnvironment?: ObjectHook<
     (
-      this: void,
+      this: ConfigPluginContext,
       name: string,
       config: EnvironmentOptions,
       env: ConfigEnv & {
@@ -258,7 +270,10 @@ export interface Plugin<A = any> extends RolldownPlugin<A> {
    * Use this hook to read and store the final resolved vite config.
    */
   configResolved?: ObjectHook<
-    (this: void, config: ResolvedConfig) => void | Promise<void>
+    (
+      this: MinimalPluginContextWithoutEnvironment,
+      config: ResolvedConfig,
+    ) => void | Promise<void>
   >
   /**
    * Configure the vite server. The hook receives the {@link ViteDevServer}
@@ -301,7 +316,12 @@ export interface Plugin<A = any> extends RolldownPlugin<A> {
    * `{ order: 'pre', handler: hook }`
    */
   transformIndexHtml?: IndexHtmlTransform
-
+  /**
+   * Build Environments
+   *
+   * @experimental
+   */
+  buildApp?: ObjectHook<BuildAppHook>
   /**
    * Perform custom handling of HMR updates.
    * The handler receives a context containing changed filename, timestamp, a
@@ -319,7 +339,7 @@ export interface Plugin<A = any> extends RolldownPlugin<A> {
    */
   handleHotUpdate?: ObjectHook<
     (
-      this: void,
+      this: MinimalPluginContextWithoutEnvironment,
       ctx: HmrContext,
     ) => Array<ModuleNode> | void | Promise<Array<ModuleNode> | void>
   >

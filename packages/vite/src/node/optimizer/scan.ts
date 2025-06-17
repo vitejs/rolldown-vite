@@ -5,7 +5,7 @@ import { performance } from 'node:perf_hooks'
 import { scan, transform } from 'rolldown/experimental'
 import type { PartialResolvedId, Plugin } from 'rolldown'
 import colors from 'picocolors'
-import { glob, isDynamicPattern } from 'tinyglobby'
+import { glob } from 'tinyglobby'
 import {
   CSS_LANGS_RE,
   JS_TYPES_RE,
@@ -28,7 +28,6 @@ import {
   virtualModulePrefix,
   virtualModuleRE,
 } from '../utils'
-import { resolveEnvironmentPlugins } from '../plugin'
 import type { EnvironmentPluginContainer } from '../server/pluginContainer'
 import { createEnvironmentPluginContainer } from '../server/pluginContainer'
 import { BaseEnvironment } from '../baseEnvironment'
@@ -56,7 +55,6 @@ export class ScanEnvironment extends BaseEnvironment {
       return
     }
     this._initiated = true
-    this._plugins = await resolveEnvironmentPlugins(this)
     this._pluginContainer = await createEnvironmentPluginContainer(
       this,
       this.plugins,
@@ -77,12 +75,6 @@ export function devToScanEnvironment(
     },
     getTopLevelConfig() {
       return environment.getTopLevelConfig()
-    },
-    /**
-     * @deprecated use environment.config instead
-     **/
-    get options() {
-      return environment.options
     },
     get config() {
       return environment.config
@@ -122,15 +114,15 @@ export function scanImports(environment: ScanEnvironment): {
   }>
 } {
   const start = performance.now()
-  const deps: Record<string, string> = {}
-  const missing: Record<string, string> = {}
-  let entries: string[]
-
   const { config } = environment
-  const scanContext = { cancelled: false }
-  const context = computeEntries(environment).then((computedEntries) => {
-    entries = computedEntries
 
+  const scanContext = { cancelled: false }
+  async function cancel() {
+    scanContext.cancelled = true
+  }
+
+  async function scan() {
+    const entries = await computeEntries(environment)
     if (!entries.length) {
       if (!config.optimizeDeps.entries && !config.optimizeDeps.include) {
         environment.logger.warn(
@@ -150,29 +142,25 @@ export function scanImports(environment: ScanEnvironment): {
         .map((entry) => `\n  ${colors.dim(entry)}`)
         .join('')}`,
     )
-    return prepareRolldownScanner(
+    const deps: Record<string, string> = {}
+    const missing: Record<string, string> = {}
+
+    const context = await prepareRolldownScanner(
       environment,
       entries,
       deps,
       missing,
-      scanContext,
     )
-  })
+    if (scanContext.cancelled) return
 
-  const result = context
-    .then((context) => {
-      if (!context || scanContext.cancelled) {
-        return { deps: {}, missing: {} }
+    try {
+      await context.build()
+      return {
+        // Ensure a fixed order so hashes are stable and improve logs
+        deps: orderedDependencies(deps),
+        missing,
       }
-      return context.build().then(() => {
-        return {
-          // Ensure a fixed order so hashes are stable and improve logs
-          deps: orderedDependencies(deps),
-          missing,
-        }
-      })
-    })
-    .catch(async (e) => {
+    } catch (e) {
       const prependMessage = colors.red(`\
   Failed to scan for dependencies from entries:
   ${entries.join('\n')}
@@ -180,8 +168,7 @@ export function scanImports(environment: ScanEnvironment): {
   `)
       e.message = prependMessage + e.message
       throw e
-    })
-    .finally(() => {
+    } finally {
       if (debug) {
         const duration = (performance.now() - start).toFixed(2)
         const depsStr =
@@ -191,13 +178,13 @@ export function scanImports(environment: ScanEnvironment): {
             .join('') || colors.dim('no dependencies found')
         debug(`Scan completed in ${duration}ms: ${depsStr}`)
       }
-    })
+    }
+  }
+  const result = scan()
 
   return {
-    cancel: async () => {
-      scanContext.cancelled = true
-    },
-    result,
+    cancel,
+    result: result.then((res) => res ?? { deps: {}, missing: {} }),
   }
 }
 
@@ -211,10 +198,15 @@ async function computeEntries(environment: ScanEnvironment) {
     entries = await globEntries(explicitEntryPatterns, environment)
   } else if (buildInput) {
     const resolvePath = async (p: string) => {
+      // rollup resolves the input from process.cwd()
       const id = (
-        await environment.pluginContainer.resolveId(p, undefined, {
-          scan: true,
-        })
+        await environment.pluginContainer.resolveId(
+          p,
+          path.join(process.cwd(), '*'),
+          {
+            scan: true,
+          },
+        )
       )?.id
       if (id === undefined) {
         throw new Error(
@@ -252,10 +244,7 @@ async function prepareRolldownScanner(
   entries: string[],
   deps: Record<string, string>,
   missing: Record<string, string>,
-  scanContext: { cancelled: boolean },
-): Promise<{ build: () => Promise<void> } | undefined> {
-  if (scanContext.cancelled) return
-
+): Promise<{ build: () => Promise<void> }> {
   const { plugins: pluginsFromConfig = [], ...rollupOptions } =
     environment.config.optimizeDeps.rollupOptions ?? {}
 
@@ -284,25 +273,42 @@ function orderedDependencies(deps: Record<string, string>) {
   return Object.fromEntries(depsList)
 }
 
-function globEntries(pattern: string | string[], environment: ScanEnvironment) {
-  const resolvedPatterns = arraify(pattern)
-  if (resolvedPatterns.every((str) => !isDynamicPattern(str))) {
-    return resolvedPatterns.map((p) =>
-      normalizePath(path.resolve(environment.config.root, p)),
-    )
+async function globEntries(
+  patterns: string | string[],
+  environment: ScanEnvironment,
+) {
+  const nodeModulesPatterns: string[] = []
+  const regularPatterns: string[] = []
+
+  for (const pattern of arraify(patterns)) {
+    if (pattern.includes('node_modules')) {
+      nodeModulesPatterns.push(pattern)
+    } else {
+      regularPatterns.push(pattern)
+    }
   }
-  return glob(pattern, {
+
+  const sharedOptions = {
     absolute: true,
     cwd: environment.config.root,
     ignore: [
-      '**/node_modules/**',
       `**/${environment.config.build.outDir}/**`,
       // if there aren't explicit entries, also ignore other common folders
       ...(environment.config.optimizeDeps.entries
         ? []
         : [`**/__tests__/**`, `**/coverage/**`]),
     ],
-  })
+  }
+
+  const results = await Promise.all([
+    glob(nodeModulesPatterns, sharedOptions),
+    glob(regularPatterns, {
+      ...sharedOptions,
+      ignore: [...sharedOptions.ignore, '**/node_modules/**'],
+    }),
+  ])
+
+  return results.flat()
 }
 
 type Loader = 'js' | 'ts' | 'jsx' | 'tsx'
