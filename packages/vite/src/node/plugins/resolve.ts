@@ -186,6 +186,7 @@ const perEnvironmentOrWorkerPlugin = (
     buildStart() {
       env = this.environment
     },
+    perEnvironmentStartEndDuringDev: true,
   }
   const getEnvironment = () => env
 
