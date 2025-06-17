@@ -180,20 +180,23 @@ const perEnvironmentOrWorkerPlugin = (
     getEnvironment: () => Environment,
   ) => Plugin,
 ): Plugin[] => {
-  let env: Environment
+  const envs: Record<string, Environment> = {}
   const getEnvironmentPlugin: Plugin = {
     name: `${name}:get-environment`,
     buildStart() {
-      env = this.environment
+      envs[this.environment.name] = this.environment
     },
     perEnvironmentStartEndDuringDev: true,
   }
-  const getEnvironment = () => env
+  const createGetEnvironment = (name: string) => () => envs[name]
 
   if (overrideEnvConfig) {
     return [
       getEnvironmentPlugin,
-      f({ name: 'client', config: overrideEnvConfig }, getEnvironment),
+      f(
+        { name: 'client', config: overrideEnvConfig },
+        createGetEnvironment('client'),
+      ),
     ]
   }
   return [
@@ -201,7 +204,7 @@ const perEnvironmentOrWorkerPlugin = (
     {
       name,
       applyToEnvironment(environment) {
-        return f(environment, getEnvironment)
+        return f(environment, createGetEnvironment(environment.name))
       },
     },
   ]
