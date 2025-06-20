@@ -1,10 +1,10 @@
 {
-  "name": "vite",
-  "version": "7.0.0-beta.2",
+  "name": "rolldown-vite",
+  "version": "7.0.0-beta.0",
   "type": "module",
   "license": "MIT",
   "author": "Evan You",
-  "description": "Native-ESM powered web dev build tool",
+  "description": "Vite on Rolldown preview",
   "bin": {
     "vite": "bin/vite.js"
   },
@@ -58,11 +58,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vitejs/vite.git",
+    "url": "git+https://github.com/vitejs/rolldown-vite.git",
     "directory": "packages/vite"
   },
   "bugs": {
-    "url": "https://github.com/vitejs/vite/issues"
+    "url": "https://github.com/vitejs/rolldown-vite/issues"
   },
   "homepage": "https://vite.dev",
   "funding": "https://github.com/vitejs/vite?sponsor=1",
@@ -81,11 +81,12 @@
   },
   "//": "READ CONTRIBUTING.md to understand what to put under deps vs. devDeps!",
   "dependencies": {
-    "esbuild": "^0.25.0",
+    "@oxc-project/runtime": "0.73.2",
     "fdir": "^6.4.6",
+    "lightningcss": "^1.30.1",
     "picomatch": "^4.0.2",
     "postcss": "^8.5.5",
-    "rollup": "^4.40.0",
+    "rolldown": "1.0.0-beta.18",
     "tinyglobby": "^0.2.14"
   },
   "optionalDependencies": {
@@ -95,9 +96,9 @@
     "@ampproject/remapping": "^2.3.0",
     "@babel/parser": "^7.27.5",
     "@jridgewell/trace-mapping": "^0.3.25",
-    "@oxc-project/runtime": "^0.70.0",
-    "@oxc-project/types": "^0.70.0",
+    "@oxc-project/types": "0.73.2",
     "@polka/compression": "^1.0.0-next.25",
+    "@rolldown/pluginutils": "1.0.0-beta.18",
     "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-commonjs": "^28.0.5",
     "@rollup/plugin-dynamic-import-vars": "2.1.4",
@@ -117,13 +118,13 @@
     "dotenv": "^16.5.0",
     "dotenv-expand": "^12.0.2",
     "es-module-lexer": "^1.7.0",
+    "esbuild": "^0.25.0",
     "escape-html": "^1.0.3",
     "estree-walker": "^3.0.3",
     "etag": "^1.8.1",
     "host-validation-middleware": "^0.1.1",
     "http-proxy": "^1.18.1",
     "launch-editor-middleware": "^2.10.0",
-    "lightningcss": "^1.30.1",
     "magic-string": "^0.30.17",
     "mlly": "^1.7.4",
     "mrmime": "^2.0.1",
@@ -138,8 +139,8 @@
     "postcss-modules": "^6.0.1",
     "premove": "^4.0.0",
     "resolve.exports": "^2.0.3",
-    "rolldown": "^1.0.0-beta.16",
     "rolldown-plugin-dts": "^0.13.11",
+    "rollup": "^4.40.0",
     "rollup-plugin-license": "^3.6.0",
     "sass": "^1.89.2",
     "sass-embedded": "^1.89.2",
@@ -153,9 +154,9 @@
   },
   "peerDependencies": {
     "@types/node": "^20.19.0 || >=22.12.0",
+    "esbuild": "^0.25.0",
     "jiti": ">=1.21.0",
     "less": "^4.0.0",
-    "lightningcss": "^1.21.0",
     "sass": "^1.70.0",
     "sass-embedded": "^1.70.0",
     "stylus": ">=0.54.8",
@@ -166,6 +167,9 @@
   },
   "peerDependenciesMeta": {
     "@types/node": {
+      "optional": true
+    },
+    "esbuild": {
       "optional": true
     },
     "jiti": {
@@ -184,9 +188,6 @@
       "optional": true
     },
     "sugarss": {
-      "optional": true
-    },
-    "lightningcss": {
       "optional": true
     },
     "terser": {

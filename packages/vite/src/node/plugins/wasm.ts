@@ -1,4 +1,10 @@
+import { exactRegex } from '@rolldown/pluginutils'
+import {
+  wasmFallbackPlugin as nativeWasmFallbackPlugin,
+  wasmHelperPlugin as nativeWasmHelperPlugin,
+} from 'rolldown/experimental'
 import type { Plugin } from '../plugin'
+import type { ResolvedConfig } from '..'
 import { fileToUrl } from './asset'
 
 const wasmHelperId = '\0vite/wasm-helper.js'
@@ -47,26 +53,29 @@ const wasmHelper = async (opts = {}, url: string) => {
 
 const wasmHelperCode = wasmHelper.toString()
 
-export const wasmHelperPlugin = (): Plugin => {
+export const wasmHelperPlugin = (config: ResolvedConfig): Plugin => {
+  if (
+    config.experimental.enableNativePlugin === true &&
+    config.command === 'build'
+  ) {
+    return nativeWasmHelperPlugin()
+  }
+
   return {
     name: 'vite:wasm-helper',
 
     resolveId: {
+      filter: { id: exactRegex(wasmHelperId) },
       handler(id) {
-        if (id === wasmHelperId) {
-          return id
-        }
+        return id
       },
     },
 
     load: {
+      filter: { id: [exactRegex(wasmHelperId), wasmInitRE] },
       async handler(id) {
         if (id === wasmHelperId) {
           return `export default ${wasmHelperCode}`
-        }
-
-        if (!wasmInitRE.test(id)) {
-          return
         }
 
         const url = await fileToUrl(this, id)
@@ -80,16 +89,17 @@ export const wasmHelperPlugin = (): Plugin => {
   }
 }
 
-export const wasmFallbackPlugin = (): Plugin => {
+export const wasmFallbackPlugin = (config: ResolvedConfig): Plugin => {
+  if (config.experimental.enableNativePlugin === true) {
+    return nativeWasmFallbackPlugin()
+  }
+
   return {
     name: 'vite:wasm-fallback',
 
     load: {
-      handler(id) {
-        if (!id.endsWith('.wasm')) {
-          return
-        }
-
+      filter: { id: /\.wasm$/ },
+      handler(_id) {
         throw new Error(
           '"ESM integration proposal for Wasm" is not supported currently. ' +
             'Use vite-plugin-wasm or other community plugins to handle this. ' +
