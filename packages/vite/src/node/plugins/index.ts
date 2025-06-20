@@ -33,6 +33,7 @@ import {
 } from './pluginFilter'
 import { oxcPlugin } from './oxc'
 import { esbuildBannerFooterCompatPlugin } from './esbuildBannerFooterCompatPlugin'
+import { gracefulFsCompatPlugin } from './gracefulFsCompatPlugin'
 
 export async function resolvePlugins(
   config: ResolvedConfig,
@@ -101,6 +102,8 @@ export async function resolvePlugins(
     htmlInlineProxyPlugin(config),
     cssPlugin(config),
     esbuildBannerFooterCompatPlugin(config),
+    // Add graceful-fs compatibility plugin to fix cyclic __proto__ issues
+    gracefulFsCompatPlugin(),
     config.oxc !== false ? oxcPlugin(config) : null,
     jsonPlugin(config.json, isBuild, enableNativePlugin === true),
     wasmHelperPlugin(config),
