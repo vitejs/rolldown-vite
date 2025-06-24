@@ -230,8 +230,8 @@ importers:
         specifier: ^8.5.5
         version: 8.5.6
       rolldown:
-        specifier: https://pkg.pr.new/rolldown@5004
-        version: https://pkg.pr.new/rolldown@5004
+        specifier: https://pkg.pr.new/rolldown@0f7897c
+        version: https://pkg.pr.new/rolldown@0f7897c
       tinyglobby:
         specifier: ^0.2.14
         version: 0.2.14
@@ -376,7 +376,7 @@ importers:
         version: 2.0.3
       rolldown-plugin-dts:
         specifier: ^0.13.11
-        version: 0.13.11(rolldown@https://pkg.pr.new/rolldown@5004)(typescript@5.7.3)
+        version: 0.13.11(rolldown@https://pkg.pr.new/rolldown@0f7897c)(typescript@5.7.3)
       rollup:
         specifier: ^4.40.0
         version: 4.43.0
@@ -517,8 +517,8 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1
       rolldown:
-        specifier: https://pkg.pr.new/rolldown@5004
-        version: https://pkg.pr.new/rolldown@5004
+        specifier: https://pkg.pr.new/rolldown@0f7897c
+        version: https://pkg.pr.new/rolldown@0f7897c
 
   playground/alias:
     dependencies:
@@ -6554,8 +6554,8 @@ packages:
     resolution: {integrity: sha512-ep788NsIGl0W5gT+99hBrSGe4Hdhcwc55PqM3O0mR5H0C4ZpGpDGgu9YzTJ8a6mFDLnFnc/LYC+Dszb7oWK/dg==}
     hasBin: true
 
-  rolldown@https://pkg.pr.new/rolldown@5004:
-    resolution: {tarball: https://pkg.pr.new/rolldown@5004}
+  rolldown@https://pkg.pr.new/rolldown@0f7897c:
+    resolution: {tarball: https://pkg.pr.new/rolldown@0f7897c}
     version: 1.0.0-beta.17-commit.e7884a7
     hasBin: true
 
@@ -12457,7 +12457,7 @@ snapshots:
       - oxc-resolver
       - supports-color
 
-  rolldown-plugin-dts@0.13.11(rolldown@https://pkg.pr.new/rolldown@5004)(typescript@5.7.3):
+  rolldown-plugin-dts@0.13.11(rolldown@https://pkg.pr.new/rolldown@0f7897c)(typescript@5.7.3):
     dependencies:
       '@babel/generator': 7.27.5
       '@babel/parser': 7.27.5
@@ -12467,7 +12467,7 @@ snapshots:
       debug: 4.4.1
       dts-resolver: 2.1.1
       get-tsconfig: 4.10.1
-      rolldown: https://pkg.pr.new/rolldown@5004
+      rolldown: https://pkg.pr.new/rolldown@0f7897c
     optionalDependencies:
       typescript: 5.7.3
     transitivePeerDependencies:
@@ -12494,7 +12494,7 @@ snapshots:
       '@rolldown/binding-win32-ia32-msvc': 1.0.0-beta.15
       '@rolldown/binding-win32-x64-msvc': 1.0.0-beta.15
 
-  rolldown@https://pkg.pr.new/rolldown@5004:
+  rolldown@https://pkg.pr.new/rolldown@0f7897c:
     dependencies:
       '@oxc-project/runtime': 0.73.2
       '@oxc-project/types': 0.73.2
