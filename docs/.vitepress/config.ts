@@ -310,7 +310,7 @@ export default defineConfig({
               link: '/guide/rolldown',
             },
             {
-              text: 'Migration from v5',
+              text: 'Migration from v6',
               link: '/guide/migration',
             },
             {
@@ -462,6 +462,8 @@ export default defineConfig({
     return pageData
   },
   markdown: {
+    // languages used for twoslash and jsdocs in twoslash
+    languages: ['ts', 'js', 'json'],
     codeTransformers: [transformerTwoslash()],
     config(md) {
       md.use(groupIconMdPlugin)
