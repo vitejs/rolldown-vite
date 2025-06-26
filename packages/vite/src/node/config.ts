@@ -681,6 +681,7 @@ export const configDefaults = Object.freeze({
     noExternal: [],
     external: [],
     preserveSymlinks: false,
+    tsconfigPaths: false,
     alias: [],
   },
 
@@ -2175,6 +2176,7 @@ async function bundleConfigFile(
             dedupe: [],
             extensions: configDefaults.resolve.extensions,
             preserveSymlinks: false,
+            tsconfigPaths: false,
             packageCache,
             isRequire,
             builtins: nodeLikeBuiltins,
