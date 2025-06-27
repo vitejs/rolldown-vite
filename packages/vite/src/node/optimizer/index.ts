@@ -792,6 +792,7 @@ async function prepareRolldownOptimizerRun(
       plugins,
       define,
       platform,
+      treeshake: false,
       resolve: {
         extensions: ['.tsx', '.ts', '.jsx', '.js', '.css', '.json'],
         ...rollupOptions.resolve,
