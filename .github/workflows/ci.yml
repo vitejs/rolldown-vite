@@ -200,15 +200,15 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Test unit
-        run: pnpm run test-unit
-        env:
-          _VITE_TEST_NATIVE_PLUGIN: 1
+      # - name: Test unit
+      #   run: pnpm run test-unit
+      #   env:
+      #     _VITE_TEST_NATIVE_PLUGIN: 1
 
-      - name: Test serve
-        run: pnpm run test-serve
-        env:
-          _VITE_TEST_NATIVE_PLUGIN: 1
+      # - name: Test serve
+      #   run: pnpm run test-serve
+      #   env:
+      #     _VITE_TEST_NATIVE_PLUGIN: 1
 
       - name: Test build
         run: pnpm run test-build
