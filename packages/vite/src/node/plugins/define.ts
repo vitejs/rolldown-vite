@@ -118,6 +118,12 @@ export function definePlugin(config: ResolvedConfig): Plugin {
         )
         define['import.meta.env'] = importMetaEnvVal
         define['import.meta.env.*'] = 'undefined'
+        if (
+          option.platform === 'browser' &&
+          !Object.hasOwn(define, 'process.env.NODE_ENV')
+        ) {
+          define['process.env.NODE_ENV'] = "'process.env.NODE_ENV'"
+        }
         option.define = define
       },
     }
