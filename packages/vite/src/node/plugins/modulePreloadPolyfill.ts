@@ -1,4 +1,6 @@
-import type { ResolvedConfig } from '..'
+import { exactRegex } from '@rolldown/pluginutils'
+import { modulePreloadPolyfillPlugin as nativeModulePreloadPolyfillPlugin } from 'rolldown/experimental'
+import { type ResolvedConfig, perEnvironmentPlugin } from '..'
 import type { Plugin } from '../plugin'
 import { isModernFlag } from './importAnalysisBuild'
 
@@ -6,32 +8,44 @@ export const modulePreloadPolyfillId = 'vite/modulepreload-polyfill'
 const resolvedModulePreloadPolyfillId = '\0' + modulePreloadPolyfillId + '.js'
 
 export function modulePreloadPolyfillPlugin(config: ResolvedConfig): Plugin {
+  if (
+    config.experimental.enableNativePlugin === true &&
+    config.command === 'build'
+  ) {
+    return perEnvironmentPlugin(
+      'native:modulepreload-polyfill',
+      (environment) => {
+        return nativeModulePreloadPolyfillPlugin({
+          isServer: environment.config.consumer !== 'client',
+        })
+      },
+    )
+  }
+
   let polyfillString: string | undefined
 
   return {
     name: 'vite:modulepreload-polyfill',
     resolveId: {
-      handler(id) {
-        if (id === modulePreloadPolyfillId) {
-          return resolvedModulePreloadPolyfillId
-        }
+      filter: { id: exactRegex(modulePreloadPolyfillId) },
+      handler(_id) {
+        return resolvedModulePreloadPolyfillId
       },
     },
     load: {
-      handler(id) {
-        if (id === resolvedModulePreloadPolyfillId) {
-          // `isModernFlag` is only available during build since it is resolved by `vite:build-import-analysis`
-          if (
-            config.command !== 'build' ||
-            this.environment.config.consumer !== 'client'
-          ) {
-            return ''
-          }
-          if (!polyfillString) {
-            polyfillString = `${isModernFlag}&&(${polyfill.toString()}());`
-          }
-          return { code: polyfillString, moduleSideEffects: true }
+      filter: { id: exactRegex(resolvedModulePreloadPolyfillId) },
+      handler(_id) {
+        // `isModernFlag` is only available during build since it is resolved by `vite:build-import-analysis`
+        if (
+          config.command !== 'build' ||
+          this.environment.config.consumer !== 'client'
+        ) {
+          return ''
         }
+        if (!polyfillString) {
+          polyfillString = `${isModernFlag}&&(${polyfill.toString()}());`
+        }
+        return { code: polyfillString, moduleSideEffects: true }
       },
     },
   }
