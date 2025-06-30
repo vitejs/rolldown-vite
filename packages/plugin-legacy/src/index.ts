@@ -1,4 +1,3 @@
-/* eslint-disable n/no-extraneous-import */
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { createRequire } from 'node:module'
@@ -10,17 +9,8 @@ import type {
   HtmlTagDescriptor,
   Plugin,
   ResolvedConfig,
+  Rollup,
 } from 'vite'
-import type {
-  NormalizedOutputOptions,
-  OutputAsset,
-  OutputBundle,
-  OutputChunk,
-  OutputOptions,
-  PluginContext,
-  PreRenderedChunk,
-  RenderedChunk,
-} from 'rollup'
 import type {
   PluginItem as BabelPlugin,
   types as BabelTypes,
@@ -37,6 +27,15 @@ import {
   safari10NoModuleFix,
   systemJSInlineCode,
 } from './snippets'
+
+type NormalizedOutputOptions = Rollup.NormalizedOutputOptions
+type OutputAsset = Rollup.OutputAsset
+type OutputBundle = Rollup.OutputBundle
+type OutputChunk = Rollup.OutputChunk
+type OutputOptions = Rollup.OutputOptions
+type PluginContext = Rollup.PluginContext
+type PreRenderedChunk = Rollup.PreRenderedChunk
+type RenderedChunk = Rollup.RenderedChunk
 
 // lazy load babel since it's not used during dev
 let babel: Promise<typeof import('@babel/core')> | undefined
@@ -174,7 +173,6 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
   const legacyPolyfills = new Set<string>()
   // When discovering polyfills in `renderChunk`, the hook may be non-deterministic, so we group the
   // modern and legacy polyfills in a sorted chunks map for each rendered outputs before merging them.
-  // TODO: options object is not identical, so Map won't work
   const outputToChunkFileNameToPolyfills = new WeakMap<
     NormalizedOutputOptions,
     Map<string, { modern: Set<string>; legacy: Set<string> }> | null
@@ -290,16 +288,15 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
         return
       }
 
-      // const chunkFileNameToPolyfills =
-      //   outputToChunkFileNameToPolyfills.get(opts)
-      // if (chunkFileNameToPolyfills == null) {
-      //   throw new Error(
-      //     'Internal @vitejs/plugin-legacy error: discovered polyfills should exist',
-      //   )
-      // }
-      const chunkFileNameToPolyfills = new Map()
+      const chunkFileNameToPolyfills =
+        outputToChunkFileNameToPolyfills.get(opts)
+      if (chunkFileNameToPolyfills == null) {
+        throw new Error(
+          'Internal @vitejs/plugin-legacy error: discovered polyfills should exist',
+        )
+      }
 
-      if (!isLegacyBundle(bundle, opts)) {
+      if (!isLegacyBundle(bundle)) {
         // Merge discovered modern polyfills to `modernPolyfills`
         for (const { modern } of chunkFileNameToPolyfills.values()) {
           modern.forEach((p) => modernPolyfills.add(p))
@@ -446,9 +443,7 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
       ): OutputOptions => {
         return {
           ...options,
-          // TODO
           format: 'esm',
-          // format: 'system',
           entryFileNames: getLegacyOutputFileName(options.entryFileNames),
           chunkFileNames: getLegacyOutputFileName(options.chunkFileNames),
         }
@@ -469,8 +464,7 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
       }
     },
 
-    // TODO: meta.chunks not supported
-    async renderChunk(raw, chunk, opts, { chunks } = { chunks: {} }) {
+    async renderChunk(raw, chunk, opts, { chunks }) {
       if (config.build.ssr) {
         return null
       }
@@ -487,18 +481,14 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
         }
         outputToChunkFileNameToPolyfills.set(opts, chunkFileNameToPolyfills)
       }
-      // const polyfillsDiscovered = chunkFileNameToPolyfills.get(chunk.fileName)
-      // if (polyfillsDiscovered == null) {
-      //   throw new Error(
-      //     `Internal @vitejs/plugin-legacy error: discovered polyfills for ${chunk.fileName} should exist`,
-      //   )
-      // }
-      const polyfillsDiscovered = {
-        modern: new Set<string>(),
-        legacy: new Set<string>(),
+      const polyfillsDiscovered = chunkFileNameToPolyfills.get(chunk.fileName)
+      if (polyfillsDiscovered == null) {
+        throw new Error(
+          `Internal @vitejs/plugin-legacy error: discovered polyfills for ${chunk.fileName} should exist`,
+        )
       }
 
-      if (!isLegacyChunk(chunk, opts)) {
+      if (!isLegacyChunk(chunk)) {
         if (
           options.modernPolyfills &&
           !Array.isArray(options.modernPolyfills) &&
@@ -578,13 +568,13 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
         configFile: false,
         // TODO: source map
         plugins: [
-          // @ts-ignore
+          // @ts-expect-error -- not typed
           (await import('@babel/plugin-transform-dynamic-import')).default,
-          // @ts-ignore
+          // @ts-expect-error -- not typed
           (await import('@babel/plugin-transform-modules-systemjs')).default,
         ],
       })
-      raw = resultSystem?.code!
+      raw = resultSystem?.code ?? ''
 
       const result = babel.transform(raw, {
         babelrc: false,
@@ -751,12 +741,12 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
       }
     },
 
-    generateBundle(opts, bundle) {
+    generateBundle(_opts, bundle) {
       if (config.build.ssr) {
         return
       }
 
-      if (isLegacyBundle(bundle, opts) && genModern) {
+      if (isLegacyBundle(bundle) && genModern) {
         // avoid emitting duplicate assets
         for (const name in bundle) {
           if (bundle[name].type === 'asset' && !/.+\.map$/.test(name)) {
@@ -862,7 +852,7 @@ async function buildPolyfillChunk(
           format,
           hashCharacters: rollupOutputOptions.hashCharacters,
           entryFileNames: rollupOutputOptions.entryFileNames,
-          sourcemapBaseUrl: rollupOutputOptions.sourcemapBaseUrl,
+          // sourcemapBaseUrl: rollupOutputOptions.sourcemapBaseUrl,
         },
       },
     },
@@ -961,24 +951,16 @@ function prependModenChunkLegacyGuardPlugin(): Plugin {
   }
 }
 
-function isLegacyChunk(chunk: RenderedChunk, options: NormalizedOutputOptions) {
+function isLegacyChunk(chunk: RenderedChunk) {
   return chunk.fileName.includes('-legacy')
-  // return options.format === 'system' && chunk.fileName.includes('-legacy')
 }
 
-function isLegacyBundle(
-  bundle: OutputBundle,
-  options: NormalizedOutputOptions,
-) {
-  if (true || options.format === 'system') {
-    const entryChunk = Object.values(bundle).find(
-      (output) => output.type === 'chunk' && output.isEntry,
-    )
+function isLegacyBundle(bundle: OutputBundle) {
+  const entryChunk = Object.values(bundle).find(
+    (output) => output.type === 'chunk' && output.isEntry,
+  )
 
-    return !!entryChunk && entryChunk.fileName.includes('-legacy')
-  }
-
-  return false
+  return !!entryChunk && entryChunk.fileName.includes('-legacy')
 }
 
 function recordAndRemovePolyfillBabelPlugin(
