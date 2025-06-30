@@ -35,6 +35,7 @@ import {
   BasicMinimalPluginContext,
   basePluginContextMeta,
 } from './pluginContainer'
+import type { FullBundleDevEnvironment } from './environments/fullBundleEnvironment'
 import type { HttpServer } from '.'
 import { restartServerWithUrls } from '.'
 
@@ -420,6 +421,13 @@ export async function handleHMRUpdate(
         triggeredBy: path.resolve(config.root, file),
       }),
     )
+    return
+  }
+
+  if (config.experimental.fullBundleMode) {
+    // TODO: support handleHotUpdate / hotUpdate
+    const environment = server.environments.client as FullBundleDevEnvironment
+    environment.onFileChange(type, file)
     return
   }
 
