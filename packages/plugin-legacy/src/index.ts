@@ -749,9 +749,12 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
       if (isLegacyBundle(bundle) && genModern) {
         // avoid emitting duplicate assets
         for (const name in bundle) {
-          if (bundle[name].type === 'asset' && !/.+\.map$/.test(name)) {
-            // TODO: don't delete polyfil chunk emitted as asset
-            // delete bundle[name]
+          if (
+            bundle[name].type === 'asset' &&
+            !/.+\.map$/.test(name) &&
+            name.includes('-legacy') // legacy chunks
+          ) {
+            delete bundle[name]
           }
         }
       }
@@ -884,15 +887,12 @@ async function buildPolyfillChunk(
     }
   }
 
-  // TODO: adding a whole new chunk to `bundle` is not supported by rolldown.
-  // can we use `emitFile(asset)` instead?
+  // add the chunk to the bundle
   ctx.emitFile({
     type: 'asset',
     fileName: polyfillChunk.fileName,
     source: polyfillChunk.code,
   })
-  // add the chunk to the bundle
-  // bundle[polyfillChunk.fileName] = polyfillChunk
   if (polyfillChunk.sourcemapFileName) {
     const polyfillChunkMapAsset = _polyfillChunk.output.find(
       (chunk) =>
@@ -900,7 +900,11 @@ async function buildPolyfillChunk(
         chunk.fileName === polyfillChunk.sourcemapFileName,
     ) as OutputAsset | undefined
     if (polyfillChunkMapAsset) {
-      // bundle[polyfillChunk.sourcemapFileName] = polyfillChunkMapAsset
+      ctx.emitFile({
+        type: 'asset',
+        fileName: polyfillChunkMapAsset.fileName,
+        source: polyfillChunkMapAsset.source,
+      })
     }
   }
 }
