@@ -556,11 +556,11 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
 
       // need to transform into systemjs separately from other plugins
       // for preset-env polyfill detection and removal
-      // TODO: use transformFromAst to avoid multiple parse
       const resultSystem = babel.transform(raw, {
         babelrc: false,
         configFile: false,
-        // TODO: source map
+        ast: true,
+        sourceMaps,
         plugins: [
           // @ts-expect-error -- not typed
           (await import('@babel/plugin-transform-dynamic-import')).default,
@@ -568,9 +568,8 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
           (await import('@babel/plugin-transform-modules-systemjs')).default,
         ],
       })
-      raw = resultSystem?.code ?? ''
 
-      const result = babel.transform(raw, {
+      const babelTransformOptions: babel.TransformOptions = {
         babelrc: false,
         configFile: false,
         compact: !!config.build.minify,
@@ -594,8 +593,17 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
             createBabelPresetEnvOptions(targets, { needPolyfills }),
           ],
         ],
-      })
-
+      }
+      let result: babel.BabelFileResult | null
+      if (resultSystem) {
+        result = babel.transformFromAstSync(
+          resultSystem.ast!,
+          resultSystem.code ?? undefined,
+          babelTransformOptions,
+        )
+      } else {
+        result = babel.transform(raw, babelTransformOptions)
+      }
       if (result) return { code: result.code!, map: result.map }
       return null
     },
@@ -746,7 +754,7 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
           if (
             bundle[name].type === 'asset' &&
             !/.+\.map$/.test(name) &&
-            name.includes('-legacy') // legacy chunks
+            !name.includes('-legacy') // legacy chunks
           ) {
             delete bundle[name]
           }
