@@ -212,12 +212,7 @@ export function getChunkOriginalFileName(
   root: string,
 ): string | undefined {
   if (chunk.facadeModuleId) {
-    let name = normalizePath(path.relative(root, chunk.facadeModuleId))
-    if (!chunk.name.includes('-legacy')) {
-      const ext = path.extname(name)
-      const endPos = ext.length !== 0 ? -ext.length : undefined
-      name = `${name.slice(0, endPos)}-legacy${ext}`
-    }
+    const name = normalizePath(path.relative(root, chunk.facadeModuleId))
     return name.replace(/\0/g, '')
   }
 }
