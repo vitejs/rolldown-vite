@@ -961,8 +961,8 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
     },
 
     async generateBundle(opts, bundle) {
-      // @ts-expect-error asset emits are skipped in legacy bundle
-      if (opts.__vite_skip_asset_emit__) {
+      // to avoid emitting duplicate assets for modern build and legacy build
+      if (this.environment.config.isOutputOptionsForLegacyChunks?.(opts)) {
         return
       }
 

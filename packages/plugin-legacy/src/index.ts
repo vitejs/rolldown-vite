@@ -133,6 +133,8 @@ const _require = createRequire(import.meta.url)
 const nonLeadingHashInFileNameRE = /[^/]+\[hash(?::\d+)?\]/
 const prefixedHashInFileNameRE = /\W?\[hash(?::\d+)?\]/
 
+const outputOptionsForLegacyChunks = new WeakSet<NormalizedOutputOptions>()
+
 function viteLegacyPlugin(options: Options = {}): Plugin[] {
   let config: ResolvedConfig
   let targets: Options['targets']
@@ -462,6 +464,11 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
           ...(genModern ? [output || {}] : []),
         ]
       }
+
+      // @ts-expect-error is readonly but should be injected here
+      _config.isOutputOptionsForLegacyChunks = (
+        opts: NormalizedOutputOptions,
+      ): boolean => outputOptionsForLegacyChunks.has(opts)
     },
 
     async renderChunk(raw, chunk, opts, { chunks }) {
@@ -537,20 +544,7 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
         return null
       }
 
-      // @ts-expect-error avoid esbuild transform on legacy chunks since it produces
-      // legacy-unsafe code - e.g. rewriting object properties into shorthands
-      opts.__vite_skip_esbuild__ = true
-
-      // @ts-expect-error force terser for legacy chunks. This only takes effect if
-      // minification isn't disabled, because that leaves out the terser plugin
-      // entirely.
-      opts.__vite_force_terser__ = true
-
-      // @ts-expect-error In the `generateBundle` hook,
-      // we'll delete the assets from the legacy bundle to avoid emitting duplicate assets.
-      // But that's still a waste of computing resource.
-      // So we add this flag to avoid emitting the asset in the first place whenever possible.
-      opts.__vite_skip_asset_emit__ = true
+      outputOptionsForLegacyChunks.add(opts)
 
       // avoid emitting assets for legacy bundle
       const needPolyfills =
