@@ -35,9 +35,9 @@ import { loadTsconfigJsonForFile } from './esbuild'
 // IIFE content looks like `var MyLib = (function() {`.
 export const IIFE_BEGIN_RE =
   /(?:(?:const|var)\s+\S+\s*=\s*|^|\n)\(?function\([^()]*\)\s*\{(?:\s*"use strict";)?/
-// UMD content looks like `(this, function(exports) {` or `factory(); })(function() {`.
+// UMD content looks like `})(this, function(exports, external1, external2) {`.
 export const UMD_BEGIN_RE =
-  /(?:\(this,\s*function\([^()]+\)\s*\{|factory\(\);\s*\}\)\(function\(\)\s*\{)(?:\s*"use strict";)?/
+  /\}\)\((?:this,\s*)?function\([^()]*\)\s*\{(?:\s*"use strict";)?/
 
 const jsxExtensionsRE = /\.(?:j|t)sx\b/
 const validExtensionRE = /\.\w+$/
@@ -489,7 +489,7 @@ export const buildOxcPlugin = (): Plugin => {
               opts.format === 'iife' ? IIFE_BEGIN_RE : UMD_BEGIN_RE
             ).exec(res.code)
             if (!m) {
-              this.error('Unexpected IIFE format')
+              this.error(`Unexpected ${opts.format.toUpperCase()} format`)
               return
             }
             const pos = m.index + m[0].length
