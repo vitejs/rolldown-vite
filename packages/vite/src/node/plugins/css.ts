@@ -918,8 +918,15 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
               injectionPoint = m.index + m[0].length
             } else if (opts.format === 'es') {
               // legacy build
-              // TODO: handle shebang
-              injectionPoint = 0
+              if (code.startsWith('#!')) {
+                let secondLinePos = code.indexOf('\n')
+                if (secondLinePos === -1) {
+                  secondLinePos = 0
+                }
+                injectionPoint = secondLinePos
+              } else {
+                injectionPoint = 0
+              }
             } else {
               this.error('Non supported format')
               return
