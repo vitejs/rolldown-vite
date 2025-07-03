@@ -579,7 +579,12 @@ async function generateRuntimeHelpers(
     format: 'cjs',
     minify: true,
   })
-  return `!(() => {${output.output[0].code.replace(cjsExportRE, ';var babelHelpers_$1=')}})();`
+  const outputCode = output.output[0].code
+  const exportNames = [...outputCode.matchAll(cjsExportRE)].map((m) => m[1])
+  return (
+    `var ${exportNames.map((n) => `babelHelpers_${n}`).join(', ')};` +
+    `!(() => {${output.output[0].code.replace(cjsExportRE, ';babelHelpers_$1=')}})();`
+  )
 }
 
 type OxcJsxOptions = Exclude<OxcOptions['jsx'], string | undefined>
