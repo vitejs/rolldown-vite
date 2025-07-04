@@ -1,13 +1,10 @@
 import path from 'node:path'
-import type {
-  InternalModuleFormat,
-  OutputAsset,
-  OutputChunk,
-  RenderedChunk,
-} from 'rollup'
+import type { OutputAsset, OutputChunk, RenderedChunk } from 'rolldown'
+import { manifestPlugin as nativeManifestPlugin } from 'rolldown/experimental'
 import type { Plugin } from '../plugin'
 import { normalizePath, sortObjectKeys } from '../utils'
 import { perEnvironmentState } from '../environment'
+import { type ResolvedConfig, perEnvironmentPlugin } from '..'
 import { cssEntriesMap } from './asset'
 
 const endsWithJSRE = /\.[cm]?js$/
@@ -27,7 +24,24 @@ export interface ManifestChunk {
   dynamicImports?: string[]
 }
 
-export function manifestPlugin(): Plugin {
+export function manifestPlugin(config: ResolvedConfig): Plugin {
+  if (
+    config.build.manifest &&
+    config.experimental.enableNativePlugin === true
+  ) {
+    return perEnvironmentPlugin('native:manifest', (environment) => {
+      if (!environment.config.build.manifest) return false
+
+      return nativeManifestPlugin({
+        root: environment.config.root,
+        outPath:
+          environment.config.build.manifest === true
+            ? '.vite/manifest.json'
+            : environment.config.build.manifest,
+      })
+    })
+  }
+
   const getState = perEnvironmentState(() => {
     return {
       manifest: {} as Manifest,
@@ -52,7 +66,7 @@ export function manifestPlugin(): Plugin {
       getState(this).reset()
     },
 
-    generateBundle({ format }, bundle) {
+    generateBundle(_opts, bundle) {
       const state = getState(this)
       const { manifest } = state
       const { root } = this.environment.config
@@ -60,7 +74,7 @@ export function manifestPlugin(): Plugin {
 
       function getChunkName(chunk: OutputChunk) {
         return (
-          getChunkOriginalFileName(chunk, root, format) ??
+          getChunkOriginalFileName(chunk, root) ??
           `_${path.basename(chunk.fileName)}`
         )
       }
@@ -196,15 +210,9 @@ export function manifestPlugin(): Plugin {
 export function getChunkOriginalFileName(
   chunk: OutputChunk | RenderedChunk,
   root: string,
-  format: InternalModuleFormat,
 ): string | undefined {
   if (chunk.facadeModuleId) {
-    let name = normalizePath(path.relative(root, chunk.facadeModuleId))
-    if (format === 'system' && !chunk.name.includes('-legacy')) {
-      const ext = path.extname(name)
-      const endPos = ext.length !== 0 ? -ext.length : undefined
-      name = `${name.slice(0, endPos)}-legacy${ext}`
-    }
+    const name = normalizePath(path.relative(root, chunk.facadeModuleId))
     return name.replace(/\0/g, '')
   }
 }

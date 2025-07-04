@@ -2,9 +2,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import colors from 'picocolors'
-import type { PartialResolvedId } from 'rollup'
+import type { PartialResolvedId } from 'rolldown'
+import { viteResolvePlugin } from 'rolldown/experimental'
 import { exports, imports } from 'resolve.exports'
 import { hasESMSyntax } from 'mlly'
+import { prefixRegex } from '@rolldown/pluginutils'
 import type { Plugin } from '../plugin'
 import {
   CLIENT_ENTRY,
@@ -33,8 +35,13 @@ import {
   safeRealpathSync,
   tryStatSync,
 } from '../utils'
-import { optimizedDepInfoFromFile, optimizedDepInfoFromId } from '../optimizer'
+import {
+  isDepOptimizationDisabled,
+  optimizedDepInfoFromFile,
+  optimizedDepInfoFromId,
+} from '../optimizer'
 import type { DepsOptimizer } from '../optimizer'
+import type { Environment } from '..'
 import type { PackageCache, PackageData } from '../packages'
 import { canExternalizeFile, shouldExternalize } from '../external'
 import {
@@ -50,6 +57,7 @@ import {
   splitFileAndPostfix,
   withTrailingSlash,
 } from '../../shared/utils'
+import type { ResolvedConfig, ResolvedEnvironmentOptions } from '../config'
 
 const normalizedClientEntry = normalizePath(CLIENT_ENTRY)
 const normalizedEnvEntry = normalizePath(ENV_ENTRY)
@@ -106,6 +114,15 @@ export interface ResolveOptions extends EnvironmentResolveOptions {
    * @default false
    */
   preserveSymlinks?: boolean
+  /**
+   * Enable tsconfig paths resolution
+   *
+   * This option does not have any effect if `experimental.enableNativePlugin` is set to `false`.
+   *
+   * @default false
+   * @experimental
+   */
+  tsconfigPaths?: boolean
 }
 
 interface ResolvePluginOptions {
@@ -125,6 +142,10 @@ interface ResolvePluginOptions {
   isRequire?: boolean
   // True when resolving during the scan phase to discover dependencies
   scan?: boolean
+  /**
+   * @internal
+   */
+  skipMainField?: boolean
 
   /**
    * Optimize deps during dev, defaults to false // TODO: Review default
@@ -157,10 +178,290 @@ export interface ResolvePluginOptionsWithOverrides
   extends ResolveOptions,
     ResolvePluginOptions {}
 
+const perEnvironmentOrWorkerPlugin = (
+  name: string,
+  overrideEnvConfig: (ResolvedConfig & ResolvedEnvironmentOptions) | undefined,
+  f: (
+    env: {
+      name: string
+      config: ResolvedConfig & ResolvedEnvironmentOptions
+    },
+    getEnvironment: () => Environment,
+  ) => Plugin,
+): Plugin[] => {
+  const envs: Record<string, Environment> = {}
+  const getEnvironmentPlugin: Plugin = {
+    name: `${name}:get-environment`,
+    buildStart() {
+      envs[this.environment.name] = this.environment
+    },
+    perEnvironmentStartEndDuringDev: true,
+  }
+  const createGetEnvironment = (name: string) => () => envs[name]
+
+  if (overrideEnvConfig) {
+    return [
+      getEnvironmentPlugin,
+      f(
+        { name: 'client', config: overrideEnvConfig },
+        createGetEnvironment('client'),
+      ),
+    ]
+  }
+  return [
+    getEnvironmentPlugin,
+    {
+      name,
+      applyToEnvironment(environment) {
+        return f(environment, createGetEnvironment(environment.name))
+      },
+    },
+  ]
+}
+
+export function oxcResolvePlugin(
+  resolveOptions: ResolvePluginOptionsWithOverrides,
+  overrideEnvConfig: (ResolvedConfig & ResolvedEnvironmentOptions) | undefined,
+): Plugin[] {
+  return [
+    ...(!resolveOptions.isBuild
+      ? [optimizerResolvePlugin(resolveOptions)]
+      : []),
+    ...perEnvironmentOrWorkerPlugin(
+      'vite:resolve-builtin',
+      overrideEnvConfig,
+      (partialEnv, getEnv) => {
+        // The resolve plugin is used for createIdResolver and the depsOptimizer should be
+        // disabled in that case, so deps optimization is opt-in when creating the plugin.
+        const depsOptimizerEnabled =
+          resolveOptions.optimizeDeps &&
+          !resolveOptions.isBuild &&
+          !isDepOptimizationDisabled(partialEnv.config.optimizeDeps)
+        const getDepsOptimizer = () => {
+          const env = getEnv()
+          if (env.mode !== 'dev')
+            throw new Error('The environment mode should be dev')
+          if (!env.depsOptimizer)
+            throw new Error('The environment should have a depsOptimizer')
+          return env.depsOptimizer
+        }
+
+        const options: InternalResolveOptions = {
+          ...partialEnv.config.resolve,
+          ...resolveOptions, // plugin options + resolve options overrides
+        }
+        const noExternal =
+          Array.isArray(options.noExternal) || options.noExternal === true
+            ? options.noExternal
+            : [options.noExternal]
+
+        return viteResolvePlugin({
+          resolveOptions: {
+            isBuild: options.isBuild,
+            isProduction: options.isProduction,
+            asSrc: options.asSrc ?? false,
+            preferRelative: options.preferRelative ?? false,
+            isRequire: options.isRequire,
+            root: options.root,
+            scan: options.scan ?? false,
+
+            mainFields: options.skipMainField
+              ? options.mainFields
+              : options.mainFields.concat(['main']),
+            conditions: options.conditions,
+            externalConditions: options.externalConditions,
+            extensions: options.extensions,
+            tryIndex: options.tryIndex ?? true,
+            tryPrefix: options.tryPrefix,
+            preserveSymlinks: options.preserveSymlinks,
+            tsconfigPaths: options.tsconfigPaths,
+          },
+          environmentConsumer: partialEnv.config.consumer,
+          environmentName: partialEnv.name,
+          builtins: partialEnv.config.resolve.builtins,
+          external: options.external,
+          noExternal: noExternal,
+          dedupe: options.dedupe,
+          finalizeBareSpecifier: !depsOptimizerEnabled
+            ? undefined
+            : (resolvedId, rawId, importer) => {
+                const depsOptimizer = getDepsOptimizer()
+                // if we reach here, it's a valid dep import that hasn't been optimized.
+                const isJsType = isOptimizable(
+                  resolvedId,
+                  depsOptimizer.options,
+                )
+                const exclude = depsOptimizer?.options.exclude
+
+                // check for deep import, e.g. "my-lib/foo"
+                const deepMatch = deepImportRE.exec(rawId)
+                // package name doesn't include postfixes
+                // trim them to support importing package with queries (e.g. `import css from 'normalize.css?inline'`)
+                const pkgId = deepMatch
+                  ? deepMatch[1] || deepMatch[2]
+                  : cleanUrl(rawId)
+
+                const skipOptimization =
+                  depsOptimizer.options.noDiscovery ||
+                  !isJsType ||
+                  (importer && isInNodeModules(importer)) ||
+                  exclude?.includes(pkgId) ||
+                  exclude?.includes(rawId) ||
+                  SPECIAL_QUERY_RE.test(resolvedId)
+
+                let newId = resolvedId
+                if (skipOptimization) {
+                  // excluded from optimization
+                  // Inject a version query to npm deps so that the browser
+                  // can cache it without re-validation, but only do so for known js types.
+                  // otherwise we may introduce duplicated modules for externalized files
+                  // from pre-bundled deps.
+                  const versionHash = depsOptimizer!.metadata.browserHash
+                  if (versionHash && isJsType) {
+                    newId = injectQuery(newId, `v=${versionHash}`)
+                  }
+                } else {
+                  // this is a missing import, queue optimize-deps re-run and
+                  // get a resolved its optimized info
+                  const optimizedInfo = depsOptimizer!.registerMissingImport(
+                    rawId,
+                    newId,
+                  )
+                  newId = depsOptimizer!.getOptimizedDepId(optimizedInfo)
+                }
+                return newId
+              },
+          finalizeOtherSpecifiers: !depsOptimizerEnabled
+            ? undefined
+            : (resolvedId, rawId) => {
+                const depsOptimizer = getDepsOptimizer()
+                const newResolvedId = ensureVersionQuery(
+                  resolvedId,
+                  rawId,
+                  options,
+                  depsOptimizer,
+                )
+                return newResolvedId === resolvedId ? undefined : newResolvedId
+              },
+          resolveSubpathImports(id, importer, isRequire, scan) {
+            options.isRequire = resolveOptions.isRequire ?? isRequire
+            options.scan = scan
+            return resolveSubpathImports(id, importer, options)
+          },
+        })
+      },
+    ),
+  ]
+}
+
+function optimizerResolvePlugin(
+  resolveOptions: ResolvePluginOptionsWithOverrides,
+): Plugin {
+  const { root, asSrc } = resolveOptions
+
+  return {
+    name: 'vite:resolve-dev',
+    resolveId: {
+      filter: {
+        id: {
+          exclude: [
+            /^\0/,
+            /^virtual:/,
+            // When injected directly in html/client code
+            /^\/virtual:/,
+            /^__vite-/,
+          ],
+        },
+      },
+      async handler(id, importer, resolveOpts) {
+        // The resolve plugin is used for createIdResolver and the depsOptimizer should be
+        // disabled in that case, so deps optimization is opt-in when creating the plugin.
+        const depsOptimizer =
+          resolveOptions.optimizeDeps && this.environment.mode === 'dev'
+            ? this.environment.depsOptimizer
+            : undefined
+        if (!depsOptimizer) {
+          return
+        }
+
+        const options: InternalResolveOptions = {
+          isRequire: resolveOpts.kind === 'require-call',
+          ...this.environment.config.resolve,
+          ...resolveOptions,
+          scan: resolveOpts.scan ?? resolveOptions.scan,
+        }
+        options.preferRelative ||= importer?.endsWith('.html')
+
+        // resolve pre-bundled deps requests, these could be resolved by
+        // tryFileResolve or /fs/ resolution but these files may not yet
+        // exists if we are in the middle of a deps re-processing
+        if (asSrc && depsOptimizer.isOptimizedDepUrl(id)) {
+          const optimizedPath = id.startsWith(FS_PREFIX)
+            ? fsPathFromId(id)
+            : normalizePath(path.resolve(root, id.slice(1)))
+          return optimizedPath
+        }
+
+        if (!isDataUrl(id) && !isExternalUrl(id)) {
+          if (
+            id[0] === '.' ||
+            (options.preferRelative && startsWithWordCharRE.test(id))
+          ) {
+            const basedir = importer ? path.dirname(importer) : root
+            const fsPath = path.resolve(basedir, id)
+            // handle browser field mapping for relative imports
+
+            const normalizedFsPath = normalizePath(fsPath)
+
+            if (depsOptimizer.isOptimizedDepFile(normalizedFsPath)) {
+              // Optimized files could not yet exist in disk, resolve to the full path
+              // Inject the current browserHash version if the path doesn't have one
+              if (!DEP_VERSION_RE.test(normalizedFsPath)) {
+                const browserHash = optimizedDepInfoFromFile(
+                  depsOptimizer.metadata,
+                  normalizedFsPath,
+                )?.browserHash
+                if (browserHash) {
+                  return injectQuery(normalizedFsPath, `v=${browserHash}`)
+                }
+              }
+              return normalizedFsPath
+            }
+          }
+
+          // bare package imports, perform node resolve
+          if (bareImportRE.test(id)) {
+            let res: string | PartialResolvedId | undefined
+            if (
+              asSrc &&
+              !options.scan &&
+              (res = await tryOptimizedResolve(
+                depsOptimizer,
+                id,
+                importer,
+                options.preserveSymlinks,
+                options.packageCache,
+              ))
+            ) {
+              return res
+            }
+          }
+        }
+      },
+    },
+  }
+}
+
 export function resolvePlugin(
   resolveOptions: ResolvePluginOptionsWithOverrides,
 ): Plugin {
-  const { root, isProduction, asSrc, preferRelative = false } = resolveOptions
+  const {
+    root,
+    isProduction,
+    isBuild,
+    asSrc,
+    preferRelative = false,
+  } = resolveOptions
 
   // In unix systems, absolute paths inside root first needs to be checked as an
   // absolute URL (/root/root/path-to-file) resulting in failed checks before falling
@@ -193,9 +494,7 @@ export function resolvePlugin(
         return id
       }
 
-      // this is passed by @rollup/plugin-commonjs
-      const isRequire: boolean =
-        resolveOpts.custom?.['node-resolve']?.isRequire ?? false
+      const isRequire = resolveOpts.kind === 'require-call'
 
       const currentEnvironmentOptions = this.environment.config
 
@@ -451,29 +750,50 @@ export function resolvePlugin(
     },
 
     load: {
+      filter: {
+        id: [prefixRegex(browserExternalId), prefixRegex(optionalPeerDepId)],
+      },
       handler(id) {
         if (id.startsWith(browserExternalId)) {
-          if (isProduction) {
-            return `export default {}`
+          if (isBuild) {
+            if (isProduction) {
+              // rolldown treats missing export as an error, and will break build.
+              // So use cjs to avoid it.
+              return `module.exports = {}`
+            } else {
+              id = id.slice(browserExternalId.length + 1)
+              // rolldown uses esbuild interop helper, so copy the proxy module from https://github.com/vitejs/vite/blob/main/packages/vite/src/node/optimizer/esbuildDepPlugin.ts#L259
+              return `\
+  module.exports = Object.create(new Proxy({}, {
+    get(_, key) {
+      if (
+        key !== '__esModule' &&
+        key !== '__proto__' &&
+        key !== 'constructor' &&
+        key !== 'splice'
+      ) {
+        throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
+      }
+    }
+    }))`
+            }
           } else {
-            id = id.slice(browserExternalId.length + 1)
-            return `\
+            // in dev, needs to return esm
+            if (isProduction) {
+              return `export default {}`
+            } else {
+              id = id.slice(browserExternalId.length + 1)
+              return `\
   export default new Proxy({}, {
     get(_, key) {
       throw new Error(\`Module "${id}" has been externalized for browser compatibility. Cannot access "${id}.\${key}" in client code.  See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`)
     }
   })`
+            }
           }
         }
         if (id.startsWith(optionalPeerDepId)) {
-          const [, peerDep, parentDep, isRequire] = id.split(':')
-          // rollup + @rollup/plugin-commonjs hoists dynamic `require`s by default
-          // If we add a `throw` statement, it will be injected to the top-level and break the whole bundle
-          // Instead, we mock the module for now
-          // This can be fixed when we migrate to rolldown
-          if (isRequire === 'true' && isProduction) {
-            return 'export default {}'
-          }
+          const [, peerDep, parentDep] = id.split(':')
           return (
             'export default {};' +
             `throw new Error(\`Could not resolve "${peerDep}" imported by "${parentDep}".${isProduction ? '' : ' Is it installed?'}\`)`
@@ -742,7 +1062,7 @@ export function tryNodeResolve(
           mainPkg.peerDependenciesMeta?.[pkgName]?.optional
         ) {
           return {
-            id: `${optionalPeerDepId}:${id}:${mainPkg.name}:${!!options.isRequire}`,
+            id: `${optionalPeerDepId}:${id}:${mainPkg.name}`,
           }
         }
       }
@@ -982,24 +1302,38 @@ function packageEntryFailure(id: string, details?: string) {
   throw err
 }
 
+function getConditions(
+  conditions: string[],
+  isProduction: boolean,
+  isRequire: boolean | undefined,
+) {
+  const resolvedConditions = conditions.map((condition) => {
+    if (condition === DEV_PROD_CONDITION) {
+      return isProduction ? 'production' : 'development'
+    }
+    return condition
+  })
+
+  if (isRequire) {
+    resolvedConditions.push('require')
+  } else {
+    resolvedConditions.push('import')
+  }
+
+  return resolvedConditions
+}
+
 function resolveExportsOrImports(
   pkg: PackageData['data'],
   key: string,
   options: InternalResolveOptions,
   type: 'imports' | 'exports',
 ) {
-  const conditions = options.conditions.map((condition) => {
-    if (condition === DEV_PROD_CONDITION) {
-      return options.isProduction ? 'production' : 'development'
-    }
-    return condition
-  })
-
-  if (options.isRequire) {
-    conditions.push('require')
-  } else {
-    conditions.push('import')
-  }
+  const conditions = getConditions(
+    options.conditions,
+    options.isProduction,
+    options.isRequire,
+  )
 
   const fn = type === 'imports' ? imports : exports
   const result = fn(pkg, key, { conditions, unsafe: true })
