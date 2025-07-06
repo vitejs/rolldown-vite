@@ -5,24 +5,27 @@ import { browserLogs, editFile, isBuild, isServe, page, readFile } from '~utils'
 const unexpectedTokenSyntaxErrorRE =
   /(\[vite:esbuild\] )*parsing .* failed: SyntaxError: Unexpected token.*\}.*|Build failed/
 
-describe.runIf(isBuild)('build', () => {
-  test('should throw an error on build', () => {
-    expect(serveError).toBeTruthy()
-    expect(serveError.message).toMatch(unexpectedTokenSyntaxErrorRE)
-    clearServeError() // got expected error, null it here so testsuite does not fail from rethrow in afterAll
-  })
+describe.runIf(isBuild && !process.env._VITE_TEST_NATIVE_PLUGIN)(
+  'build',
+  () => {
+    test('should throw an error on build', () => {
+      expect(serveError).toBeTruthy()
+      expect(serveError.message).toMatch(unexpectedTokenSyntaxErrorRE)
+      clearServeError() // got expected error, null it here so testsuite does not fail from rethrow in afterAll
+    })
 
-  test('should not output files to dist', () => {
-    let err
-    try {
-      readFile('dist/index.html')
-    } catch (e) {
-      err = e
-    }
-    expect(err).toBeTruthy()
-    expect(err.code).toBe('ENOENT')
-  })
-})
+    test('should not output files to dist', () => {
+      let err
+      try {
+        readFile('dist/index.html')
+      } catch (e) {
+        err = e
+      }
+      expect(err).toBeTruthy()
+      expect(err.code).toBe('ENOENT')
+    })
+  },
+)
 
 describe.runIf(isServe)('server', () => {
   test('should log 500 error in browser for malformed tsconfig', () => {

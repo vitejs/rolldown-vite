@@ -151,11 +151,14 @@ test('url query worker', async () => {
     .toMatch('Hello from simple worker!')
 })
 
-test('import.meta.glob eager in worker', async () => {
-  await expect
-    .poll(() => page.textContent('.importMetaGlobEager-worker'))
-    .toMatch('["')
-})
+test.skipIf(!!process.env._VITE_TEST_NATIVE_PLUGIN)(
+  'import.meta.glob eager in worker',
+  async () => {
+    await expect
+      .poll(() => page.textContent('.importMetaGlobEager-worker'))
+      .toMatch('["')
+  },
+)
 
 test('self reference worker', async () => {
   await expect

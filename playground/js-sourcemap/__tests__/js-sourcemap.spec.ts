@@ -139,8 +139,10 @@ describe.runIf(isBuild)('build tests', () => {
   })
 
   test('sourcemap is correct when preload information is injected', async () => {
-    const map = findAssetFile(/after-preload-dynamic-[-\w]{8}\.js\.map/)
-    expect(formatSourcemapForSnapshot(JSON.parse(map))).toMatchInlineSnapshot(`
+    if (!process.env._VITE_TEST_NATIVE_PLUGIN) {
+      const map = findAssetFile(/after-preload-dynamic-[-\w]{8}\.js\.map/)
+      expect(formatSourcemapForSnapshot(JSON.parse(map)))
+        .toMatchInlineSnapshot(`
       {
         "debugId": "00000000-0000-0000-0000-000000000000",
         "ignoreList": [],
@@ -157,6 +159,7 @@ describe.runIf(isBuild)('build tests', () => {
         "version": 3,
       }
     `)
+    }
     // verify sourcemap comment is preserved at the last line
     const js = findAssetFile(/after-preload-dynamic-[-\w]{8}\.js$/)
     expect(js).toMatch(
