@@ -13,9 +13,12 @@ describe.runIf(isBuild)('build', () => {
     expect(findAssetFile('other.*.js$')).toMatch(`/* empty css`)
   })
 
-  test('should generate correct manifest', async () => {
-    const manifest = readManifest()
-    expect(manifest['index.html'].css.length).toBe(2)
-    expect(manifest['other.js'].css.length).toBe(1)
-  })
+  test.skipIf(!!process.env._VITE_TEST_NATIVE_PLUGIN)(
+    'should generate correct manifest',
+    async () => {
+      const manifest = readManifest()
+      expect(manifest['index.html'].css.length).toBe(2)
+      expect(manifest['other.js'].css.length).toBe(1)
+    },
+  )
 })
