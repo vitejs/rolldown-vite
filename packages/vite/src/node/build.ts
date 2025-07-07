@@ -645,6 +645,10 @@ async function buildEnvironment(
               ? {}
               : options.rollupOptions.treeshake),
           },
+    optimization: {
+      inlineConst: true,
+      ...options.rollupOptions.optimization,
+    },
   }
 
   /**
