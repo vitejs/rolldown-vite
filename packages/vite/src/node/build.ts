@@ -636,6 +636,10 @@ async function buildEnvironment(
       ...options.rollupOptions.experimental,
       viteMode: true,
     },
+    optimization: {
+      inlineConst: true,
+      ...options.rollupOptions.optimization,
+    },
   }
 
   /**
