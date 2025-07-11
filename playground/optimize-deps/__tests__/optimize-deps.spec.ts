@@ -55,7 +55,8 @@ test('dynamic default import from webpacked cjs (clipboard)', async () => {
   await expect.poll(() => page.textContent('.cjs-dynamic-clipboard')).toBe('ok')
 })
 
-test('dynamic default import from cjs (cjs-dynamic-dep-cjs-compiled-from-esm)', async () => {
+// NOTE: rolldown behaves differently from @rollup/plugin-commonjs https://github.com/rolldown/rolldown/issues/2031
+test.skip('dynamic default import from cjs (cjs-dynamic-dep-cjs-compiled-from-esm)', async () => {
   await expect
     .poll(() => page.textContent('.cjs-dynamic-dep-cjs-compiled-from-esm'))
     .toBe('ok')
@@ -141,10 +142,9 @@ test('dep with optional peer dep (cjs)', async () => {
   await expect
     .poll(() => page.textContent('.dep-with-optional-peer-dep-cjs'))
     .toMatch(`[success]`)
-  // FIXME
-  // await expect
-  //   .poll(() => page.textContent('.dep-with-optional-peer-dep-cjs-error'))
-  //   .toMatch(`[success]`)
+  await expect
+    .poll(() => page.textContent('.dep-with-optional-peer-dep-cjs-error'))
+    .toMatch(`[success]`)
 })
 
 test('dep with css import', async () => {
