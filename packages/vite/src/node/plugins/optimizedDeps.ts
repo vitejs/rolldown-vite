@@ -83,6 +83,10 @@ export function optimizedDepsPlugin(): Plugin {
             oldMetaBrowserHash: metadata.browserHash,
             newMetaBrowserHash: depsOptimizer.metadata.browserHash,
           })
+          if (optimizedDepInfoFromFile(metadata, file)) {
+            // eslint-disable-next-line no-console
+            console.log('included in old')
+          }
 
           const newMetadata = depsOptimizer.metadata
           if (optimizedDepInfoFromFile(newMetadata, file)) {
