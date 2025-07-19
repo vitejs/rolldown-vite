@@ -47,10 +47,6 @@ export function optimizedDepsPlugin(): Plugin {
           ? versionMatch[1].split('=')[1]
           : undefined
 
-        if (browserHash && metadata.browserHash !== browserHash) {
-          throwOutdatedRequest(id)
-        }
-
         // Search in both the currently optimized and newly discovered deps
         const info = optimizedDepInfoFromFile(metadata, file)
         if (info) {
@@ -81,7 +77,12 @@ export function optimizedDepsPlugin(): Plugin {
         try {
           return await fsp.readFile(file, 'utf-8')
         } catch {
-          for (let i = 0; i < 10; i++) {}
+          // eslint-disable-next-line no-console
+          console.log('log', {
+            browserHash,
+            oldMetaBrowserHash: metadata.browserHash,
+            newMetaBrowserHash: depsOptimizer.metadata.browserHash,
+          })
 
           const newMetadata = depsOptimizer.metadata
           if (optimizedDepInfoFromFile(newMetadata, file)) {
