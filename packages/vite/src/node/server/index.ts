@@ -609,6 +609,8 @@ export async function _createServer(
       return transformRequest(environment, url, options)
     },
     async warmupRequest(url, options) {
+      // eslint-disable-next-line no-console
+      console.trace('warmupRequest')
       try {
         const environment = server.environments[options?.ssr ? 'ssr' : 'client']
         await transformRequest(environment, url, options)
