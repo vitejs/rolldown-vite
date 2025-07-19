@@ -42,7 +42,7 @@ export function optimizedDepsPlugin(): Plugin {
       if (depsOptimizer?.isOptimizedDepFile(id)) {
         const metadata = depsOptimizer.metadata
         const file = cleanUrl(id)
-        const versionMatch = DEP_VERSION_RE.exec(file)
+        const versionMatch = DEP_VERSION_RE.exec(id)
         const browserHash = versionMatch
           ? versionMatch[1].split('=')[1]
           : undefined
