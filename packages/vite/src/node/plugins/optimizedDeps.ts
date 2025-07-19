@@ -77,20 +77,8 @@ export function optimizedDepsPlugin(): Plugin {
         try {
           return await fsp.readFile(file, 'utf-8')
         } catch {
-          // eslint-disable-next-line no-console
-          console.log('log', {
-            browserHash,
-            oldMetaBrowserHash: metadata.browserHash,
-            newMetaBrowserHash: depsOptimizer.metadata.browserHash,
-          })
-          if (optimizedDepInfoFromFile(metadata, file)) {
-            // eslint-disable-next-line no-console
-            console.log('included in old')
-          }
-
-          const newMetadata = depsOptimizer.metadata
-          if (optimizedDepInfoFromFile(newMetadata, file)) {
-            // Outdated non-entry points (CHUNK), loaded after a rerun
+          if (browserHash) {
+            // Outdated optimized files loaded after a rerun
             throwOutdatedRequest(id)
           }
           throwFileNotFoundInOptimizedDep(id)
