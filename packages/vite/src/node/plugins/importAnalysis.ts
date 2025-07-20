@@ -380,27 +380,6 @@ export function importAnalysisPlugin(config: ResolvedConfig): Plugin {
 
         url = normalizeResolvedIdToUrl(environment, url, resolved)
 
-        // make the URL browser-valid
-        if (environment.config.consumer === 'client') {
-          // mark non-js/css imports with `?import`
-          if (isExplicitImportRequired(url)) {
-            url = injectQuery(url, 'import')
-          } else if (
-            (isRelative || isSelfImport) &&
-            !DEP_VERSION_RE.test(url)
-          ) {
-            // If the url isn't a request for a pre-bundled common chunk,
-            // for relative js/css imports, or self-module virtual imports
-            // (e.g. vue blocks), inherit importer's version query
-            // do not do this for unknown type imports, otherwise the appended
-            // query can break 3rd party plugin's extension checks.
-            const versionMatch = DEP_VERSION_RE.exec(importer)
-            if (versionMatch) {
-              url = injectQuery(url, versionMatch[1])
-            }
-          }
-        }
-
         try {
           // delay setting `isSelfAccepting` until the file is actually used (#7870)
           // We use an internal function to avoid resolving the url again
@@ -423,6 +402,27 @@ export function importAnalysisPlugin(config: ResolvedConfig): Plugin {
           // attach location to the missing import
           e.pos = pos
           throw e
+        }
+
+        // make the URL browser-valid
+        if (environment.config.consumer === 'client') {
+          // mark non-js/css imports with `?import`
+          if (isExplicitImportRequired(url)) {
+            url = injectQuery(url, 'import')
+          } else if (
+            (isRelative || isSelfImport) &&
+            !DEP_VERSION_RE.test(url)
+          ) {
+            // If the url isn't a request for a pre-bundled common chunk,
+            // for relative js/css imports, or self-module virtual imports
+            // (e.g. vue blocks), inherit importer's version query
+            // do not do this for unknown type imports, otherwise the appended
+            // query can break 3rd party plugin's extension checks.
+            const versionMatch = DEP_VERSION_RE.exec(importer)
+            if (versionMatch) {
+              url = injectQuery(url, versionMatch[1])
+            }
+          }
         }
 
         // prepend base
