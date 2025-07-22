@@ -54,32 +54,25 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
           generateBundle(_, bundle) {
             const asset = bundle[outPath]
             if (asset.type === 'asset') {
-              let is_manifest_changed = false
-              const maniefest = JSON.parse(asset.source.toString())
+              let manifest = null
               for (const chunk of Object.values(bundle)) {
-                if (chunk.type !== 'chunk') {
-                  continue
+                if (chunk.type !== 'chunk') continue
+                const importedCss = chunk.viteMetadata?.importedCss
+                const importedAssets = chunk.viteMetadata?.importedAssets
+                if (!importedCss?.size && !importedAssets?.size) continue
+                if (!manifest) manifest = JSON.parse(asset.source.toString())
+                const name = getChunkName(chunk)
+                const item = manifest[name]
+                if (!item) continue
+                if (importedCss?.size) {
+                  item.css = [...importedCss]
                 }
-                if (
-                  chunk.viteMetadata?.importedCss.size ||
-                  chunk.viteMetadata?.importedAssets.size
-                ) {
-                  const name = getChunkName(chunk)
-                  const item = maniefest[name]
-                  if (!item) {
-                    continue
-                  }
-                  if (chunk.viteMetadata?.importedCss.size) {
-                    item.css = [...chunk.viteMetadata.importedCss]
-                  }
-                  if (chunk.viteMetadata?.importedAssets.size) {
-                    item.assets = [...chunk.viteMetadata.importedAssets]
-                  }
-                  is_manifest_changed = true
+                if (importedAssets?.size) {
+                  item.assets = [...importedAssets]
                 }
               }
-              if (is_manifest_changed) {
-                asset.source = JSON.stringify(maniefest)
+              if (manifest) {
+                asset.source = JSON.stringify(manifest)
               }
             }
           },
