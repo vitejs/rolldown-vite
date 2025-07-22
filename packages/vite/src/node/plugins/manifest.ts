@@ -32,13 +32,59 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
     return perEnvironmentPlugin('native:manifest', (environment) => {
       if (!environment.config.build.manifest) return false
 
-      return nativeManifestPlugin({
-        root: environment.config.root,
-        outPath:
-          environment.config.build.manifest === true
-            ? '.vite/manifest.json'
-            : environment.config.build.manifest,
-      })
+      const root = environment.config.root
+      const outPath =
+        environment.config.build.manifest === true
+          ? '.vite/manifest.json'
+          : environment.config.build.manifest
+
+      function getChunkName(chunk: OutputChunk) {
+        if (chunk.facadeModuleId) {
+          return normalizePath(
+            path.relative(root, chunk.facadeModuleId),
+          ).replace(/\0/g, '')
+        }
+        return `_${path.basename(chunk.fileName)}`
+      }
+
+      return [
+        nativeManifestPlugin({ root, outPath }),
+        {
+          name: 'native:manifest-compatible',
+          generateBundle(_, bundle) {
+            const asset = bundle[outPath]
+            if (asset.type === 'asset') {
+              let is_manifest_changed = false
+              const maniefest = JSON.parse(asset.source.toString())
+              for (const chunk of Object.values(bundle)) {
+                if (chunk.type !== 'chunk') {
+                  continue
+                }
+                if (
+                  chunk.viteMetadata?.importedCss.size ||
+                  chunk.viteMetadata?.importedAssets.size
+                ) {
+                  const name = getChunkName(chunk)
+                  const item = maniefest[name]
+                  if (!item) {
+                    continue
+                  }
+                  if (chunk.viteMetadata?.importedCss.size) {
+                    item.css = [...chunk.viteMetadata.importedCss]
+                  }
+                  if (chunk.viteMetadata?.importedAssets.size) {
+                    item.assets = [...chunk.viteMetadata.importedAssets]
+                  }
+                  is_manifest_changed = true
+                }
+              }
+              if (is_manifest_changed) {
+                asset.source = JSON.stringify(maniefest)
+              }
+            }
+          },
+        },
+      ]
     })
   }
 
