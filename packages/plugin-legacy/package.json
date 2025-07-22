@@ -34,6 +34,8 @@
   "funding": "https://github.com/vitejs/vite?sponsor=1",
   "dependencies": {
     "@babel/core": "^7.28.0",
+    "@babel/plugin-transform-dynamic-import": "^7.27.1",
+    "@babel/plugin-transform-modules-systemjs": "^7.27.1",
     "@babel/preset-env": "^7.28.0",
     "babel-plugin-polyfill-corejs3": "^0.13.0",
     "babel-plugin-polyfill-regenerator": "^0.6.5",

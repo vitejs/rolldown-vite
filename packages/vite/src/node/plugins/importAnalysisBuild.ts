@@ -5,11 +5,13 @@ import type {
   ImportSpecifier,
 } from 'es-module-lexer'
 import { init, parse as parseImports } from 'es-module-lexer'
-import type { SourceMap } from 'rollup'
+import type { SourceMap } from 'rolldown'
+import { buildImportAnalysisPlugin as nativeBuildImportAnalysisPlugin } from 'rolldown/experimental'
 import type { RawSourceMap } from '@ampproject/remapping'
 import convertSourceMap from 'convert-source-map'
+import { exactRegex } from '@rolldown/pluginutils'
 import { combineSourcemaps, generateCodeFrame, numberToPos } from '../utils'
-import type { Plugin } from '../plugin'
+import { type Plugin, perEnvironmentPlugin } from '../plugin'
 import type { ResolvedConfig } from '../config'
 import { toOutputFilePathInJS } from '../build'
 import { genSourceMapUrl } from '../server/sourcemap'
@@ -210,7 +212,7 @@ function getPreloadCode(
 /**
  * Build only. During serve this is performed as part of ./importAnalysis.
  */
-export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
+export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin[] {
   const getInsertPreload = (environment: PartialEnvironment) =>
     environment.config.consumer === 'client' &&
     !config.isWorker &&
@@ -219,35 +221,34 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
   const renderBuiltUrl = config.experimental.renderBuiltUrl
   const isRelativeBase = config.base === './' || config.base === ''
 
-  return {
+  const plugin: Plugin = {
     name: 'vite:build-import-analysis',
     resolveId: {
+      filter: {
+        id: exactRegex(preloadHelperId),
+      },
       handler(id) {
-        if (id === preloadHelperId) {
-          return id
-        }
+        return id
       },
     },
 
     load: {
-      handler(id) {
-        if (id === preloadHelperId) {
-          const preloadCode = getPreloadCode(
-            this.environment,
-            !!renderBuiltUrl,
-            isRelativeBase,
-          )
-          return { code: preloadCode, moduleSideEffects: false }
-        }
+      filter: {
+        id: exactRegex(preloadHelperId),
+      },
+      handler(_id) {
+        const preloadCode = getPreloadCode(
+          this.environment,
+          !!renderBuiltUrl,
+          isRelativeBase,
+        )
+        return { code: preloadCode, moduleSideEffects: false }
       },
     },
 
     transform: {
+      filter: { code: dynamicImportPrefixRE },
       async handler(source, importer) {
-        if (!dynamicImportPrefixRE.test(source)) {
-          return
-        }
-
         await init
 
         let imports: readonly ImportSpecifier[] = []
@@ -462,7 +463,10 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
                 let url = name
                 if (!url) {
                   const rawUrl = code.slice(start, end)
-                  if (rawUrl[0] === `"` && rawUrl.endsWith(`"`))
+                  if (
+                    (rawUrl[0] === `"` && rawUrl[rawUrl.length - 1] === `"`) ||
+                    (rawUrl[0] === '`' && rawUrl[rawUrl.length - 1] === '`')
+                  )
                     url = rawUrl.slice(1, -1)
                 }
                 if (!url) continue
@@ -539,7 +543,10 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
               let url = name
               if (!url) {
                 const rawUrl = code.slice(start, end)
-                if (rawUrl[0] === `"` && rawUrl.endsWith(`"`))
+                if (
+                  (rawUrl[0] === `"` && rawUrl[rawUrl.length - 1] === `"`) ||
+                  (rawUrl[0] === '`' && rawUrl[rawUrl.length - 1] === '`')
+                )
                   url = rawUrl.slice(1, -1)
               }
               const deps = new Set<string>()
@@ -745,4 +752,29 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin {
       }
     },
   }
+
+  if (config.experimental.enableNativePlugin === true) {
+    delete plugin.transform
+    delete plugin.resolveId
+    delete plugin.load
+    return [
+      plugin,
+      perEnvironmentPlugin('native:import-analysis-build', (environment) => {
+        const preloadCode = getPreloadCode(
+          environment,
+          !!renderBuiltUrl,
+          isRelativeBase,
+        )
+        return nativeBuildImportAnalysisPlugin({
+          preloadCode,
+          insertPreload: getInsertPreload(environment),
+          // this field looks redundant, put a dummy value for now
+          optimizeModulePreloadRelativePaths: false,
+          renderBuiltUrl: !!renderBuiltUrl,
+          isRelativeBase,
+        })
+      }),
+    ]
+  }
+  return [plugin]
 }

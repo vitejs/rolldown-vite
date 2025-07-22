@@ -3,7 +3,7 @@ import fsp from 'node:fs/promises'
 import type { ServerResponse } from 'node:http'
 import type { Connect } from 'dep-types/connect'
 import colors from 'picocolors'
-import type { ExistingRawSourceMap } from 'rollup'
+import type { ExistingRawSourceMap } from 'rolldown'
 import type { ViteDevServer } from '..'
 import {
   createDebugger,
