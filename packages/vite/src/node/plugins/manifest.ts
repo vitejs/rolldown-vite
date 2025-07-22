@@ -39,12 +39,10 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
           : environment.config.build.manifest
 
       function getChunkName(chunk: OutputChunk) {
-        if (chunk.facadeModuleId) {
-          return normalizePath(
-            path.relative(root, chunk.facadeModuleId),
-          ).replace(/\0/g, '')
-        }
-        return `_${path.basename(chunk.fileName)}`
+        return (
+          getChunkOriginalFileName(chunk, root, false) ??
+          `_${path.basename(chunk.fileName)}`
+        )
       }
 
       return [
@@ -54,13 +52,13 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
           generateBundle(_, bundle) {
             const asset = bundle[outPath]
             if (asset.type === 'asset') {
-              let manifest = null
+              let manifest: Manifest | undefined
               for (const chunk of Object.values(bundle)) {
                 if (chunk.type !== 'chunk') continue
                 const importedCss = chunk.viteMetadata?.importedCss
                 const importedAssets = chunk.viteMetadata?.importedAssets
                 if (!importedCss?.size && !importedAssets?.size) continue
-                if (!manifest) manifest = JSON.parse(asset.source.toString())
+                manifest ??= JSON.parse(asset.source.toString()) as Manifest
                 const name = getChunkName(chunk)
                 const item = manifest[name]
                 if (!item) continue
