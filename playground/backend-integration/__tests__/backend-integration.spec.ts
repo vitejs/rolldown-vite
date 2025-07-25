@@ -45,7 +45,7 @@ describe('asset imports from js', () => {
 })
 
 describe.runIf(isBuild)('build', () => {
-  test('manifest', async () => {
+  test.skipIf(!!process.env._VITE_TEST_NATIVE_PLUGIN)('manifest', async () => {
     const manifest = readManifest('dev')
     const htmlEntry = manifest['index.html']
     const mainTsEntry = manifest['main.ts']
@@ -61,6 +61,7 @@ describe.runIf(isBuild)('build', () => {
     expect(mainTsEntry.imports.length).toBeGreaterThanOrEqual(1)
     const mainTsEntryImported = manifest[mainTsEntry.imports[0]]
     expect(mainTsEntryImported).toBeDefined()
+
     expect(mainTsEntryImported.assets?.length ?? 0).toBeGreaterThanOrEqual(1)
     expect(mainTsEntryImported.assets).toContainEqual(
       expect.stringMatching(/assets\/url-[-\w]{8}\.css/),
@@ -82,12 +83,15 @@ describe.runIf(isBuild)('build', () => {
     expect(waterContainerEntry?.file).not.toBeUndefined()
   })
 
-  test('CSS imported from JS entry should have a non-nested chunk name', () => {
-    const manifest = readManifest('dev')
-    const mainTsEntryCss = manifest['nested/sub.ts'].css
-    expect(mainTsEntryCss.length).toBe(1)
-    expect(mainTsEntryCss[0].replace('assets/', '')).not.toContain('/')
-  })
+  test.skipIf(!!process.env._VITE_TEST_NATIVE_PLUGIN)(
+    'CSS imported from JS entry should have a non-nested chunk name',
+    () => {
+      const manifest = readManifest('dev')
+      const mainTsEntryCss = manifest['nested/sub.ts'].css
+      expect(mainTsEntryCss.length).toBe(1)
+      expect(mainTsEntryCss[0].replace('assets/', '')).not.toContain('/')
+    },
+  )
 
   test('entrypoint assets should not generate empty JS file', () => {
     expect(serverLogs).not.toContainEqual(

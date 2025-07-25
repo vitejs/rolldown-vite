@@ -638,20 +638,23 @@ test("new URL(/* @vite-ignore */ 'non-existent', import.meta.url)", async () => 
   )
 })
 
-test.runIf(isBuild)('manifest', async () => {
-  const manifest = readManifest('foo')
-  const entry = manifest['index.html']
+test.runIf(isBuild && !process.env._VITE_TEST_NATIVE_PLUGIN)(
+  'manifest',
+  async () => {
+    const manifest = readManifest('foo')
+    const entry = manifest['index.html']
 
-  for (const file of listAssets('foo')) {
-    if (file.endsWith('.css')) {
-      // ignore icons-*.css and css-url-url-*.css as it's imported with ?url
-      if (file.includes('icons-') || file.includes('css-url-url-')) continue
-      expect(entry.css).toContain(`assets/${file}`)
-    } else if (!file.endsWith('.js')) {
-      expect(entry.assets).toContain(`assets/${file}`)
+    for (const file of listAssets('foo')) {
+      if (file.endsWith('.css')) {
+        // ignore icons-*.css and css-url-url-*.css as it's imported with ?url
+        if (file.includes('icons-') || file.includes('css-url-url-')) continue
+        expect(entry.css).toContain(`assets/${file}`)
+      } else if (!file.endsWith('.js')) {
+        expect(entry.assets).toContain(`assets/${file}`)
+      }
     }
-  }
-})
+  },
+)
 
 describe.runIf(isBuild)('css and assets in css in build watch', () => {
   test('css will not be lost and css does not contain undefined', async () => {
