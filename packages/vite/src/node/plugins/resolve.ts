@@ -348,6 +348,17 @@ export function oxcResolvePlugin(
             options.scan = scan
             return resolveSubpathImports(id, importer, options)
           },
+
+          onWarn(msg) {
+            getEnv().logger.warn(msg)
+          },
+          ...(debug
+            ? {
+                onDebug(message) {
+                  debug(message)
+                },
+              }
+            : {}),
         })
       },
     ),
