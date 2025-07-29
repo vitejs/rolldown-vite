@@ -349,12 +349,19 @@ export function oxcResolvePlugin(
             return resolveSubpathImports(id, importer, options)
           },
 
-          onWarn(msg) {
-            getEnv().logger.warn(msg)
-          },
+          ...(partialEnv.config.command === 'serve'
+            ? {
+                async onWarn(msg) {
+                  getEnv().logger.warn(`warning: ${msg}`, {
+                    clear: true,
+                    timestamp: true,
+                  })
+                },
+              }
+            : {}),
           ...(debug
             ? {
-                onDebug(message) {
+                async onDebug(message) {
                   debug(message)
                 },
               }
