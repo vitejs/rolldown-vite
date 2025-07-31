@@ -224,7 +224,7 @@ export function oxcResolvePlugin(
   overrideEnvConfig: (ResolvedConfig & ResolvedEnvironmentOptions) | undefined,
 ): Plugin[] {
   return [
-    ...(!resolveOptions.isBuild
+    ...(resolveOptions.optimizeDeps && !resolveOptions.isBuild
       ? [optimizerResolvePlugin(resolveOptions)]
       : []),
     ...perEnvironmentOrWorkerPlugin(
@@ -380,6 +380,12 @@ function optimizerResolvePlugin(
 
   return {
     name: 'vite:resolve-dev',
+    applyToEnvironment(environment) {
+      return (
+        !environment.config.experimental.fullBundleMode &&
+        !isDepOptimizationDisabled(environment.config.optimizeDeps)
+      )
+    },
     resolveId: {
       filter: {
         id: {
