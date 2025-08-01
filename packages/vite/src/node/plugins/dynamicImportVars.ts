@@ -167,20 +167,13 @@ export async function transformDynamicImport(
 }
 
 export function dynamicImportVarsPlugin(config: ResolvedConfig): Plugin {
-  if (config.experimental.enableNativePlugin === true && config.isBundled) {
-    return nativeDynamicImportVarsPlugin()
-  }
-
   const resolve = createBackCompatIdResolver(config, {
     preferRelative: true,
     tryIndex: false,
     extensions: [],
   })
 
-  if (
-    config.experimental.enableNativePlugin === true &&
-    config.command === 'build'
-  ) {
+  if (config.experimental.enableNativePlugin === true && config.isBundled) {
     return perEnvironmentPlugin('native:dynamic-import-vars', (environment) => {
       const { include, exclude } =
         environment.config.build.dynamicImportVarsOptions
