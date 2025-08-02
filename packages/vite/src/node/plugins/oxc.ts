@@ -10,7 +10,12 @@ import {
   transform,
 } from 'rolldown/experimental'
 import type { RawSourceMap } from '@ampproject/remapping'
-import type { InternalModuleFormat, RollupError, SourceMap } from 'rolldown'
+import type {
+  InternalModuleFormat,
+  ModuleType,
+  RollupError,
+  SourceMap,
+} from 'rolldown'
 import { rolldown } from 'rolldown'
 import type { FSWatcher } from 'dep-types/chokidar'
 import { TSConfckParseError } from 'tsconfck'
@@ -25,7 +30,7 @@ import {
 } from '../utils'
 import type { ResolvedConfig } from '../config'
 import type { Plugin } from '../plugin'
-import { cleanUrl } from '../../shared/utils'
+import { cleanUrl, splitFileAndPostfix } from '../../shared/utils'
 import { type Environment, perEnvironmentPlugin } from '..'
 import type { ViteDevServer } from '../server'
 import { JS_TYPES_RE } from '../constants'
@@ -336,7 +341,8 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
 
   const getModifiedOxcTransformOptions = (
     oxcTransformOptions: OxcTransformOptions,
-    id: string,
+    moduleType: ModuleType,
+    isJSXRefresh: boolean,
     code: string,
     environment: Environment,
   ): OxcTransformOptions => {
@@ -350,14 +356,12 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
 
     // disable refresh based by the same condition as @vitejs/plugin-react
     // https://github.com/vitejs/vite-plugin-react/blob/c8ecad052001b6fc42e508f18433e6b305bca641/packages/plugin-react/src/index.ts#L261-L269
-    const [filepath] = id.split('?')
-    const isJSX = filepath.endsWith('x')
-
+    const isJSX = moduleType.endsWith('x')
     if (
       typeof jsxOptions === 'object' &&
       jsxOptions.refresh &&
       (environment.config.consumer === 'server' ||
-        (jsxRefreshFilter && !jsxRefreshFilter(id)) ||
+        !isJSXRefresh ||
         !(
           isJSX ||
           code.includes(jsxImportRuntime) ||
@@ -366,7 +370,17 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
     ) {
       result.jsx = { ...jsxOptions, refresh: false }
     }
-    if (jsxRefreshFilter?.(id) && !JS_TYPES_RE.test(cleanUrl(id))) {
+    if (!result.lang) {
+      if (moduleType === 'cjs' || moduleType === 'mjs') {
+        result.lang = 'js'
+      } else if (moduleType === 'cts' || moduleType === 'mts') {
+        result.lang = 'ts'
+      } else {
+        result.lang = moduleType as 'js' | 'jsx' | 'ts' | 'tsx'
+      }
+    }
+
+    if (isJSXRefresh && !JS_TYPES_RE.test(`.${moduleType}`)) {
       result.lang = 'js'
     }
 
@@ -395,33 +409,52 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
         return resolved
       },
     },
-    async transform(code, id) {
-      if (filter(id) || filter(cleanUrl(id)) || jsxRefreshFilter?.(id)) {
-        const modifiedOxcTransformOptions = getModifiedOxcTransformOptions(
-          oxcTransformOptions,
-          id,
-          code,
-          this.environment,
-        )
-        const result = await transformWithOxc(
-          code,
-          id,
-          modifiedOxcTransformOptions,
-          undefined,
-          config,
-          server?.watcher,
-        )
-        if (jsxInject && jsxExtensionsRE.test(id)) {
-          result.code = jsxInject + ';' + result.code
-        }
-        for (const warning of result.warnings) {
-          this.environment.logger.warnOnce(warning)
-        }
-        return {
-          code: result.code,
-          map: result.map,
-          moduleType: 'js',
-        }
+    async transform(code, id, options) {
+      const moduleType = options?.moduleType
+      // To handle scenarios where a file type is determined by a previous plugin (e.g., markdown to jsx),
+      // we use `moduleType` to create a virtual ID (`filterId`) with the correct extension.
+      // This `filterId` is then used to check against the user's `include`/`exclude` rules.
+      // The original `id` is preserved for the actual transformation to ensure sourcemaps are accurate.
+      let filterId = id
+      if (moduleType) {
+        const { file, postfix } = splitFileAndPostfix(id)
+        filterId =
+          file.slice(0, -path.extname(file).length) + '.' + moduleType + postfix
+      }
+
+      const isJSXRefresh = !!jsxRefreshFilter?.(filterId)
+      const cleanedFilterId = cleanUrl(filterId)
+      if (!filter(filterId) && !filter(cleanedFilterId) && !isJSXRefresh) {
+        return
+      }
+
+      const mergedModuleType = path.extname(cleanedFilterId).slice(1)
+
+      const modifiedOxcTransformOptions = getModifiedOxcTransformOptions(
+        oxcTransformOptions,
+        mergedModuleType,
+        isJSXRefresh,
+        code,
+        this.environment,
+      )
+      const result = await transformWithOxc(
+        code,
+        id,
+        modifiedOxcTransformOptions,
+        undefined,
+        config,
+        server?.watcher,
+      )
+      if (jsxInject && jsxExtensionsRE.test(id)) {
+        result.code = jsxInject + ';' + result.code
+      }
+      for (const warning of result.warnings) {
+        this.environment.logger.warnOnce(warning)
+      }
+      return {
+        code: result.code,
+        map: result.map,
+        moduleType: 'js',
       }
     },
   }
