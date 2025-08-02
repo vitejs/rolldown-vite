@@ -2,7 +2,7 @@ import path from 'node:path'
 import { describe, expect, test } from 'vitest'
 import type { InternalModuleFormat } from 'rolldown'
 import { resolveConfig } from '../../config'
-import { buildOxcPlugin, transformWithOxc } from '../../plugins/oxc'
+import { buildOxcPlugin, oxcPlugin, transformWithOxc } from '../../plugins/oxc'
 import { PartialEnvironment } from '../../baseEnvironment'
 
 async function createBuildOxcPluginRenderChunk(target: string) {
@@ -210,7 +210,7 @@ describe('renderChunk', () => {
       	//#endregion
       })();
       "
-    `)
+      `)
   })
 
   test('should inject helper for iife without exports from cjs', async () => {
@@ -240,7 +240,7 @@ describe('renderChunk', () => {
       	//#endregion
       })();
       "
-    `)
+      `)
   })
 
   test('should inject helper for iife with exports', async () => {
@@ -276,7 +276,7 @@ return exports;
       	return exports;
       })({});
       "
-    `)
+      `)
   })
 
   test('should inject helper for umd without exports', async () => {
@@ -311,7 +311,7 @@ return exports;
       	//#endregion
       });
       "
-    `)
+      `)
   })
 
   test('should inject helper for umd with exports', async () => {
@@ -350,7 +350,7 @@ exports.foo = foo;
       	exports.foo = foo;
       });
       "
-    `)
+      `)
   })
 
   test('should inject helper for umd with only default export', async () => {
@@ -389,7 +389,7 @@ return index_default;
       	return index_default;
       });
       "
-    `)
+      `)
   })
 
   test('should inject multiple helpers', async () => {
@@ -421,6 +421,81 @@ return index_default;
       	//#endregion
       })();
       "
-    `)
+      `)
+  })
+})
+
+describe('transform', () => {
+  test.each([
+    ['test.md', 'jsx'],
+    ['test.md', 'tsx'],
+    ['test.md?query', 'tsx'],
+  ])(
+    'should handle moduleType option correctly for id %s',
+    async (id, moduleType) => {
+      const config = await resolveConfig(
+        {
+          oxc: {
+            include: /\.(jsx|tsx)$/,
+            jsx: {
+              runtime: 'automatic',
+              importSource: 'react',
+              development: false,
+            },
+          },
+          configFile: false,
+        },
+        'serve',
+      )
+      const plugin = oxcPlugin(config)
+      const environment = new PartialEnvironment('client', config)
+
+      const code = 'const a = <div />'
+      const options = { moduleType: moduleType as 'tsx' }
+
+      // @ts-expect-error transform should exist
+      const result = await plugin.transform.call(
+        { environment },
+        code,
+        id,
+        options,
+      )
+      expect(result).not.toBeNull()
+      expect(result?.code).toContain('react/jsx-runtime')
+      expect(result?.moduleType).toBe('js')
+    },
+  )
+
+  test('should not transform if moduleType does not match', async () => {
+    const config = await resolveConfig(
+      {
+        oxc: {
+          include: /\.tsx$/,
+          jsx: {
+            runtime: 'automatic',
+            importSource: 'react',
+            development: false,
+          },
+        },
+        configFile: false,
+      },
+      'serve',
+    )
+    const plugin = oxcPlugin(config)
+    const environment = new PartialEnvironment('client', config)
+
+    const code = 'const a = <div />'
+    const id = 'test.md'
+    const options = { moduleType: 'jsx' as const }
+
+    // @ts-expect-error transform should exist
+    const result = await plugin.transform.call(
+      { environment },
+      code,
+      id,
+      options,
+    )
+
+    expect(result).toBeUndefined()
   })
 })
