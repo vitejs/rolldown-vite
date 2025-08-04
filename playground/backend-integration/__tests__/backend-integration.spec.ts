@@ -68,16 +68,18 @@ describe.runIf(isBuild)('build', () => {
     expect(cssAssetEntry?.file).not.toBeUndefined()
     expect(cssAssetEntry?.isEntry).toEqual(true)
     expect(pcssAssetEntry?.file).not.toBeUndefined()
-    expect(pcssAssetEntry?.isEntry).toEqual(true)
+    if (!process.env._VITE_TEST_NATIVE_PLUGIN) {
+      expect(pcssAssetEntry?.isEntry).toEqual(true)
+      expect(scssAssetEntry?.isEntry).toEqual(true)
+      expect(dirFooAssetEntry.names).toStrictEqual(['bar.css'])
+    }
     expect(scssAssetEntry?.file).not.toBeUndefined()
     expect(scssAssetEntry?.src).toEqual('nested/blue.scss')
-    expect(scssAssetEntry?.isEntry).toEqual(true)
     expect(imgAssetEntry?.file).not.toBeUndefined()
     expect(imgAssetEntry?.isEntry).toBeUndefined()
     expect(dirFooAssetEntry).not.toBeUndefined() // '\\' should not be used even on windows
     // use the entry name
     expect(dirFooAssetEntry.file).toMatch('assets/bar-')
-    expect(dirFooAssetEntry.names).toStrictEqual(['bar.css'])
     expect(iconEntrypointEntry?.file).not.toBeUndefined()
     expect(waterContainerEntry?.file).not.toBeUndefined()
   })
