@@ -463,53 +463,62 @@ export function webWorkerPlugin(config: ResolvedConfig): Plugin {
       },
     },
 
-    renderChunk(code, chunk, outputOptions) {
-      let s: MagicString
-      const result = () => {
-        return (
-          s && {
-            code: s.toString(),
-            map: this.environment.config.build.sourcemap
-              ? s.generateMap({ hires: 'boundary' })
-              : null,
-          }
-        )
-      }
-      workerAssetUrlRE.lastIndex = 0
-      if (workerAssetUrlRE.test(code)) {
-        const toRelativeRuntime = createToImportMetaURLBasedRelativeRuntime(
-          outputOptions.format,
-          this.environment.config.isWorker,
-        )
+    ...(isBuild
+      ? {
+          renderChunk(code, chunk, outputOptions) {
+            let s: MagicString
+            const result = () => {
+              return (
+                s && {
+                  code: s.toString(),
+                  map: this.environment.config.build.sourcemap
+                    ? s.generateMap({ hires: 'boundary' })
+                    : null,
+                }
+              )
+            }
+            workerAssetUrlRE.lastIndex = 0
+            if (workerAssetUrlRE.test(code)) {
+              const toRelativeRuntime =
+                createToImportMetaURLBasedRelativeRuntime(
+                  outputOptions.format,
+                  this.environment.config.isWorker,
+                )
 
-        let match: RegExpExecArray | null
-        s = new MagicString(code)
-        workerAssetUrlRE.lastIndex = 0
+              let match: RegExpExecArray | null
+              s = new MagicString(code)
+              workerAssetUrlRE.lastIndex = 0
 
-        // Replace "__VITE_WORKER_ASSET__5aa0ddc0__" using relative paths
-        const workerMap = workerCache.get(config.mainConfig || config)!
-        const { fileNameHash } = workerMap
+              // Replace "__VITE_WORKER_ASSET__5aa0ddc0__" using relative paths
+              const workerMap = workerCache.get(config.mainConfig || config)!
+              const { fileNameHash } = workerMap
 
-        while ((match = workerAssetUrlRE.exec(code))) {
-          const [full, hash] = match
-          const filename = fileNameHash.get(hash)!
-          const replacement = toOutputFilePathInJS(
-            this.environment,
-            filename,
-            'asset',
-            chunk.fileName,
-            'js',
-            toRelativeRuntime,
-          )
-          const replacementString =
-            typeof replacement === 'string'
-              ? JSON.stringify(encodeURIPath(replacement)).slice(1, -1)
-              : `"+${replacement.runtime}+"`
-          s.update(match.index, match.index + full.length, replacementString)
+              while ((match = workerAssetUrlRE.exec(code))) {
+                const [full, hash] = match
+                const filename = fileNameHash.get(hash)!
+                const replacement = toOutputFilePathInJS(
+                  this.environment,
+                  filename,
+                  'asset',
+                  chunk.fileName,
+                  'js',
+                  toRelativeRuntime,
+                )
+                const replacementString =
+                  typeof replacement === 'string'
+                    ? JSON.stringify(encodeURIPath(replacement)).slice(1, -1)
+                    : `"+${replacement.runtime}+"`
+                s.update(
+                  match.index,
+                  match.index + full.length,
+                  replacementString,
+                )
+              }
+            }
+            return result()
+          },
         }
-      }
-      return result()
-    },
+      : {}),
 
     generateBundle(opts, bundle) {
       // to avoid emitting duplicate assets for modern build and legacy build
