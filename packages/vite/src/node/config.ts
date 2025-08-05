@@ -1776,6 +1776,15 @@ export async function resolveConfig(
     )
   }
 
+  const experimental = mergeWithDefaults(
+    configDefaults.experimental,
+    config.experimental ?? {},
+  )
+  if (command === 'serve' && experimental.fullBundleMode) {
+    // full bundle mode does not support experimental.renderBuiltUrl
+    experimental.renderBuiltUrl = undefined
+  }
+
   resolved = {
     configFile: configFile ? normalizePath(configFile) : undefined,
     configFileDependencies: configFileDependencies.map((name) =>
@@ -1838,10 +1847,7 @@ export async function resolveConfig(
     packageCache,
     worker: resolvedWorkerOptions,
     appType: config.appType ?? 'spa',
-    experimental: mergeWithDefaults(
-      configDefaults.experimental,
-      config.experimental ?? {},
-    ),
+    experimental,
     future:
       config.future === 'warn'
         ? ({
