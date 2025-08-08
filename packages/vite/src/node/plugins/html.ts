@@ -6,7 +6,7 @@ import type {
   OutputChunk,
   RollupError,
   SourceMapInput,
-} from 'rollup'
+} from 'rolldown'
 import MagicString from 'magic-string'
 import colors from 'picocolors'
 import type {
@@ -497,9 +497,10 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
                       if (moduleInfo) {
                         moduleInfo.moduleSideEffects = true
                       } else if (!resolved.external) {
-                        return this.load(resolved).then((mod) => {
-                          mod.moduleSideEffects = true
-                        })
+                        return this.load({
+                          ...resolved,
+                          moduleSideEffects: true,
+                        }).then(() => {})
                       }
                     }),
                   )
