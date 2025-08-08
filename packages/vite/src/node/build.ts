@@ -646,6 +646,10 @@ function resolveRolldownOptions(
               ? {}
               : options.rollupOptions.treeshake),
           },
+    optimization: {
+      inlineConst: true,
+      ...options.rollupOptions.optimization,
+    },
   }
 
   const isSsrTargetWebworkerEnvironment =
