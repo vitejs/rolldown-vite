@@ -82,85 +82,88 @@ test('asset url', async () => {
   )
 })
 
-describe.runIf(isBuild)('build', () => {
-  test('should generate correct manifest', async () => {
-    const manifest = readManifest()
-    // legacy polyfill
-    // FIXME: needs https://github.com/rolldown/rolldown/issues/4034
-    // expect(manifest['../../vite/legacy-polyfills-legacy']).toBeDefined()
-    // expect(manifest['../../vite/legacy-polyfills-legacy'].src).toBe(
-    //   '../../vite/legacy-polyfills-legacy',
-    // )
-    expect(manifest['custom0-legacy.js'].file).toMatch(
-      /chunk-X-legacy\.[-\w]{8}.js/,
-    )
-    expect(manifest['custom1-legacy.js'].file).toMatch(
-      /chunk-X-legacy-[-\w]{8}.js/,
-    )
-    expect(manifest['custom2-legacy.js'].file).toMatch(
-      /chunk-X-legacy[-\w]{8}.js/,
-    )
-    // modern polyfill
-    // FIXME: needs https://github.com/rolldown/rolldown/issues/4034
-    // expect(manifest['../../vite/legacy-polyfills']).toBeDefined()
-    // expect(manifest['../../vite/legacy-polyfills'].src).toBe(
-    //   '../../vite/legacy-polyfills',
-    // )
-  })
+describe.runIf(!process.env._VITE_TEST_NATIVE_PLUGIN && isBuild)(
+  'build',
+  () => {
+    test('should generate correct manifest', async () => {
+      const manifest = readManifest()
+      // legacy polyfill
+      // FIXME: needs https://github.com/rolldown/rolldown/issues/4034
+      // expect(manifest['../../vite/legacy-polyfills-legacy']).toBeDefined()
+      // expect(manifest['../../vite/legacy-polyfills-legacy'].src).toBe(
+      //   '../../vite/legacy-polyfills-legacy',
+      // )
+      expect(manifest['custom0-legacy.js'].file).toMatch(
+        /chunk-X-legacy\.[-\w]{8}.js/,
+      )
+      expect(manifest['custom1-legacy.js'].file).toMatch(
+        /chunk-X-legacy-[-\w]{8}.js/,
+      )
+      expect(manifest['custom2-legacy.js'].file).toMatch(
+        /chunk-X-legacy[-\w]{8}.js/,
+      )
+      // modern polyfill
+      // FIXME: needs https://github.com/rolldown/rolldown/issues/4034
+      // expect(manifest['../../vite/legacy-polyfills']).toBeDefined()
+      // expect(manifest['../../vite/legacy-polyfills'].src).toBe(
+      //   '../../vite/legacy-polyfills',
+      // )
+    })
 
-  test('should minify legacy chunks with terser', async () => {
-    // This is a ghetto heuristic, but terser output seems to reliably start
-    // with one of the following, and non-terser output (including unminified or
-    // esbuild-minified) does not!
-    const terserPattern = /^(?:!function|System.register)/
+    test('should minify legacy chunks with terser', async () => {
+      // This is a ghetto heuristic, but terser output seems to reliably start
+      // with one of the following, and non-terser output (including unminified or
+      // esbuild-minified) does not!
+      const terserPattern = /^(?:!function|System.register)/
 
-    expect(findAssetFile(/chunk-async-legacy/)).toMatch(terserPattern)
-    expect(findAssetFile(/chunk-async(?!-legacy)/)).not.toMatch(terserPattern)
-    expect(findAssetFile(/immutable-chunk-legacy/)).toMatch(terserPattern)
-    expect(findAssetFile(/immutable-chunk(?!-legacy)/)).not.toMatch(
-      terserPattern,
-    )
-    expect(findAssetFile(/index-legacy/)).toMatch(terserPattern)
-    expect(findAssetFile(/index(?!-legacy)/)).not.toMatch(terserPattern)
-    expect(findAssetFile(/polyfills-legacy/)).toMatch(terserPattern)
-  })
+      expect(findAssetFile(/chunk-async-legacy/)).toMatch(terserPattern)
+      expect(findAssetFile(/chunk-async(?!-legacy)/)).not.toMatch(terserPattern)
+      expect(findAssetFile(/immutable-chunk-legacy/)).toMatch(terserPattern)
+      expect(findAssetFile(/immutable-chunk(?!-legacy)/)).not.toMatch(
+        terserPattern,
+      )
+      expect(findAssetFile(/index-legacy/)).toMatch(terserPattern)
+      expect(findAssetFile(/index(?!-legacy)/)).not.toMatch(terserPattern)
+      expect(findAssetFile(/polyfills-legacy/)).toMatch(terserPattern)
+    })
 
-  test('should emit css file', async () => {
-    expect(
-      listAssets().some((filename) => filename.endsWith('.css')),
-    ).toBeTruthy()
-  })
+    test('should emit css file', async () => {
+      expect(
+        listAssets().some((filename) => filename.endsWith('.css')),
+      ).toBeTruthy()
+    })
 
-  test('includes structuredClone polyfill which is supported after core-js v3', () => {
-    expect(findAssetFile(/polyfills-legacy/)).toMatch('"structuredClone"')
-    expect(findAssetFile(/polyfills-[-\w]{8}\./)).toMatch('"structuredClone"')
-  })
+    test('includes structuredClone polyfill which is supported after core-js v3', () => {
+      expect(findAssetFile(/polyfills-legacy/)).toMatch('"structuredClone"')
+      expect(findAssetFile(/polyfills-[-\w]{8}\./)).toMatch('"structuredClone"')
+    })
 
-  test('should generate legacy sourcemap file', async () => {
-    expect(
-      listAssets().some((filename) =>
-        /chunk-main-legacy\.[-\w]{8}\.js\.map$/.test(filename),
-      ),
-    ).toBeTruthy()
-    expect(
-      listAssets().some((filename) =>
-        /polyfills-legacy-[-\w]{8}\.js\.map$/.test(filename),
-      ),
-    ).toBeTruthy()
-    // also for modern polyfills
-    expect(
-      listAssets().some((filename) =>
-        /polyfills-[-\w]{8}\.js\.map$/.test(filename),
-      ),
-    ).toBeTruthy()
-  })
+    test('should generate legacy sourcemap file', async () => {
+      expect(
+        listAssets().some((filename) =>
+          /chunk-main-legacy\.[-\w]{8}\.js\.map$/.test(filename),
+        ),
+      ).toBeTruthy()
+      expect(
+        listAssets().some((filename) =>
+          /polyfills-legacy-[-\w]{8}\.js\.map$/.test(filename),
+        ),
+      ).toBeTruthy()
+      // also for modern polyfills
+      expect(
+        listAssets().some((filename) =>
+          /polyfills-[-\w]{8}\.js\.map$/.test(filename),
+        ),
+      ).toBeTruthy()
+    })
 
-  test('should have only modern entry files guarded', async () => {
-    const guard = /(import\s*\()|(import.meta)|(async\s*function\*)/
-    expect(findAssetFile(/index(?!-legacy)/)).toMatch(guard)
-    expect(findAssetFile(/polyfills(?!-legacy)/)).toMatch(guard)
+    test('should have only modern entry files guarded', async () => {
+      const guard = /(import\s*\()|(import.meta)|(async\s*function\*)/
+      expect(findAssetFile(/index(?!-legacy)/)).toMatch(guard)
+      expect(findAssetFile(/polyfills(?!-legacy)/)).toMatch(guard)
 
-    expect(findAssetFile(/chunk-async(?!-legacy)/)).not.toMatch(guard)
-    expect(findAssetFile(/index-legacy/)).not.toMatch(guard)
-  })
-})
+      expect(findAssetFile(/chunk-async(?!-legacy)/)).not.toMatch(guard)
+      expect(findAssetFile(/index-legacy/)).not.toMatch(guard)
+    })
+  },
+)

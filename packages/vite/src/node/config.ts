@@ -746,7 +746,7 @@ export const configDefaults = Object.freeze({
     importGlobRestoreExtension: false,
     renderBuiltUrl: undefined,
     hmrPartialAccept: false,
-    enableNativePlugin: process.env._VITE_TEST_JS_PLUGIN ? false : 'resolver',
+    enableNativePlugin: process.env._VITE_TEST_NATIVE_PLUGIN ? true : false,
   },
   future: {
     removePluginHookHandleHotUpdate: undefined,
@@ -1812,10 +1812,12 @@ export async function resolveConfig(
     packageCache,
     worker: resolvedWorkerOptions,
     appType: config.appType ?? 'spa',
-    experimental: mergeWithDefaults(
-      configDefaults.experimental,
-      config.experimental ?? {},
-    ),
+    experimental: {
+      importGlobRestoreExtension: false,
+      hmrPartialAccept: false,
+      enableNativePlugin: process.env._VITE_TEST_NATIVE_PLUGIN ? true : false,
+      ...config.experimental,
+    },
     future:
       config.future === 'warn'
         ? ({
