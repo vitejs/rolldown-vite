@@ -684,9 +684,9 @@ export interface ResolvedConfig
       /** @internal */
       safeModulePaths: Set<string>
       /** @internal */
-      [SYMBOL_RESOLVED_CONFIG]: true
-      /** @internal */
       nativePluginEnabledLevel: number
+      /** @internal */
+      [SYMBOL_RESOLVED_CONFIG]: true
     } & PluginHookUtils
   > {}
 
@@ -1757,6 +1757,11 @@ export async function resolveConfig(
     )
   }
 
+  const experimental = mergeWithDefaults(
+    configDefaults.experimental,
+    config.experimental ?? {},
+  )
+
   resolved = {
     configFile: configFile ? normalizePath(configFile) : undefined,
     configFileDependencies: configFileDependencies.map((name) =>
@@ -1818,10 +1823,7 @@ export async function resolveConfig(
     packageCache,
     worker: resolvedWorkerOptions,
     appType: config.appType ?? 'spa',
-    experimental: mergeWithDefaults(
-      configDefaults.experimental,
-      config.experimental ?? {},
-    ),
+    experimental,
     future:
       config.future === 'warn'
         ? ({
@@ -1886,26 +1888,15 @@ export async function resolveConfig(
       },
     ),
     safeModulePaths: new Set<string>(),
+    nativePluginEnabledLevel: resolveNativePluginEnabledLevel(
+      experimental.enableNativePlugin,
+    ),
     [SYMBOL_RESOLVED_CONFIG]: true,
-    nativePluginEnabledLevel: -1,
-  }
-
-  function resolveNativePluginLevel() {
-    switch (resolved.experimental.enableNativePlugin) {
-      case 'resolver':
-        return 0
-      case 'v1':
-      case true:
-        return 1
-      default:
-        return -1
-    }
   }
 
   resolved = {
     ...config,
     ...resolved,
-    nativePluginEnabledLevel: resolveNativePluginLevel(),
   }
 
   // Backward compatibility hook, modify the resolved config before it is used
@@ -2037,6 +2028,26 @@ assetFileNames isn't equal for every build.rollupOptions.output. A single patter
   }
 
   return resolved
+}
+
+function resolveNativePluginEnabledLevel(
+  enableNativePlugin: Exclude<
+    ExperimentalOptions['enableNativePlugin'],
+    undefined
+  >,
+) {
+  switch (enableNativePlugin) {
+    case 'resolver':
+      return 0
+    case 'v1':
+    case true:
+      return 1
+    case false:
+      return -1
+    default:
+      enableNativePlugin satisfies never
+      return -1
+  }
 }
 
 /**
