@@ -89,10 +89,7 @@ export const wasmHelperPlugin = (config: ResolvedConfig): Plugin => {
 }
 
 export const wasmFallbackPlugin = (config: ResolvedConfig): Plugin => {
-  if (
-    config.experimental.enableNativePlugin === true ||
-    config.experimental.enableNativePlugin === 'v1'
-  ) {
+  if (config.nativePluginEnabledLevel >= 1) {
     return nativeWasmFallbackPlugin()
   }
 

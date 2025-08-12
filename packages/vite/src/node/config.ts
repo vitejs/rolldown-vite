@@ -1893,7 +1893,6 @@ export async function resolveConfig(
     ),
     [SYMBOL_RESOLVED_CONFIG]: true,
   }
-
   resolved = {
     ...config,
     ...resolved,
