@@ -119,6 +119,7 @@ import {
   BasicMinimalPluginContext,
   basePluginContextMeta,
 } from './server/pluginContainer'
+import { FullBundleDevEnvironment } from './server/environments/fullBundleEnvironment'
 
 const debug = createDebugger('vite:config', { depth: 10 })
 const promisifiedRealpath = promisify(fs.realpath)
@@ -232,6 +233,13 @@ function defaultCreateClientDevEnvironment(
   config: ResolvedConfig,
   context: CreateDevEnvironmentContext,
 ) {
+  if (config.experimental.fullBundleMode) {
+    return new FullBundleDevEnvironment(name, config, {
+      hot: true,
+      transport: context.ws,
+    })
+  }
+
   return new DevEnvironment(name, config, {
     hot: true,
     transport: context.ws,
@@ -546,6 +554,13 @@ export interface ExperimentalOptions {
    * @default 'resolver'
    */
   enableNativePlugin?: boolean | 'resolver'
+  /**
+   * Enable full bundle mode in dev.
+   *
+   * @experimental
+   * @default false
+   */
+  fullBundleMode?: boolean
 }
 
 export interface LegacyOptions {
@@ -613,6 +628,8 @@ export interface ResolvedConfig
       cacheDir: string
       command: 'build' | 'serve'
       mode: string
+      /** `true` when build or full-bundle mode dev */
+      isBundled: boolean
       isWorker: boolean
       // in nested worker bundle to find the main config
       /** @internal */
@@ -747,6 +764,7 @@ export const configDefaults = Object.freeze({
     renderBuiltUrl: undefined,
     hmrPartialAccept: false,
     enableNativePlugin: process.env._VITE_TEST_JS_PLUGIN ? false : 'resolver',
+    fullBundleMode: false,
   },
   future: {
     removePluginHookHandleHotUpdate: undefined,
@@ -829,6 +847,7 @@ function resolveEnvironmentOptions(
   forceOptimizeDeps: boolean | undefined,
   logger: Logger,
   environmentName: string,
+  isFullBundledDev: boolean,
   // Backward compatibility
   isSsrTargetWebworkerSet?: boolean,
   preTransformRequests?: boolean,
@@ -891,6 +910,7 @@ function resolveEnvironmentOptions(
       options.build ?? {},
       logger,
       consumer,
+      isFullBundledDev,
     ),
     plugins: undefined!, // to be resolved later
     // will be set by `setOptimizeDepsPluginNames` later
@@ -1475,6 +1495,9 @@ export async function resolveConfig(
     config.ssr?.target === 'webworker',
   )
 
+  const isFullBundledDev =
+    command === 'serve' && !!config.experimental?.fullBundleMode
+
   // Backward compatibility: merge config.environments.client.resolve back into config.resolve
   config.resolve ??= {}
   config.resolve.conditions = config.environments.client.resolve?.conditions
@@ -1491,6 +1514,7 @@ export async function resolveConfig(
       inlineConfig.forceOptimizeDeps,
       logger,
       environmentName,
+      isFullBundledDev,
       config.ssr?.target === 'webworker',
       config.server?.preTransformRequests,
     )
@@ -1514,6 +1538,7 @@ export async function resolveConfig(
     config.build ?? {},
     logger,
     undefined,
+    isFullBundledDev,
   )
 
   // Backward compatibility: merge config.environments.ssr back into config.ssr
@@ -1751,6 +1776,15 @@ export async function resolveConfig(
     )
   }
 
+  const experimental = mergeWithDefaults(
+    configDefaults.experimental,
+    config.experimental ?? {},
+  )
+  if (command === 'serve' && experimental.fullBundleMode) {
+    // full bundle mode does not support experimental.renderBuiltUrl
+    experimental.renderBuiltUrl = undefined
+  }
+
   resolved = {
     configFile: configFile ? normalizePath(configFile) : undefined,
     configFileDependencies: configFileDependencies.map((name) =>
@@ -1765,6 +1799,7 @@ export async function resolveConfig(
     cacheDir,
     command,
     mode,
+    isBundled: config.experimental?.fullBundleMode || isBuild,
     isWorker: false,
     mainConfig: null,
     bundleChain: [],
@@ -1812,10 +1847,7 @@ export async function resolveConfig(
     packageCache,
     worker: resolvedWorkerOptions,
     appType: config.appType ?? 'spa',
-    experimental: mergeWithDefaults(
-      configDefaults.experimental,
-      config.experimental ?? {},
-    ),
+    experimental,
     future:
       config.future === 'warn'
         ? ({
