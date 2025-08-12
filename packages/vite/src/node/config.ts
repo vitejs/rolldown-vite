@@ -542,10 +542,14 @@ export interface ExperimentalOptions {
   /**
    * Enable builtin plugin that written by rust, which is faster than js plugin.
    *
+   * - 'resolver': Enable only the native resolver plugin.
+   * - 'v1': Enable the first stable set of native plugins (including resolver).
+   * - true: Enable all native plugins (currently an alias of 'v1', it will map to a newer one in the future versions).
+   *
    * @experimental
-   * @default 'resolver'
+   * @default 'v1'
    */
-  enableNativePlugin?: boolean | 'resolver'
+  enableNativePlugin?: boolean | 'resolver' | 'v1'
 }
 
 export interface LegacyOptions {
@@ -681,6 +685,8 @@ export interface ResolvedConfig
       safeModulePaths: Set<string>
       /** @internal */
       [SYMBOL_RESOLVED_CONFIG]: true
+      /** @internal */
+      nativePluginEnabledLevel: number
     } & PluginHookUtils
   > {}
 
@@ -746,7 +752,7 @@ export const configDefaults = Object.freeze({
     importGlobRestoreExtension: false,
     renderBuiltUrl: undefined,
     hmrPartialAccept: false,
-    enableNativePlugin: process.env._VITE_TEST_JS_PLUGIN ? false : 'resolver',
+    enableNativePlugin: process.env._VITE_TEST_JS_PLUGIN ? false : 'v1',
   },
   future: {
     removePluginHookHandleHotUpdate: undefined,
@@ -1881,10 +1887,25 @@ export async function resolveConfig(
     ),
     safeModulePaths: new Set<string>(),
     [SYMBOL_RESOLVED_CONFIG]: true,
+    nativePluginEnabledLevel: -1,
   }
+
+  function resolveNativePluginLevel() {
+    switch (resolved.experimental.enableNativePlugin) {
+      case 'resolver':
+        return 0
+      case 'v1':
+      case true:
+        return 1
+      default:
+        return -1
+    }
+  }
+
   resolved = {
     ...config,
     ...resolved,
+    nativePluginEnabledLevel: resolveNativePluginLevel(),
   }
 
   // Backward compatibility hook, modify the resolved config before it is used
