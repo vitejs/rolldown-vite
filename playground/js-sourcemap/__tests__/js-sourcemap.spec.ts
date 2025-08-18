@@ -144,7 +144,7 @@ describe.runIf(isBuild)('build tests', () => {
       {
         "debugId": "00000000-0000-0000-0000-000000000000",
         "ignoreList": [],
-        "mappings": ";grCAAA,OAAO,qDAEP,QAAQ,IAAI,wBAAwB",
+        "mappings": ";grCAAA,OAAO,qDAEP,QAAQ,IAAI",
         "sources": [
           "../../after-preload-dynamic.js",
         ],
@@ -159,8 +159,8 @@ describe.runIf(isBuild)('build tests', () => {
     `
     if (process.env._VITE_TEST_JS_PLUGIN) {
       mapSnapshot = mapSnapshot.replace(
-        ';grCAAA,OAAO,qDAEP,QAAQ,IAAI,wBAAwB',
-        ';grCAAA,OAAO,6BAAuB,wBAE9B,QAAQ,IAAI,wBAAuB',
+        ';grCAAA,OAAO,qDAEP,QAAQ,IAAI',
+        ';grCAAA,OAAO,6BAAuB,wBAE9B,QAAQ,IAAI',
       )
     }
     expect(formatSourcemapForSnapshot(JSON.parse(map))).toMatchInlineSnapshot(
