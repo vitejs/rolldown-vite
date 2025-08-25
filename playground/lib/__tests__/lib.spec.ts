@@ -53,7 +53,7 @@ describe.runIf(isBuild)('build', () => {
     expect(code).not.toMatch('__vitePreload')
 
     // Test that library chunks are hashed
-    expect(code).toMatch(/await import\(`\.\/message-[-\w]{8}.js`\)/)
+    expect(code).toMatch(/await import\("\.\/message-[-\w]{8}.js"\)/)
   })
 
   test('Library mode does not have any reference to pure CSS chunks', async () => {
