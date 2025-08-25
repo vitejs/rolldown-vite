@@ -84,9 +84,8 @@ const nodeConfig = defineConfig({
     },
   },
   external: [
-    /^vite\//,
     'fsevents',
-    'rollup/parseAst',
+    /^rolldown\//,
     /^tsx\//,
     /^#/,
     'sugarss', // postcss-import -> sugarss
@@ -97,6 +96,14 @@ const nodeConfig = defineConfig({
     ...Object.keys(pkg.peerDependencies),
   ],
   plugins: [
+    {
+      name: 'externalize-vite',
+      resolveId(id) {
+        if (id.startsWith('vite/')) {
+          return { id: id.replace(/^vite\//, 'rolldown-vite/'), external: true }
+        }
+      },
+    },
     shimDepsPlugin({
       'postcss-load-config/src/req.js': [
         {
@@ -149,7 +156,7 @@ const moduleRunnerConfig = defineConfig({
   external: [
     'fsevents',
     'lightningcss',
-    'rollup/parseAst',
+    /^rolldown\//,
     ...Object.keys(pkg.dependencies),
   ],
   plugins: [bundleSizeLimit(54), enableSourceMapsInWatchModePlugin()],
@@ -158,7 +165,8 @@ const moduleRunnerConfig = defineConfig({
     minify: {
       compress: true,
       mangle: false,
-      removeWhitespace: false,
+      // FIXME: https://github.com/rolldown/rolldown/pull/5893
+      // removeWhitespace: false,
     },
   },
 })
