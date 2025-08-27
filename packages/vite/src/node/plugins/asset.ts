@@ -304,6 +304,10 @@ export function assetPlugin(config: ResolvedConfig): Plugin {
         }
       }
     },
+
+    watchChange(id) {
+      assetCache.get(this.environment)?.delete(id)
+    },
   }
 }
 
