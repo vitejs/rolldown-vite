@@ -3,7 +3,10 @@ import type * as Rollup from 'types/internal/rollupTypeCompat.mjs'
 
 export type { Rollup, Rolldown }
 export { parseAst, parseAstAsync } from 'rolldown/parseAst'
-export { esmExternalRequirePlugin } from 'rolldown/experimental'
+export {
+  esmExternalRequirePlugin,
+  reactRefreshWrapperPlugin,
+} from 'rolldown/experimental'
 export {
   defineConfig,
   loadConfigFromFile,
