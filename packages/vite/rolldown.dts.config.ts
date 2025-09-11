@@ -27,8 +27,7 @@ const pkg = JSON.parse(
 
 const external = [
   /^node:*/,
-  /^vite\//,
-  'rollup/parseAst',
+  /^rolldown\//,
   ...Object.keys(pkg.dependencies),
   ...Object.keys(pkg.peerDependencies),
 ]
@@ -47,6 +46,20 @@ export default defineConfig({
   },
   external,
   plugins: [
+    {
+      name: 'externalize-vite',
+      resolveId: {
+        order: 'pre',
+        handler(id) {
+          if (id.startsWith('vite/')) {
+            return {
+              id: id.replace(/^vite\//, 'rolldown-vite/'),
+              external: true,
+            }
+          }
+        },
+      },
+    },
     patchTypes(),
     addNodePrefix(),
     dts({
@@ -76,14 +89,16 @@ const identifierWithTrailingDollarRE = /\b(\w+)\$\d+\b/g
  * the module that imports the identifier as a named import alias
  */
 const identifierReplacements: Record<string, Record<string, string>> = {
-  rollup: {
-    Plugin$2: 'Rollup.Plugin',
-    TransformResult$1: 'Rollup.TransformResult',
+  'rolldown-vite/module-runner': {
+    FetchResult$1: 'moduleRunner_FetchResult',
   },
-  esbuild: {
-    TransformResult$2: 'esbuild_TransformResult',
-    TransformOptions$1: 'esbuild_TransformOptions',
-    BuildOptions$1: 'esbuild_BuildOptions',
+  rolldown: {
+    Plugin$2: 'Rolldown.Plugin',
+    TransformResult$1: 'Rolldown.TransformResult',
+  },
+  'rolldown/experimental': {
+    TransformOptions$1: 'rolldown_experimental_TransformOptions',
+    TransformResult$2: 'rolldown_experimental_TransformResult',
   },
   'node:http': {
     Server$1: 'http.Server',
@@ -96,15 +111,15 @@ const identifierReplacements: Record<string, Record<string, string>> = {
   'node:url': {
     URL$1: 'url_URL',
   },
-  'vite/module-runner': {
-    FetchResult$1: 'moduleRunner_FetchResult',
-  },
   '../../types/hmrPayload.js': {
     CustomPayload$1: 'hmrPayload_CustomPayload',
     HotPayload$1: 'hmrPayload_HotPayload',
   },
   '../../types/customEvent.js': {
     InferCustomEventPayload$1: 'hmrPayload_InferCustomEventPayload',
+  },
+  '../../types/internal/esbuildOptions.js': {
+    EsbuildTransformOptions$1: 'esbuildOptions_EsbuildTransformOptions',
   },
   '../../types/internal/lightningcssOptions.js': {
     LightningCSSOptions$1: 'lightningcssOptions_LightningCSSOptions',
@@ -146,8 +161,11 @@ function patchTypes(): Plugin {
         }
         // Ambient types are unbundled and externalized
         if (id.startsWith('types/')) {
+          const filename = id.replace(/(\.m?js)?$/, (_m, ext) =>
+            ext ? ext : '.js',
+          )
           return {
-            id: '../../' + (id.endsWith('.js') ? id : id + '.js'),
+            id: '../../' + filename,
             external: true,
           }
         }
@@ -163,8 +181,8 @@ function patchTypes(): Plugin {
           const importBindings = getAllImportBindings(ast)
           if (
             chunk.fileName.startsWith('module-runner') ||
-            // index and moduleRunner have a common chunk "moduleRunnerTransport"
-            chunk.fileName.startsWith('moduleRunnerTransport') ||
+            // index and moduleRunner have a common chunk "moduleRunnerTransport-"
+            chunk.fileName.startsWith('moduleRunnerTransport-') ||
             chunk.fileName.startsWith('types.d-')
           ) {
             validateRunnerChunk.call(this, chunk, importBindings)
@@ -236,7 +254,7 @@ function validateRunnerChunk(
       !id.startsWith('./') &&
       !id.startsWith('../') &&
       // index and moduleRunner have a common chunk "moduleRunnerTransport"
-      !id.startsWith('moduleRunnerTransport.d') &&
+      !id.startsWith('moduleRunnerTransport-') &&
       !id.startsWith('types.d')
     ) {
       this.warn(
@@ -262,7 +280,7 @@ function validateChunkImports(
       !id.startsWith('../') &&
       !id.startsWith('node:') &&
       !id.startsWith('types.d') &&
-      !id.startsWith('vite/') &&
+      !id.startsWith('rolldown-vite/') &&
       // index and moduleRunner have a common chunk "moduleRunnerTransport"
       !id.startsWith('moduleRunnerTransport.d') &&
       !deps.includes(id) &&
