@@ -49,6 +49,8 @@ import {
   BasicMinimalPluginContext,
   basePluginContextMeta,
 } from '../pluginContainer'
+import { FullBundleDevEnvironment } from '../environments/fullBundleEnvironment'
+import { getHmrImplementation } from '../../plugins/clientInjections'
 import { checkLoadingAccess, respondWithAccessDenied } from './static'
 
 interface AssetNode {
@@ -442,6 +444,10 @@ export function indexHtmlMiddleware(
   server: ViteDevServer | PreviewServer,
 ): Connect.NextHandleFunction {
   const isDev = isDevServer(server)
+  const fullBundleEnv =
+    isDev && server.environments.client instanceof FullBundleDevEnvironment
+      ? server.environments.client
+      : undefined
 
   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
   return async function viteIndexHtmlMiddleware(req, res, next) {
@@ -452,6 +458,29 @@ export function indexHtmlMiddleware(
     const url = req.url && cleanUrl(req.url)
     // htmlFallbackMiddleware appends '.html' to URLs
     if (url?.endsWith('.html') && req.headers['sec-fetch-dest'] !== 'script') {
+      if (fullBundleEnv) {
+        const pathname = decodeURIComponent(url)
+        const filePath = pathname.slice(1) // remove first /
+
+        let content = fullBundleEnv.memoryFiles.get(filePath)
+        if (!content && fullBundleEnv.memoryFiles.size !== 0) {
+          return next()
+        }
+        if (
+          fullBundleEnv.triggerBundleRegenerationIfStale() ||
+          content === undefined
+        ) {
+          content = await generateFallbackHtml(server as ViteDevServer)
+        }
+
+        const html =
+          typeof content === 'string' ? content : Buffer.from(content.buffer)
+        const headers = isDev
+          ? server.config.server.headers
+          : server.config.preview.headers
+        return send(req, res, html, 'html', { headers })
+      }
+
       let filePath: string
       if (isDev && url.startsWith(FS_PREFIX)) {
         filePath = decodeURIComponent(fsPathFromId(url))
@@ -510,4 +539,51 @@ function preTransformRequest(
   // transform all url as non-ssr as html includes client-side assets only
   decodedUrl = unwrapId(stripBase(decodedUrl, decodedBase))
   server.warmupRequest(decodedUrl)
+}
+
+async function generateFallbackHtml(server: ViteDevServer) {
+  const hmrRuntime = await getHmrImplementation(server.config)
+  return /* html */ `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script type="module">
+    ${hmrRuntime.replaceAll('</script>', '<\\/script>')}
+  </script>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .container {
+      margin: auto;
+      padding: 2rem;
+      text-align: center;
+      border-radius: 1rem;
+    }
+
+    .spinner {
+      width: 3rem;
+      height: 3rem;
+      margin: 2rem auto;
+      border: 3px solid #f5f5f7;
+      border-top-color: #0071e3;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg) } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bundling in progress</h1>
+    <p>The page will automatically reload when ready.</p>
+    <div class="spinner"></div>
+  </div>
+</body>
+</html>
+`
 }
