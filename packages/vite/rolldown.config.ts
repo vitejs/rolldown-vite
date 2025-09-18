@@ -74,6 +74,7 @@ const nodeConfig = defineConfig({
   input: {
     index: path.resolve(__dirname, 'src/node/index.ts'),
     cli: path.resolve(__dirname, 'src/node/cli.ts'),
+    internal: path.resolve(__dirname, 'src/node/internalIndex.ts'),
   },
   resolve: {
     alias: {
@@ -82,9 +83,8 @@ const nodeConfig = defineConfig({
     },
   },
   external: [
-    /^vite\//,
     'fsevents',
-    'rollup/parseAst',
+    /^rolldown\//,
     /^tsx\//,
     /^#/,
     'sugarss', // postcss-import -> sugarss
@@ -95,6 +95,14 @@ const nodeConfig = defineConfig({
     ...Object.keys(pkg.peerDependencies),
   ],
   plugins: [
+    {
+      name: 'externalize-vite',
+      resolveId(id) {
+        if (id.startsWith('vite/')) {
+          return { id: id.replace(/^vite\//, 'rolldown-vite/'), external: true }
+        }
+      },
+    },
     shimDepsPlugin({
       'postcss-load-config/src/req.js': [
         {
@@ -147,7 +155,7 @@ const moduleRunnerConfig = defineConfig({
   external: [
     'fsevents',
     'lightningcss',
-    'rollup/parseAst',
+    /^rolldown\//,
     ...Object.keys(pkg.dependencies),
   ],
   plugins: [bundleSizeLimit(54), enableSourceMapsInWatchModePlugin()],
