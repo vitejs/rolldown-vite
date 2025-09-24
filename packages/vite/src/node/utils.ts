@@ -20,7 +20,7 @@ import type { Alias, AliasOptions } from 'dep-types/alias'
 import type MagicString from 'magic-string'
 import type { Equal } from '@type-challenges/utils'
 
-import type { TransformResult } from 'rollup'
+import type { TransformResult } from 'rolldown'
 import { createFilter as _createFilter } from '@rollup/pluginutils'
 import {
   cleanUrl,
@@ -49,6 +49,7 @@ import {
   findNearestPackageData,
   resolvePackageData,
 } from './packages'
+import type { BuildEnvironmentOptions } from './build'
 import type { CommonServerOptions } from '.'
 
 /**
@@ -64,6 +65,8 @@ export const createFilter = _createFilter as (
   exclude?: FilterPattern,
   options?: { resolve?: string | false | null },
 ) => (id: string | unknown) => boolean
+
+export { withFilter } from 'rolldown/filter'
 
 const replaceSlashOrColonRE = /[/:]/g
 const replaceDotRE = /\./g
@@ -178,9 +181,9 @@ const _require = createRequire(/** #__KEEP__ */ import.meta.url)
 
 const _dirname = path.dirname(fileURLToPath(/** #__KEEP__ */ import.meta.url))
 
-// NOTE: we don't use VERSION variable exported from rollup to avoid importing rollup in dev
-export const rollupVersion =
-  resolvePackageData('rollup', _dirname, true)?.data.version ?? ''
+// https://github.com/rolldown/rolldown/blob/62fba31428af244f871f0e119ed43936ee5d01fd/packages/rolldown/src/log/logger.ts#L64
+export const rollupVersion = '4.23.0'
+export { VERSION as rolldownVersion } from 'rolldown'
 
 // set in bin/vite.js
 const filter = process.env.VITE_DEBUG_FILTER
@@ -1163,7 +1166,7 @@ type DeepWritable<T> =
         ? T
         : { -readonly [P in keyof T]: DeepWritable<T[P]> }
 
-function deepClone<T>(value: T): DeepWritable<T> {
+export function deepClone<T>(value: T): DeepWritable<T> {
   if (Array.isArray(value)) {
     return value.map((v) => deepClone(v)) as DeepWritable<T>
   }
@@ -1247,19 +1250,80 @@ export function mergeWithDefaults<
   return mergeWithDefaultsRecursively(clonedDefaults, values)
 }
 
+export function setupRollupOptionCompat<
+  T extends Pick<BuildEnvironmentOptions, 'rollupOptions' | 'rolldownOptions'>,
+>(
+  buildConfig: T,
+): asserts buildConfig is T & {
+  rolldownOptions: Exclude<T['rolldownOptions'], undefined>
+} {
+  // if both rollupOptions and rolldownOptions are present,
+  // ignore rollupOptions and use rolldownOptions
+  buildConfig.rolldownOptions ??= buildConfig.rollupOptions
+
+  // proxy rolldownOptions to rollupOptions
+  Object.defineProperty(buildConfig, 'rollupOptions', {
+    get() {
+      return buildConfig.rolldownOptions
+    },
+    set(newValue) {
+      buildConfig.rolldownOptions = newValue
+    },
+    configurable: true,
+    enumerable: true,
+  })
+}
+
+const rollupOptionsRootPaths = new Set([
+  'build',
+  'worker',
+  'optimizeDeps',
+  'ssr.optimizeDeps',
+])
+
+export function hasBothRollupOptionsAndRolldownOptions(
+  options: Record<string, any>,
+): boolean {
+  for (const opt of [
+    options.build,
+    options.worker,
+    options.optimizeDeps,
+    options.ssr?.optimizeDeps,
+  ]) {
+    if (
+      opt != null &&
+      opt.rollupOptions != null &&
+      opt.rolldownOptions != null
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
 function mergeConfigRecursively(
   defaults: Record<string, any>,
   overrides: Record<string, any>,
   rootPath: string,
 ) {
   const merged: Record<string, any> = { ...defaults }
+  if (rollupOptionsRootPaths.has(rootPath)) {
+    setupRollupOptionCompat(merged)
+  }
+
   for (const key in overrides) {
     const value = overrides[key]
     if (value == null) {
       continue
     }
 
-    const existing = merged[key]
+    let existing = merged[key]
+    if (key === 'rollupOptions' && rollupOptionsRootPaths.has(rootPath)) {
+      // if both rollupOptions and rolldownOptions are present,
+      // ignore rollupOptions and use rolldownOptions
+      if (overrides.rolldownOptions) continue
+      existing = merged.rolldownOptions
+    }
 
     if (existing == null) {
       merged[key] = value

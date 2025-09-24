@@ -60,7 +60,7 @@ describe('runTransform', () => {
   test('import all specifier', () => {
     expect(runTransformCjsImport('import * as react from "react"')).toBe(
       'import __vite__cjsImport0_react from "./node_modules/.vite/deps/react.js"; ' +
-        `const react = ((m) => m?.__esModule ? m : {  ...typeof m === "object" && !Array.isArray(m) || typeof m === "function" ? m : {},  default: m})(__vite__cjsImport0_react)`,
+        `const react = ((m) => m?.__esModule ? m : {\t...typeof m === "object" && !Array.isArray(m) || typeof m === "function" ? m : {},\tdefault: m})(__vite__cjsImport0_react)`,
     )
   })
 
