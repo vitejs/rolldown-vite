@@ -16,6 +16,7 @@ describe('runTransform', () => {
       'react',
       0,
       'modA',
+      false,
       config,
     )
     if (result !== undefined) {
