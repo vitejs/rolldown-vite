@@ -221,7 +221,6 @@ export async function replaceDefine(
   })
 
   if (result.errors.length > 0) {
-    // TODO: better error message
     throw new AggregateError(result.errors, 'oxc transform error')
   }
 
