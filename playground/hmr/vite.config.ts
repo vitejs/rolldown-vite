@@ -4,11 +4,29 @@ import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
 import { TestCssLinkPlugin } from './css-link/plugin'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   experimental: {
     hmrPartialAccept: true,
   },
   build: {
+    rollupOptions: {
+      input: [
+        path.resolve(import.meta.dirname, './index.html'),
+        ...(command === 'build'
+          ? []
+          : [path.resolve(import.meta.dirname, './missing-import/index.html')]),
+        path.resolve(
+          import.meta.dirname,
+          './unicode-path/中文-にほんご-한글-🌕🌖🌗/index.html',
+        ),
+        path.resolve(import.meta.dirname, './counter/index.html'),
+        path.resolve(
+          import.meta.dirname,
+          './self-accept-within-circular/index.html',
+        ),
+        path.resolve(import.meta.dirname, './css-deps/index.html'),
+      ],
+    },
     assetsInlineLimit(filePath) {
       if (filePath.endsWith('logo-no-inline.svg')) {
         return false
@@ -40,7 +58,7 @@ export default defineConfig({
     watchCssDepsPlugin(),
     TestCssLinkPlugin(),
   ],
-})
+}))
 
 function virtualPlugin(): Plugin {
   let num = 0
