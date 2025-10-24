@@ -566,6 +566,10 @@ export interface LegacyOptions {
    * that security weakness.**
    */
   skipWebSocketTokenCheck?: boolean
+  /**
+   * TODO: write description
+   */
+  inconsistentCjsInterop?: boolean
 }
 
 export interface ResolvedWorkerOptions {
