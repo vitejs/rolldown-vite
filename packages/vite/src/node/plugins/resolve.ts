@@ -169,7 +169,7 @@ interface ResolvePluginOptions {
   idOnly?: boolean
 
   /**
-   * TODO: write description
+   * Enable when `legacy.inconsistentCjsInterop` is true. See that option for more details.
    */
   legacyInconsistentCjsInterop?: boolean
 }
