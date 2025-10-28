@@ -419,6 +419,11 @@ export async function handleHMRUpdate(
     return
   }
 
+  if (config.experimental.fullBundleMode) {
+    // TODO: support handleHotUpdate / hotUpdate
+    return
+  }
+
   const timestamp = monotonicDateNow()
   const contextMeta = {
     type,
