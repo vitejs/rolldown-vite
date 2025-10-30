@@ -53,6 +53,7 @@ Note that if you use a plugin that uses `transformWithEsbuild` function, you nee
 
 TODO: No Native Decorator Support
 TODO: `supported` option https://github.com/rolldown/rolldown/issues/6212
+TODO: `jsxSideEffects` option
 
 ### JS Minification by Oxc
 
@@ -69,11 +70,10 @@ LightningCSS is now used for CSS minification by default. You can use `build.css
 
 **_TODO: write this section_**
 
-https://github.com/rolldown/rolldown/issues/6269
 https://github.com/rolldown/rolldown/issues/6438
 https://esbuild.github.io/content-types/#default-interop
 
-### Module Resolution Using Format Sniffing
+### Removed Module Resolution Using Format Sniffing
 
 When both `browser` and `module` fields are present in `package.json`, Vite used to resolve the field based on the content of the file, trying to pick the ESM file for browsers. This was introduced because some packages were using the `module` field to point to ESM files for Node.js and some other packages were using the `browser` field to point to UMD files for browsers. Given that the modern `exports` field solved this problem and is now adopted by many packages, Vite no longer uses this heuristic and always respects the order of the `resolve.mainFields` option. If you were relying on this behavior, you can use the `resolve.alias` option to map the field to the desired file or apply a patch with your package manager (e.g. `patch-package`, `pnpm patch`).
 
@@ -85,6 +85,7 @@ When both `browser` and `module` fields are present in `package.json`, Vite used
 
 `require` calls for externalized modules are now preserved as `require` calls and not converted to `import` statements.
 
+https://github.com/rolldown/rolldown/issues/6269
 https://rolldown.rs/in-depth/bundling-cjs#require-external-modules
 
 _**TODO: write this section**_
@@ -93,7 +94,7 @@ _**TODO: write this section**_
 
 _**TODO: write this section**_
 
-https://github.com/rolldown/rolldown/issues/3301
+https://rolldown.rs/in-depth/non-esm-output-formats#well-known-import-meta-properties
 
 ### Removed `build.rollupOptions.watch.chokidar` option
 
@@ -124,7 +125,6 @@ There are other breaking changes which only affect few users.
 - **[TODO: fix before stable release (better if it's fixed before first beta)]** https://github.com/rolldown/rolldown/issues/5867
 - **[TODO: fix before stable release]** https://github.com/rolldown/rolldown/issues/5726 (affects nuxt, qwik)
 - **[TODO: fix before stable release]** https://github.com/rolldown/rolldown/issues/3403 (affects sveltekit)
-- **[TODO: fix before stable release]** https://github.com/vitejs/rolldown-vite/issues/465
 - **[TODO: fix before stable release]** https://github.com/vitejs/rolldown-vite/issues/450
 - **[TODO: fix before stable release]** Legacy chunks are emitted as an asset file instead of a chunk file due to the lack of prebuilt chunk emit feature ([rolldown#4304](https://github.com/rolldown/rolldown/issues/4034)). This means the chunk related options does not apply to legacy chunks and the manifest file will not include legacy chunks as a chunk file.
 - **[TODO: fix before stable release]** resolver cache breaks minor cases in Vitest ([rolldown-vite#466](https://github.com/vitejs/rolldown-vite/issues/466), [vitest#8754](https://github.com/vitest-dev/vitest/issues/8754#issuecomment-3441115032))
