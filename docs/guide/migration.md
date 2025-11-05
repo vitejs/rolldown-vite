@@ -125,7 +125,6 @@ There are other breaking changes which only affect few users.
 - **[TODO: fix before stable release (better if it's fixed before first beta)]** https://github.com/rolldown/rolldown/issues/5867
 - **[TODO: fix before stable release]** https://github.com/rolldown/rolldown/issues/5726 (affects nuxt, qwik)
 - **[TODO: fix before stable release]** https://github.com/rolldown/rolldown/issues/3403 (affects sveltekit)
-- **[TODO: fix before stable release]** https://github.com/vitejs/rolldown-vite/issues/450
 - **[TODO: fix before stable release]** Legacy chunks are emitted as an asset file instead of a chunk file due to the lack of prebuilt chunk emit feature ([rolldown#4304](https://github.com/rolldown/rolldown/issues/4034)). This means the chunk related options does not apply to legacy chunks and the manifest file will not include legacy chunks as a chunk file.
 - **[TODO: fix before stable release]** resolver cache breaks minor cases in Vitest ([rolldown-vite#466](https://github.com/vitejs/rolldown-vite/issues/466), [vitest#8754](https://github.com/vitest-dev/vitest/issues/8754#issuecomment-3441115032))
 - **[TODO: fix before stable release]** The resolver does not work with yarn pnp ([rolldown-vite#324](https://github.com/vitejs/rolldown-vite/issues/324), [rolldown-vite#392](https://github.com/vitejs/rolldown-vite/issues/392))
