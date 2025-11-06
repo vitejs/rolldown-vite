@@ -79,21 +79,20 @@ The following options are converted:
 - `esbuild.jsxInject` -> `oxc.jsxInject`
 - `esbuild.include` -> `oxc.include`
 - `esbuild.exclude` -> `oxc.exclude`
-- `esbuild.jsx` -> [`oxc.jsx`](https://oxc.rs/docs/guide/usage/transformer/jsx)
+- [`esbuild.jsx`](https://esbuild.github.io/api/#jsx) -> [`oxc.jsx`](https://oxc.rs/docs/guide/usage/transformer/jsx)
   - `esbuild.jsx: 'preserve'` -> `oxc.jsx: 'preserve'`
   - `esbuild.jsx: 'automatic'` -> `oxc.jsx: { runtime: 'automatic' }`
-    - `esbuild.jsxImportSource` -> `oxc.jsx.importSource`
+    - [`esbuild.jsxImportSource`](https://esbuild.github.io/api/#jsx-import-source) -> `oxc.jsx.importSource`
   - `esbuild.jsx: 'transform'` -> `oxc.jsx: { runtime: 'classic' }`
-    - `esbuild.jsxFactory` -> `oxc.jsx.pragma`
-    - `esbuild.jsxFragment` -> `oxc.jsx.pragmaFrag`
-  - `esbuild.jsxDev` -> `oxc.jsx.development`
+    - [`esbuild.jsxFactory`](https://esbuild.github.io/api/#jsx-factory) -> `oxc.jsx.pragma`
+    - [`esbuild.jsxFragment`](https://esbuild.github.io/api/#jsx-fragment) -> `oxc.jsx.pragmaFrag`
+  - [`esbuild.jsxDev`](https://esbuild.github.io/api/#jsx-dev) -> `oxc.jsx.development`
+  - [`esbuild.jsxSideEffects`](https://esbuild.github.io/api/#jsx-side-effects) -> `oxc.jsx.pure`
 - [`esbuild.define`](https://esbuild.github.io/api/#define) -> [`oxc.define`](https://oxc.rs/docs/guide/usage/transformer/global-variable-replacement#define)
 - [`esbuild.banner`](https://esbuild.github.io/api/#banner) -> custom plugin using transform hook
 - [`esbuild.footer`](https://esbuild.github.io/api/#footer) -> custom plugin using transform hook
 
-[`esbuild.supported`](https://esbuild.github.io/api/#supported) option and [`esbuild.jsxSideEffects`](https://esbuild.github.io/api/#jsx-side-effects) option are not supported by Oxc.
-
-<!-- TODO: create issues and link to them, https://github.com/rolldown/rolldown/issues/6212 -->
+[`esbuild.supported`](https://esbuild.github.io/api/#supported) option is not supported by Oxc. If you need these options, please check [oxc-project/oxc#15373](https://github.com/oxc-project/oxc/issues/15373).
 
 You can also get the options set by the compatibility layer from the `configResolved` hook:
 
@@ -124,9 +123,7 @@ Oxc Minifier is now used for JS minification by default instead of esbuild. You 
 
 If you were using `esbuild.minify*` options to control the minification behavior, you can use `build.rolldownOptions.output.minify` option instead.
 
-Property mangling feature is not supported by Oxc and the related options ([`mangleProps`, `reserveProps`, `mangleQuoted`, `mangleCache`](https://esbuild.github.io/api/#mangle-props)) are not supported.
-
-<!-- TODO: create issue for property mangling and link to it -->
+Property mangling feature is not supported by Oxc and the related options ([`mangleProps`, `reserveProps`, `mangleQuoted`, `mangleCache`](https://esbuild.github.io/api/#mangle-props)) are not supported. If you need these options, please check [oxc-project/oxc#15375](https://github.com/oxc-project/oxc/issues/15375).
 
 Note that esbuild and Oxc Minifier have a slightly different assumptions about the input code. While this would not affect most projects, you can compare the assumptions if the minifier breaks your code ([esbuild assumptions](https://esbuild.github.io/api/#minify-considerations), [Oxc Minifier assumptions](https://oxc.rs/docs/guide/usage/minifier.html#assumptions)).
 
