@@ -107,13 +107,115 @@ const plugin = {
 
 <!-- TODO: add link to rolldownOptions.output.minify -->
 
-Currently, Oxc transformer does not support lowering native decorators.
+Currently, Oxc transformer does not support lowering native decorators ([oxc-project/oxc#9170](https://github.com/oxc-project/oxc/issues/9170)).
 
-::: details Workaround for lowering native decorators
+:::: details Workaround for lowering native decorators
 
-<!-- TODO: write the way to lower native decorators -->
+You can use [Babel](https://babeljs.io/) or [SWC](https://swc.rs/) to lower native decorators for the time being. While SWC is faster than Babel, it does **not support the latest decorator spec** that esbuild supports.
+
+The decorator spec has been updated multiple times since it reached stage 3 and the versions supported by each tools are (the version names are same with [babel's options](https://babeljs.io/docs/babel-plugin-proposal-decorators#version)):
+
+- `"2023-11"` (esbuild and TS5.4+ and babel supports this version)
+- `"2023-05"` (TS5.2+ supports this version)
+- `"2023-01"` (TS5.0+ supports this version)
+- `"2022-03"` (SWC supports this version)
+
+**If you want to use babel:**
+
+::: code-group
+
+```bash [npm]
+$ npm install -D @rollup/plugin-babel @babel/plugin-proposal-decorators
+```
+
+```bash [Yarn]
+$ yarn add -D @rollup/plugin-babel @babel/plugin-proposal-decorators
+```
+
+```bash [pnpm]
+$ pnpm add -D @rollup/plugin-babel @babel/plugin-proposal-decorators
+```
+
+```bash [Bun]
+$ bun add -D @rollup/plugin-babel @babel/plugin-proposal-decorators
+```
+
+```bash [Deno]
+$ deno add -D npm:@rollup/plugin-babel npm:@babel/plugin-proposal-decorators
+```
 
 :::
+
+```ts [vite.config.ts]
+import { defineConfig, withFilter } from 'vite'
+import { babel } from '@rollup/plugin-babel'
+
+export default defineConfig({
+  plugins: [
+    withFilter(
+      babel({
+        configFile: false,
+        plugins: [
+          ['@babel/plugin-proposal-decorators', { version: '2023-11' }],
+        ],
+      }),
+      // only run this transform if the file contains a decorator
+      { transform: { code: '@' } },
+    ),
+  ],
+})
+```
+
+**If you want to use SWC:**
+
+::: code-group
+
+```bash [npm]
+$ npm install -D @rollup/plugin-swc @swc/core
+```
+
+```bash [Yarn]
+$ yarn add -D @rollup/plugin-swc @swc/core
+```
+
+```bash [pnpm]
+$ pnpm add -D @rollup/plugin-swc @swc/core
+```
+
+```bash [Bun]
+$ bun add -D @rollup/plugin-swc @swc/core
+```
+
+```bash [Deno]
+$ deno add -D npm:@rollup/plugin-swc npm:@swc/core
+```
+
+:::
+
+```js
+import { defineConfig, withFilter } from 'vite'
+
+export default defineConfig({
+  // ...
+  plugins: [
+    withFilter(
+      swc({
+        swc: {
+          jsc: {
+            parser: { decorators: true, decoratorsBeforeExport: true },
+            // NOTE: SWC doesn't support '2023-11' version yet
+            transform: { decoratorVersion: '2022-03' },
+          },
+        },
+      }),
+      // only run this transform if the file contains a decorator
+      { transform: { code: '@' } },
+    ),
+  ],
+})
+```
+
+::::
 
 Note that if you use a plugin that uses `transformWithEsbuild` function, you need to install `esbuild` as a dev dependency as it's now an optional dependency. `transformWithEsbuild` function is now deprecated and will be removed in the future. We recommend to use the new `transformWithOxc` function instead.
 
@@ -232,8 +334,8 @@ There are other breaking changes which only affect few users.
 - **[TODO: fix before stable release]** native plugin ordering issue ([rolldown-vite#373](https://github.com/vitejs/rolldown-vite/issues/373))
 - **[TODO: fix before stable release]** `@vite-ignore` comment edge case ([rolldown-vite#426](https://github.com/vitejs/rolldown-vite/issues/426))
 - **[TODO: fix before stable release]** https://github.com/rolldown/rolldown/issues/3403
-- ext glob support ([rolldown-vite#365](https://github.com/vitejs/rolldown-vite/issues/365))
-- `define` does not share reference for objects: When you pass an object as a value to `define`, each variable will have a separate copy of the object.
+- **[TODO: clarify this here a bit more]** ext glob support ([rolldown-vite#365](https://github.com/vitejs/rolldown-vite/issues/365))
+- `define` does not share reference for objects: When you pass an object as a value to `define`, each variable will have a separate copy of the object. See [Oxc Transformer document](https://oxc.rs/docs/guide/usage/transformer/global-variable-replacement#define) for more details.
 - `bundle` object changes (`bundle` is an object passed in `generateBundle` / `writeBundle` hooks, returned by `build` function):
   - Assigning to `bundle[foo]` is not supported. This is discouraged by Rollup as well. Please use `this.emitFile()` instead.
   - the reference is not shared across the hooks ([rolldown-vite#410](https://github.com/vitejs/rolldown-vite/issues/410))
