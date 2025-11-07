@@ -10,11 +10,15 @@ This section will be moved to the release post before the stable release.
 
 ### Built-in tsconfig `paths` Support
 
-**_TODO: write this section_**
+Vite 8 now has built-in tsconfig `paths` support, thanks to [Oxc Resolver](https://oxc.rs/docs/guide/usage/resolver). This is not enabled by default, because it has a performance cost and is [discouraged by the TypeScript team to use this option to change the behavior of the external tools](https://www.typescriptlang.org/tsconfig/#paths:~:text=Note%20that%20this%20feature%20does%20not%20change%20how%20import%20paths%20are%20emitted%20by%20tsc%2C%20so%20paths%20should%20only%20be%20used%20to%20inform%20TypeScript%20that%20another%20tool%20has%20this%20mapping%20and%20will%20use%20it%20at%20runtime%20or%20when%20bundling.). While having that caveat, you can enable it by setting `resolve.tsconfigPaths` to `true`.
+
+**_[TODO: fix before stable release] currently this feature only supports basic cases. If the tsconfig.json uses references/include/exclude, it won't work as expected._**
 
 ### `emitDecoratorMetadata` Support
 
-**_TODO: write this section_**
+Vite 8 now has built-in support for TypeScript's [`emitDecoratorMetadata` option](https://www.typescriptlang.org/tsconfig/#emitDecoratorMetadata), thanks to [Oxc Transformer](https://oxc.rs/docs/guide/usage/transformer). If you have `emitDecoratorMetadata` set to `true` in your tsconfig, this feature will be enabled automatically.
+
+Note that this transformation has some limitations as the full support requires the full type inference by TypeScript compiler, which is not supported. See [Oxc Transformer's documentation](https://oxc.rs/docs/guide/usage/transformer/typescript#decorators) for more details.
 
 ## Default Browser Target change
 
@@ -341,7 +345,7 @@ There are other breaking changes which only affect few users.
   - the reference is not shared across the hooks ([rolldown-vite#410](https://github.com/vitejs/rolldown-vite/issues/410))
   - `structuredClone(bundle)` errors with `DataCloneError: #<Object> could not be cloned`. This is not supported anymore. Please clone it with `structuredClone({ ...bundle })`. ([rolldown-vite#128](https://github.com/vitejs/rolldown-vite/issues/128))
 - **[TODO: clarify this in Rolldown's docs and link it from here]** All parallel hooks in Rollup works as sequential hooks.
-- **[TODO: clarify this in Rolldown's docs and link it from here]** `"use strict";` is not injected sometimes.
+- `"use strict";` is not injected sometimes. See [Rolldown's documentation](https://rolldown.rs/in-depth/directives) for more details.
 - Transforming to lower than ES5 with plugin-legacy is not supported ([rolldown-vite#452](https://github.com/vitejs/rolldown-vite/issues/452))
 - Passing the same browser with multiple versions of it to `build.target` option now errors: esbuild selects the latest version of it, which was probably not what you intended.
 - Missing support by Rolldown: The following features are not supported by Rolldown and is no longer supported by Vite.
