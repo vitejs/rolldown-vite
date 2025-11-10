@@ -286,7 +286,7 @@ Set to `false` to disable minification, or specify the minifier to use. The defa
 
 Note the `build.minify` option does not minify whitespaces when using the `'es'` format in lib mode, as it removes pure annotations and breaks tree-shaking.
 
-esbuild and Terser must be installed when it is set to `'esbuild'` or `'terser'`.
+esbuild or Terser must be installed when it is set to `'esbuild'` or `'terser'` respectively.
 
 ```sh
 npm add -D esbuild

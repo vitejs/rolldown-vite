@@ -357,7 +357,7 @@ If set to `'auto'`, the data will be stringified only if [the data is bigger tha
 
 - **Type:** `OxcOptions | false`
 
-`OxcOptions` extends [Oxc trasnformer's options](https://oxc.rs/docs/guide/usage/transformer). The most common use case is customizing JSX:
+`OxcOptions` extends [Oxc Transformer's options](https://oxc.rs/docs/guide/usage/transformer). The most common use case is customizing JSX:
 
 ```js
 export default defineConfig({
