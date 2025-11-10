@@ -41,7 +41,18 @@ Vite 8 uses Oxc based tools instead of esbuild and Rollup.
 
 `rolldown-vite` package implements Vite 7 with Rolldown integration, but without the other Vite 8 changes. This can be used as a intermediate step to migrate to Vite 8. See [the Rolldown Integration guide](https://v7.vite.dev/guide/rolldown) in the Vite 7 docs to switch to `rolldown-vite` from Vite 7.
 
+<!-- TODO: Hide the guide from the sidebar as it is irrelevant in Vite 8. Also update the content there -->
+
 For users migrating from `rolldown-vite` to Vite 8, you can undo the dependencies changes in `package.json` and update to Vite 8.
+
+```json
+{
+  "dependencies": {
+    "vite": "npm:rolldown-vite@7.2.2" // [!code --]
+    "vite": "^8.0.0" // [!code ++]
+  }
+}
+```
 
 ### Dependency Optimizer now uses Rolldown
 
