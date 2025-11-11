@@ -16,8 +16,7 @@ export async function minify(
 ): Promise<MinifyResult> {
   return minifySync(filename, sourceText, options)
 }
-export { minifySync }
-export { type MinifyOptions, type MinifyResult } from 'rolldown/experimental'
+export { minifySync, type MinifyOptions, type MinifyResult }
 
 export {
   defineConfig,
