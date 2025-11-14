@@ -20,6 +20,7 @@ declare const __HMR_BASE__: string
 declare const __HMR_TIMEOUT__: number
 declare const __HMR_ENABLE_OVERLAY__: boolean
 declare const __WS_TOKEN__: string
+declare const __FULL_BUNDLE_MODE__: boolean
 
 console.debug('[vite] connecting...')
 
@@ -37,6 +38,7 @@ const directSocketHost = __HMR_DIRECT_TARGET__
 const base = __BASE__ || '/'
 const hmrTimeout = __HMR_TIMEOUT__
 const wsToken = __WS_TOKEN__
+const isFullBundleMode = __FULL_BUNDLE_MODE__
 
 const transport = normalizeModuleRunnerTransport(
   (() => {
@@ -140,32 +142,53 @@ const hmrClient = new HMRClient(
     debug: (...msg) => console.debug('[vite]', ...msg),
   },
   transport,
-  async function importUpdatedModule({
-    acceptedPath,
-    timestamp,
-    explicitImportRequired,
-    isWithinCircularImport,
-  }) {
-    const [acceptedPathWithoutQuery, query] = acceptedPath.split(`?`)
-    const importPromise = import(
-      /* @vite-ignore */
-      base +
-        acceptedPathWithoutQuery.slice(1) +
-        `?${explicitImportRequired ? 'import&' : ''}t=${timestamp}${
-          query ? `&${query}` : ''
-        }`
-    )
-    if (isWithinCircularImport) {
-      importPromise.catch(() => {
-        console.info(
-          `[hmr] ${acceptedPath} failed to apply HMR as it's within a circular import. Reloading page to reset the execution order. ` +
-            `To debug and break the circular import, you can run \`vite --debug hmr\` to log the circular dependency path if a file change triggered it.`,
+  isFullBundleMode
+    ? async function importUpdatedModule({
+        url,
+        acceptedPath,
+        isWithinCircularImport,
+      }) {
+        const importPromise = import(base + url!).then(() =>
+          // @ts-expect-error globalThis.__rolldown_runtime__
+          globalThis.__rolldown_runtime__.loadExports(acceptedPath),
         )
-        pageReload()
-      })
-    }
-    return await importPromise
-  },
+        if (isWithinCircularImport) {
+          importPromise.catch(() => {
+            console.info(
+              `[hmr] ${acceptedPath} failed to apply HMR as it's within a circular import. Reloading page to reset the execution order. ` +
+                `To debug and break the circular import, you can run \`vite --debug hmr\` to log the circular dependency path if a file change triggered it.`,
+            )
+            pageReload()
+          })
+        }
+        return await importPromise
+      }
+    : async function importUpdatedModule({
+        acceptedPath,
+        timestamp,
+        explicitImportRequired,
+        isWithinCircularImport,
+      }) {
+        const [acceptedPathWithoutQuery, query] = acceptedPath.split(`?`)
+        const importPromise = import(
+          /* @vite-ignore */
+          base +
+            acceptedPathWithoutQuery.slice(1) +
+            `?${explicitImportRequired ? 'import&' : ''}t=${timestamp}${
+              query ? `&${query}` : ''
+            }`
+        )
+        if (isWithinCircularImport) {
+          importPromise.catch(() => {
+            console.info(
+              `[hmr] ${acceptedPath} failed to apply HMR as it's within a circular import. Reloading page to reset the execution order. ` +
+                `To debug and break the circular import, you can run \`vite --debug hmr\` to log the circular dependency path if a file change triggered it.`,
+            )
+            pageReload()
+          })
+        }
+        return await importPromise
+      },
 )
 transport.connect!(createHMRHandler(handleMessage))
 
@@ -593,3 +616,37 @@ export function injectQuery(url: string, queryToInject: string): string {
 }
 
 export { ErrorOverlay }
+
+// TODO: proper types
+declare let DevRuntime: { new (socket: any): any } | undefined
+
+if (isFullBundleMode && typeof DevRuntime !== 'undefined') {
+  class ViteDevRuntime extends DevRuntime {
+    createModuleHotContext(moduleId: string) {
+      const ctx = createHotContext(moduleId)
+      // @ts-expect-error TODO: support CSS properly
+      ctx._internal = { updateStyle, removeStyle }
+      return ctx
+    }
+
+    applyUpdates(_boundaries: string[]): void {
+      // noop, handled in the HMR client
+    }
+  }
+
+  // TODO: make this more performant
+  const wrappedSocket = {
+    readyState: WebSocket.OPEN,
+    send(data: string) {
+      const d = JSON.parse(data)
+      transport.send({
+        type: 'custom',
+        event: 'vite:module-loaded',
+        data: { modules: d.modules },
+      })
+    },
+  }
+  ;(globalThis as any).__rolldown_runtime__ ??= new ViteDevRuntime(
+    wrappedSocket,
+  )
+}
