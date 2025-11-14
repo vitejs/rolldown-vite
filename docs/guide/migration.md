@@ -238,7 +238,7 @@ Note that if you use a plugin that uses `transformWithEsbuild` function, you nee
 
 Oxc Minifier is now used for JS minification by default instead of esbuild. You can use [`build.minify: 'esbuild'`](/config/build-options#minify) option to switch back to esbuild, but this is deprecated and will be removed in the future. Note that you need to install `esbuild` as a dev dependency as it's now an optional dependency.
 
-If you were using `esbuild.minify*` options to control the minification behavior, you can use `build.rolldownOptions.output.minify` option instead.
+If you were using `esbuild.minify*` options to control the minification behavior, you can use `build.rolldownOptions.output.minify` option instead. If you were using `esbuild.drop` option, you can use [`build.rolldownOptions.output.minify.compress.drop*` options](https://oxc.rs/docs/guide/usage/minifier/dead-code-elimination) instead.
 
 Property mangling feature is not supported by Oxc and the related options ([`mangleProps`, `reserveProps`, `mangleQuoted`, `mangleCache`](https://esbuild.github.io/api/#mangle-props)) are not supported. If you need these options, please check [oxc-project/oxc#15375](https://github.com/oxc-project/oxc/issues/15375).
 
@@ -339,7 +339,6 @@ The following options are deprecated and will be removed in the future:
 
 There are other breaking changes which only affect few users.
 
-- **[TODO: fix before stable release (better if it's fixed before first beta)]** https://github.com/vitejs/rolldown-vite/issues/461 (blocking sveltekit)
 - **[TODO: fix before stable release (better if it's fixed before first beta)]** https://github.com/rolldown/rolldown/issues/5867
 - **[TODO: fix before stable release]** https://github.com/rolldown/rolldown/issues/5726 (affects nuxt, qwik)
 - **[TODO: fix before stable release]** https://github.com/rolldown/rolldown/issues/3403 (affects sveltekit)
@@ -367,6 +366,7 @@ There are other breaking changes which only affect few users.
   - `resolveImportMeta` hook ([rolldown#1010](https://github.com/rolldown/rolldown/issues/1010))
   - `renderDynamicImport` hook ([rolldown#4532](https://github.com/rolldown/rolldown/issues/4532))
   - `resolveFileUrl` hook
+- `parseAst` / `parseAstAsync` functions are now deprecated in favor of `parse` / `parseAsync` functions which has more features.
 
 ## Migration from v6
 
