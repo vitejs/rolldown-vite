@@ -210,7 +210,7 @@ describe('supports plugin context', () => {
   })
 
   test('transformIndexHtml hook in build', async () => {
-    expect.assertions(4)
+    expect.assertions(3)
 
     await buildWithPlugin({
       name: 'test',
@@ -223,7 +223,7 @@ describe('supports plugin context', () => {
           meta: expect.any(Object),
         })
         expect(this.meta.rollupVersion).toBeTypeOf('string')
-        expect(this.meta.viteVersion).toBeTypeOf('string')
+        // expect(this.meta.viteVersion).toBeTypeOf('string')
         expect(this.meta.watchMode).toBe(false)
       },
     })

@@ -17,7 +17,15 @@ import type {
 } from 'parse5'
 import { stripLiteral } from 'strip-literal'
 import escapeHtml from 'escape-html'
-import type { MinimalPluginContextWithoutEnvironment, Plugin } from '../plugin'
+import {
+  htmlInlineProxyPlugin as nativeHtmlInlineProxyPlugin,
+  viteHtmlPlugin,
+} from 'rolldown/experimental'
+import {
+  type MinimalPluginContextWithoutEnvironment,
+  type Plugin,
+  perEnvironmentPlugin,
+} from '../plugin'
 import type { ViteDevServer } from '../server'
 import {
   decodeURIIfPossible,
@@ -101,6 +109,12 @@ export const htmlProxyMap: WeakMap<
 export const htmlProxyResult: Map<string, string> = new Map()
 
 export function htmlInlineProxyPlugin(config: ResolvedConfig): Plugin {
+  if (config.command === 'build' && config.nativePluginEnabledLevel >= 1) {
+    return nativeHtmlInlineProxyPlugin({
+      root: config.root,
+    })
+  }
+
   // Should do this when `constructor` rather than when `buildStart`,
   // `buildStart` will be triggered multiple times then the cached result will be emptied.
   // https://github.com/vitejs/vite/issues/6372
@@ -365,6 +379,33 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
 
   // Same reason with `htmlInlineProxyPlugin`
   isAsyncScriptMap.set(config, new Map())
+
+  if (config.command === 'build' && config.nativePluginEnabledLevel >= 1) {
+    return perEnvironmentPlugin('native:vite-html', (env) => {
+      return viteHtmlPlugin({
+        root: env.config.root,
+        isLib: !!env.config.build.lib,
+        isSsr: !!env.config.build.ssr,
+        urlBase: env.config.base,
+        publicDir: env.config.publicDir,
+        decodedBase: env.config.decodedBase,
+        modulePreload: env.config.build.modulePreload,
+        cssCodeSplit: env.config.build.cssCodeSplit,
+        assetInlineLimit: env.config.build.assetsInlineLimit,
+        preHooks,
+        normalHooks,
+        postHooks,
+        async applyHtmlTransforms(html, hooks, pluginContext, ctx) {
+          return applyHtmlTransforms(
+            html,
+            hooks as IndexHtmlTransformHook[],
+            pluginContext,
+            ctx,
+          )
+        },
+      })
+    })
+  }
 
   return {
     name: 'vite:build-html',

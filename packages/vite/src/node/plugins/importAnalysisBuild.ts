@@ -745,24 +745,27 @@ export function buildImportAnalysisPlugin(config: ResolvedConfig): Plugin[] {
   }
 
   if (config.nativePluginEnabledLevel >= 1) {
-    delete plugin.transform
-    delete plugin.resolveId
-    delete plugin.load
     return [
-      plugin,
-      perEnvironmentPlugin('native:import-analysis-build', (environment) => {
+      perEnvironmentPlugin('native:import-analysis-build', (env) => {
         const preloadCode = getPreloadCode(
-          environment,
+          env,
           !!renderBuiltUrl,
           isRelativeBase,
         )
         return nativeBuildImportAnalysisPlugin({
           preloadCode,
-          insertPreload: getInsertPreload(environment),
+          insertPreload: getInsertPreload(env),
           // this field looks redundant, put a dummy value for now
           optimizeModulePreloadRelativePaths: false,
           renderBuiltUrl: !!renderBuiltUrl,
           isRelativeBase,
+          v2: {
+            isSsr: !!env.config.build.ssr,
+            urlBase: env.config.base,
+            decodedBase: env.config.decodedBase,
+            modulePreload: env.config.build.modulePreload,
+            renderBuiltUrl: env.config.experimental.renderBuiltUrl,
+          },
         })
       }),
     ]
