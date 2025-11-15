@@ -35,6 +35,7 @@ export function buildReporterPlugin(config: ResolvedConfig): Plugin {
         LogLevels[config.logLevel || 'info'] >= LogLevels.info
       const assetsDir = path.join(env.config.build.assetsDir, '/')
       return nativeReporterPlugin({
+        root: env.config.root,
         isTty: !!tty,
         isLib: !!env.config.build.lib,
         assetsDir,

@@ -47,12 +47,6 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
 
       const isLegacySet = new Set<string>()
       const envs: Record<string, Environment> = {}
-      function getChunkName(chunk: OutputChunk) {
-        return (
-          getChunkOriginalFileName(chunk, root, false) ??
-          `_${path.basename(chunk.fileName)}`
-        )
-      }
 
       return [
         {
@@ -78,6 +72,7 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
         nativeManifestPlugin({
           root,
           outPath,
+          isEnableV2: true,
           isLegacy: config.isOutputOptionsForLegacyChunks
             ? () => isLegacySet.has(environment.name)
             : undefined,
@@ -92,28 +87,10 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
           generateBundle(_, bundle) {
             const asset = bundle[outPath]
             if (asset.type === 'asset') {
-              let manifest: Manifest | undefined
-              for (const chunk of Object.values(bundle)) {
-                if (chunk.type !== 'chunk') continue
-                const importedCss = chunk.viteMetadata?.importedCss
-                const importedAssets = chunk.viteMetadata?.importedAssets
-                if (!importedCss?.size && !importedAssets?.size) continue
-                manifest ??= JSON.parse(asset.source.toString()) as Manifest
-                const name = getChunkName(chunk)
-                const item = manifest[name]
-                if (!item) continue
-                if (importedCss?.size) {
-                  item.css = [...importedCss]
-                }
-                if (importedAssets?.size) {
-                  item.assets = [...importedAssets]
-                }
-              }
               const output =
                 this.environment.config.build.rolldownOptions.output
               const outputLength = Array.isArray(output) ? output.length : 1
-              if (manifest && outputLength === 1) {
-                asset.source = JSON.stringify(manifest, undefined, 2)
+              if (outputLength === 1) {
                 return
               }
 
@@ -121,7 +98,7 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
               state.outputCount++
               state.manifest = Object.assign(
                 state.manifest,
-                manifest ?? JSON.parse(asset.source.toString()),
+                JSON.parse(asset.source.toString()),
               )
               if (state.outputCount >= outputLength) {
                 asset.source = JSON.stringify(state.manifest, undefined, 2)

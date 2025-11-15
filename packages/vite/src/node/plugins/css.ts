@@ -27,6 +27,7 @@ import type {
   TransformAttributeResult as LightningCssTransformAttributeResult,
   TransformResult as LightningCssTransformResult,
 } from 'lightningcss'
+import { viteCSSPlugin, viteCSSPostPlugin } from 'rolldown/experimental'
 import type { LightningCSSOptions } from '#types/internal/lightningcssOptions'
 import type {
   LessPreprocessorBaseOptions,
@@ -89,7 +90,7 @@ import type { ResolveIdFn } from '../idResolver'
 import { PartialEnvironment } from '../baseEnvironment'
 import type { TransformPluginContext } from '../server/pluginContainer'
 import { searchForWorkspaceRoot } from '../server/searchRoot'
-import { type DevEnvironment } from '..'
+import { type DevEnvironment, perEnvironmentPlugin } from '..'
 import type { PackageCache } from '../packages'
 import { findNearestMainPackageData } from '../packages'
 import { nodeResolveWithVite } from '../nodeResolve'
@@ -311,6 +312,49 @@ export function cssPlugin(config: ResolvedConfig): Plugin {
     })
   }
 
+  if (isBuild && config.nativePluginEnabledLevel >= 1) {
+    return perEnvironmentPlugin('vite:native-css', (env) => {
+      return [
+        {
+          name: 'vite:css-compat',
+          buildStart() {
+            preprocessorWorkerController = createPreprocessorWorkerController(
+              normalizeMaxWorkers(config.css.preprocessorMaxWorkers),
+            )
+            preprocessorWorkerControllerCache.set(
+              config,
+              preprocessorWorkerController,
+            )
+          },
+
+          buildEnd() {
+            preprocessorWorkerController?.close()
+          },
+        },
+        viteCSSPlugin({
+          root: env.config.root,
+          isLib: !!env.config.build.lib,
+          publicDir: env.config.publicDir,
+          async compileCSS(url, importer, resolver) {
+            return compileCSS(
+              env,
+              url,
+              importer,
+              preprocessorWorkerController!,
+              (url, importer) => {
+                return resolver.call(url, importer)
+              },
+            )
+          },
+          resolveUrl(url, importer) {
+            return idResolver(env, url, importer)
+          },
+          assetInlineLimit: env.config.build.assetsInlineLimit,
+        }),
+      ]
+    })
+  }
+
   return {
     name: 'vite:css',
 
@@ -504,6 +548,46 @@ export function cssPostPlugin(config: ResolvedConfig): Plugin {
       : defaultCssBundleName
     cssBundleNameCache.set(config, cssBundleName)
     return cssBundleName
+  }
+
+  if (config.command === 'build' && config.nativePluginEnabledLevel >= 1) {
+    const isLegacySet = new Set<string>()
+    return perEnvironmentPlugin('native:css-post', (env) => {
+      return [
+        {
+          name: 'native:css-post-compat',
+          ...(config.isOutputOptionsForLegacyChunks
+            ? {
+                renderChunk(_, __, opts) {
+                  const isLegacy =
+                    env.config.isOutputOptionsForLegacyChunks?.(opts) ?? false
+                  if (isLegacy) {
+                    isLegacySet.add(env.name)
+                  } else {
+                    isLegacySet.delete(env.name)
+                  }
+                },
+              }
+            : {}),
+        },
+        viteCSSPostPlugin({
+          root: env.config.root,
+          isLib: !!env.config.build.lib,
+          isSsr: !!env.config.build.ssr,
+          isWorker: env.config.isWorker,
+          isLegacy: env.config.isOutputOptionsForLegacyChunks
+            ? () => isLegacySet.has(env.name)
+            : undefined,
+          isClient: env.config.consumer === 'client',
+          cssCodeSplit: env.config.build.cssCodeSplit,
+          sourcemap: !!env.config.build.sourcemap,
+          assetsDir: env.config.build.assetsDir,
+          urlBase: env.config.base,
+          decodedBase: env.config.decodedBase,
+          renderBuiltUrl: env.config.experimental.renderBuiltUrl,
+        }),
+      ]
+    })
   }
 
   return {

@@ -338,6 +338,7 @@ export function oxcPlugin(config: ResolvedConfig): Plugin {
         !!environment.config.build.sourcemap
 
       return nativeTransformPlugin({
+        root: environment.config.root,
         include,
         exclude,
         jsxRefreshInclude,
