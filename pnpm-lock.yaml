@@ -240,8 +240,8 @@ importers:
   packages/vite:
     dependencies:
       '@oxc-project/runtime':
-        specifier: 0.97.0
-        version: 0.97.0
+        specifier: 0.98.0
+        version: 0.98.0
       fdir:
         specifier: ^6.5.0
         version: 6.5.0(picomatch@4.0.3)
@@ -271,8 +271,8 @@ importers:
         specifier: ^0.3.31
         version: 0.3.31
       '@oxc-project/types':
-        specifier: 0.97.0
-        version: 0.97.0
+        specifier: 0.98.0
+        version: 0.98.0
       '@polka/compression':
         specifier: ^1.0.0-next.25
         version: 1.0.0-next.25
@@ -2974,12 +2974,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-project/runtime@0.97.0':
-    resolution: {integrity: sha512-yH0zw7z+jEws4dZ4IUKoix5Lh3yhqIJWF9Dc8PWvhpo7U7O+lJrv7ZZL4BeRO0la8LBQFwcCewtLBnVV7hPe/w==}
+  '@oxc-project/runtime@0.98.0':
+    resolution: {integrity: sha512-F0ldlBv2orG2YqNL0w77deq9yCaO4zEHbanGnW/jaJxGBR8ImekvZb8x42zAHvdzr8J76psibijvHtXfSjbEIQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
-
-  '@oxc-project/types@0.97.0':
-    resolution: {integrity: sha512-lxmZK4xFrdvU0yZiDwgVQTCvh2gHWBJCBk5ALsrtsBWhs0uDIi+FTOnXRQeQfs304imdvTdaakT/lqwQ8hkOXQ==}
 
   '@oxc-project/types@0.98.0':
     resolution: {integrity: sha512-Vzmd6FsqVuz5HQVcRC/hrx7Ujo3WEVeQP7C2UNP5uy1hUY4SQvMB+93jxkI1KRHz9a/6cni3glPOtvteN+zpsw==}
@@ -8755,9 +8752,7 @@ snapshots:
   '@oxc-minify/binding-win32-x64-msvc@0.97.0':
     optional: true
 
-  '@oxc-project/runtime@0.97.0': {}
-
-  '@oxc-project/types@0.97.0': {}
+  '@oxc-project/runtime@0.98.0': {}
 
   '@oxc-project/types@0.98.0': {}
 
