@@ -351,6 +351,7 @@ The following options are deprecated and will be removed in the future:
 
 - `build.rollupOptions`: renamed to `build.rolldownOptions`
 - `worker.rollupOptions`: renamed to `worker.rolldownOptions`
+- `build.commonjsOptions`: it is now no-op
 
 ## General Changes
 

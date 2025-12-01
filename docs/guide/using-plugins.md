@@ -37,6 +37,8 @@ Check out the [Plugins section](../plugins/) for information about official plug
 
 You can also find plugins that follow the [recommended conventions](./api-plugin.md#conventions) using a [npm search for vite-plugin](https://www.npmjs.com/search?q=vite-plugin&ranking=popularity) for Vite plugins or a [npm search for rollup-plugin](https://www.npmjs.com/search?q=rollup-plugin&ranking=popularity) for Rollup plugins.
 
+<!-- TODO: add `rolldown-plugin` search here -->
+
 ## Enforcing Plugin Ordering
 
 For compatibility with some Rollup plugins, it may be needed to enforce the order of the plugin or only apply at build time. This should be an implementation detail for Vite plugins. You can enforce the position of a plugin with the `enforce` modifier:
