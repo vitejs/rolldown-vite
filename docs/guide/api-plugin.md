@@ -5,7 +5,6 @@ Vite plugins extends Rollup's well-designed plugin interface with a few extra Vi
 **It is recommended to go through [Rollup's plugin documentation](https://rollupjs.org/plugin-development/) first before reading the sections below.**
 
 <!-- TODO: update the link above to Rolldown's documentation -->
-<!-- TODO: we probably should update the whole page once Rolldown's plugin documentation is ready -->
 
 ## Authoring a Plugin
 
