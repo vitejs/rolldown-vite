@@ -70,8 +70,6 @@ For example, you can specify multiple Rolldown outputs with plugins that are onl
 
 You can configure how chunks are split using `build.rolldownOptions.output.advancedChunks` (see [Rolldown docs](https://rolldown.rs/in-depth/advanced-chunks)). If you use a framework, refer to their documentation for configuring how chunks are split.
 
-<!-- TODO: Maybe we want a dedicated guide for some real world examples of how to configure it in the Rolldown docs -->
-
 ## Load Error Handling
 
 Vite emits `vite:preloadError` event when it fails to load dynamic imports. `event.payload` contains the original import error. If you call `event.preventDefault()`, the error will not be thrown.

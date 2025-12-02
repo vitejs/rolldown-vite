@@ -42,6 +42,12 @@ Provides legacy browsers support for the production build.
 
 Check out [awesome-vite](https://github.com/vitejs/awesome-vite#plugins) - you can also submit a PR to list your plugins there.
 
+## Rolldown Builtin Plugins
+
+Vite uses [Rolldown](https://rolldown.rs/) under the hood and it provides a few builtin plugins for common use cases.
+
+Read the [Rolldown Builtin Plugins section](https://rolldown.rs/builtin-plugins/) for more information.
+
 ## Rollup Plugins
 
 [Vite plugins](../guide/api-plugin) are an extension of Rollup's plugin interface. Check out the [Rollup Plugin Compatibility section](../guide/api-plugin#rollup-plugin-compatibility) for more information.
