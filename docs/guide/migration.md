@@ -56,7 +56,7 @@ You can get the options set by the compatibility layer from the `configResolved`
 const plugin = {
   name: 'log-config',
   configResolved(config) {
-    console.log('options', config.rolldownOptions)
+    console.log('options', config.optimizeDeps.rolldownOptions)
   },
 },
 ```
