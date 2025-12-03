@@ -10,7 +10,7 @@ This section will be moved to the release post before the stable release.
 
 ### Built-in tsconfig `paths` Support
 
-Vite 8 now has built-in support for TypeScript's `paths` option, based on [Oxc Resolver](https://oxc.rs/docs/guide/usage/resolver). This feature has a small performance cost and can [change the behavior of external tools](https://www.typescriptlang.org/tsconfig/#paths:~:text=Note%20that%20this%20feature%20does%20not%20change%20how%20import%20paths%20are%20emitted%20by%20tsc%2C%20so%20paths%20should%20only%20be%20used%20to%20inform%20TypeScript%20that%20another%20tool%20has%20this%20mapping%20and%20will%20use%20it%20at%20runtime%20or%20when%20bundling.), so it is not enabled by default. You can enable it by setting `resolve.tsconfigPaths` to `true`.
+Vite 8 now has built-in support for TypeScript's `paths` option, based on [Oxc Resolver](https://oxc.rs/docs/guide/usage/resolver). This feature has a small performance cost and is [discouraged by the TypeScript team](https://www.typescriptlang.org/tsconfig/#paths:~:text=Note%20that%20this%20feature%20does%20not%20change%20how%20import%20paths%20are%20emitted%20by%20tsc%2C%20so%20paths%20should%20only%20be%20used%20to%20inform%20TypeScript%20that%20another%20tool%20has%20this%20mapping%20and%20will%20use%20it%20at%20runtime%20or%20when%20bundling.), so it is not enabled by default. You can enable it by setting `resolve.tsconfigPaths` to `true`.
 
 The `tsconfig.json` in the closest parent directory will be used. For more details about resolving `tsconfig.json`, see [the Features page](/guide/features#typescript-compiler-options).
 
