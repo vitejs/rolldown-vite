@@ -10,15 +10,15 @@ This section will be moved to the release post before the stable release.
 
 ### Built-in tsconfig `paths` Support
 
-Vite 8 now has built-in tsconfig `paths` support, thanks to [Oxc Resolver](https://oxc.rs/docs/guide/usage/resolver). This is not enabled by default, because it has a performance cost and is [discouraged by the TypeScript team to use this option to change the behavior of the external tools](https://www.typescriptlang.org/tsconfig/#paths:~:text=Note%20that%20this%20feature%20does%20not%20change%20how%20import%20paths%20are%20emitted%20by%20tsc%2C%20so%20paths%20should%20only%20be%20used%20to%20inform%20TypeScript%20that%20another%20tool%20has%20this%20mapping%20and%20will%20use%20it%20at%20runtime%20or%20when%20bundling.). While having that caveat, you can enable it by setting `resolve.tsconfigPaths` to `true`.
+Vite 8 now has built-in support for TypeScript's `paths` option, based on [Oxc Resolver](https://oxc.rs/docs/guide/usage/resolver). This feature has a small performance cost and can [change the behavior of external tools](https://www.typescriptlang.org/tsconfig/#paths:~:text=Note%20that%20this%20feature%20does%20not%20change%20how%20import%20paths%20are%20emitted%20by%20tsc%2C%20so%20paths%20should%20only%20be%20used%20to%20inform%20TypeScript%20that%20another%20tool%20has%20this%20mapping%20and%20will%20use%20it%20at%20runtime%20or%20when%20bundling.), so it is not enabled by default. You can enable it by setting `resolve.tsconfigPaths` to `true`.
 
-The tsconfig.json in the closest parent directory will be used. For more details about what tsconfig.json is used, see [the Features page](/guide/features#typescript-compiler-options).
+The `tsconfig.json` in the closest parent directory will be used. For more details about resolving `tsconfig.json`, see [the Features page](/guide/features#typescript-compiler-options).
 
 ### `emitDecoratorMetadata` Support
 
-Vite 8 now has built-in support for TypeScript's [`emitDecoratorMetadata` option](https://www.typescriptlang.org/tsconfig/#emitDecoratorMetadata), thanks to [Oxc Transformer](https://oxc.rs/docs/guide/usage/transformer). If you have `emitDecoratorMetadata` set to `true` in your tsconfig, this feature will be enabled automatically.
+Vite 8 now has built-in support for TypeScript's [`emitDecoratorMetadata` option](https://www.typescriptlang.org/tsconfig/#emitDecoratorMetadata), based on [Oxc Transformer](https://oxc.rs/docs/guide/usage/transformer). This feature will be enabled automatically if you have `emitDecoratorMetadata` set to `true` in your `tsconfig.json`.
 
-Note that this transformation has some limitations as the full support requires the full type inference by TypeScript compiler, which is not supported. See [Oxc Transformer's documentation](https://oxc.rs/docs/guide/usage/transformer/typescript#decorators) for more details.
+This transform has some limitations. Full support for decorator metadata requires type inference by the TypeScript compiler, which is not supported. See [Oxc Transformer's documentation](https://oxc.rs/docs/guide/usage/transformer/typescript#decorators) for details.
 
 ## Default Browser Target change
 
@@ -131,6 +131,8 @@ The decorator spec has been updated multiple times since it reached stage 3. The
 - `"2023-01"` (TypeScript 5.0+ supports this version)
 - `"2022-03"` (SWC supports this version)
 
+See the [Babel decorators versions guide](https://babeljs.io/docs/babel-plugin-proposal-decorators#version) for differences between each version.
+
 **Using Babel:**
 
 ::: code-group
@@ -228,7 +230,7 @@ export default defineConfig({
 
 ::::
 
-### esbuild Fallbacks
+#### esbuild Fallbacks
 
 `esbuild` is no longer directly used by Vite and is now an optional dependency. If you are using a plugin that uses the `transformWithEsbuild` function, you need to install `esbuild` as a `devDependency`. The `transformWithEsbuild` function is deprecated and will be removed in the future. We recommend migrating to the new `transformWithOxc` function instead.
 
