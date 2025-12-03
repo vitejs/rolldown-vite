@@ -72,6 +72,67 @@ export function manifestPlugin(config: ResolvedConfig): Plugin {
       },
     }
   })
+  if (config.build.manifest && config.nativePluginEnabledLevel >= 2) {
+    return perEnvironmentPlugin('native:manifest', (env) => {
+      if (!env.config.build.manifest) return false
+
+      const root = env.config.root
+      const outPath =
+        env.config.build.manifest === true
+          ? '.vite/manifest.json'
+          : env.config.build.manifest
+
+      const envs: Record<string, Environment> = {}
+
+      return [
+        {
+          name: 'native:manifest-envs',
+          buildStart() {
+            envs[env.name] = this.environment
+          },
+        },
+        nativeManifestPlugin({
+          root,
+          outPath,
+          isEnableV2: true,
+          isOutputOptionsForLegacyChunks:
+            env.config.isOutputOptionsForLegacyChunks,
+          cssEntries() {
+            return Object.fromEntries(
+              cssEntriesMap.get(envs[env.name])!.entries(),
+            )
+          },
+        }),
+        {
+          name: 'native:manifest-compatible',
+          generateBundle(_, bundle) {
+            const asset = bundle[outPath]
+            if (asset.type === 'asset') {
+              const output =
+                this.environment.config.build.rolldownOptions.output
+              const outputLength = Array.isArray(output) ? output.length : 1
+              if (outputLength === 1) {
+                return
+              }
+
+              const state = getState(this)
+              state.outputCount++
+              state.manifest = Object.assign(
+                state.manifest,
+                JSON.parse(asset.source.toString()),
+              )
+              if (state.outputCount >= outputLength) {
+                asset.source = JSON.stringify(state.manifest, undefined, 2)
+                state.reset()
+              } else {
+                delete bundle[outPath]
+              }
+            }
+          },
+        },
+      ]
+    })
+  }
   if (config.build.manifest && config.nativePluginEnabledLevel >= 1) {
     return perEnvironmentPlugin('native:manifest', (environment) => {
       if (!environment.config.build.manifest) return false

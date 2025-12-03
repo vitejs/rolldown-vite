@@ -550,7 +550,7 @@ export interface ExperimentalOptions {
    *
    * - 'resolver' (deprecated, will be removed in v8 stable): Enable only the native resolver plugin.
    * - 'v1' (will be deprecated, will be removed in v8 stable): Enable the first stable set of native plugins (including resolver).
-   * - true: Enable all native plugins (currently an alias of 'v1', it will map to a newer one in the future versions).
+   * - true: Enable all native plugins (including newly added ones beyond 'v1').
    *
    * @experimental
    * @default 'v1'
@@ -768,7 +768,7 @@ const configDefaults = Object.freeze({
     importGlobRestoreExtension: false,
     renderBuiltUrl: undefined,
     hmrPartialAccept: false,
-    enableNativePlugin: process.env._VITE_TEST_JS_PLUGIN ? false : 'v1',
+    enableNativePlugin: process.env._VITE_TEST_JS_PLUGIN ? false : true,
   },
   future: {
     removePluginHookHandleHotUpdate: undefined,
@@ -2060,8 +2060,9 @@ function resolveNativePluginEnabledLevel(
     case 'resolver':
       return 0
     case 'v1':
-    case true:
       return 1
+    case true:
+      return 2
     case false:
       return -1
     default:
