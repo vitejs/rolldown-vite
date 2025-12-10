@@ -2,7 +2,8 @@ import path from 'node:path'
 import MagicString from 'magic-string'
 import { stripLiteral } from 'strip-literal'
 import { exactRegex } from '@rolldown/pluginutils'
-import type { Plugin } from '../plugin'
+import { viteAssetImportMetaUrlPlugin } from 'rolldown/experimental'
+import { type Plugin, perEnvironmentPlugin } from '../plugin'
 import type { ResolvedConfig } from '../config'
 import {
   injectQuery,
@@ -42,6 +43,30 @@ export function assetImportMetaUrlPlugin(config: ResolvedConfig): Plugin {
     isBuild: config.command === 'build',
     packageCache: config.packageCache,
     asSrc: true,
+  }
+
+  if (config.command === 'build' && config.nativePluginEnabledLevel >= 2) {
+    return perEnvironmentPlugin('vite:native-asset-import-meta-url', (env) => {
+      if (env.config.consumer === 'client') {
+        return viteAssetImportMetaUrlPlugin({
+          root: env.config.root,
+          isLib: !!env.config.build.lib,
+          publicDir: env.config.publicDir,
+          clientEntry: CLIENT_ENTRY,
+          assetInlineLimit: env.config.build.assetsInlineLimit,
+          tryFsResolve: (file) => tryFsResolve(file, fsResolveOptions),
+          assetResolver: (url, importer) => {
+            assetResolver ??= createBackCompatIdResolver(env.config, {
+              extensions: [],
+              mainFields: [],
+              tryIndex: false,
+              preferRelative: true,
+            })
+            return assetResolver(env, url, importer)
+          },
+        })
+      }
+    })
   }
 
   return {

@@ -2,6 +2,7 @@ import path from 'node:path'
 import fsp from 'node:fs/promises'
 import { Buffer } from 'node:buffer'
 import * as mrmime from 'mrmime'
+import { viteAssetPlugin as nativeAssetPlugin } from 'rolldown/experimental'
 import type {
   NormalizedOutputOptions,
   PluginContext,
@@ -15,7 +16,7 @@ import {
   createToImportMetaURLBasedRelativeRuntime,
   toOutputFilePathInJS,
 } from '../build'
-import type { Plugin } from '../plugin'
+import { type Plugin, perEnvironmentPlugin } from '../plugin'
 import type { ResolvedConfig } from '../config'
 import { checkPublicFile } from '../publicDir'
 import {
@@ -148,6 +149,23 @@ export function renderAssetUrlInJS(
  * Also supports loading plain strings with import text from './foo.txt?raw'
  */
 export function assetPlugin(config: ResolvedConfig): Plugin {
+  if (config.command === 'build' && config.nativePluginEnabledLevel >= 2) {
+    return perEnvironmentPlugin('native:asset', (env) => {
+      return nativeAssetPlugin({
+        root: env.config.root,
+        isLib: !!env.config.build.lib,
+        isSsr: !!env.config.build.ssr,
+        isWorker: env.config.isWorker,
+        urlBase: env.config.base,
+        publicDir: env.config.publicDir,
+        decodedBase: env.config.decodedBase,
+        isSkipAssets: !env.config.build.emitAssets,
+        assetInlineLimit: env.config.build.assetsInlineLimit,
+        assetsInclude: env.config.rawAssetsInclude,
+      })
+    })
+  }
+
   registerCustomMime()
 
   return {
