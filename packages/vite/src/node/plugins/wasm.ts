@@ -57,6 +57,15 @@ export const wasmHelperPlugin = (config: ResolvedConfig): Plugin => {
   if (config.command === 'build' && config.nativePluginEnabledLevel >= 1) {
     return nativeWasmHelperPlugin({
       decodedBase: config.decodedBase,
+      v2:
+        config.nativePluginEnabledLevel >= 2
+          ? {
+              root: config.root,
+              isLib: !!config.build.lib,
+              publicDir: config.publicDir,
+              assetInlineLimit: config.build.assetsInlineLimit,
+            }
+          : undefined,
     })
   }
 
